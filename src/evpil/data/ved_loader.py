@@ -23,11 +23,13 @@ below uses what the files say.
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
+from evpil.data.dem import DEM
 from evpil.data.dialect import Dialect, canonicalise
 
 # The three battery-electric vehicles, read off VED_Static_Data_PHEV&EV.xlsx
@@ -55,15 +57,14 @@ VED_MAPPING: dict[str, str] = {
 # ---------------------------------------------------------------------------
 # ABSENT CHANNELS
 #
-# elevation_m: VED logs latitude and longitude but no elevation, so it is set
-#   to a constant and the derived grade is therefore zero everywhere. The
-#   consequence is stated rather than hidden: on a trip that returns near its
-#   starting elevation the grade term contributes little NET energy, because
-#   what is spent climbing is partly recovered descending, but INSTANTANEOUS
-#   power on any real hill is wrong. Ann Arbor is not flat. Recovering grade
-#   needs the GPS trace map-matched against a digital elevation model, which is
-#   a separate piece of work with its own data licence; `elevation_column`
-#   below is the hook for it.
+# elevation_m: VED logs latitude and longitude but no elevation. Passing a
+#   `DEM` to `load_bev_trips` recovers it by sampling a digital elevation
+#   model at each GPS fix, which is the supported path and what
+#   `VED_DEM_DIALECT` is for. Without one the loader falls back to a constant
+#   elevation and therefore a zero gradient, and the consequence is stated
+#   rather than hidden: on a trip returning near its starting elevation the
+#   grade term costs little NET energy, since climbing is partly recovered
+#   descending, but instantaneous power on any real hill is wrong.
 #
 # t_batt_c: no battery temperature channel. The canonical loader falls back to
 #   ambient, which is right at key-on and increasingly wrong as the pack
@@ -121,6 +122,34 @@ VED_DIALECT = Dialect(
 )
 
 
+# Used when a DEM supplies elevation. Everything else matches VED_DIALECT.
+#
+# The 200 m gradient baseline is measured, not assumed. Elevation comes from a
+# 10.3 m DEM sampled at GPS fixes, and at urban speeds consecutive samples are
+# about 4 m apart, so a per-sample difference asks the DEM for detail it does
+# not have. Sweeping the baseline over the eligible trips gives:
+#
+#     baseline     grade sd     p99 |grade|     max      above 0.10 rad
+#        20 m       0.0565        0.2312      1.5708 (vertical)   5.19%
+#        50 m       0.0325        0.1219      0.4404              1.89%
+#       100 m       0.0258        0.0823      0.2467              0.28%
+#     * 200 m       0.0206        0.0587      0.1479              0.05%
+#       300 m       0.0181        0.0504      0.0997              0.00%
+#       500 m       0.0152        0.0430      0.0649              0.00%
+#
+# US roads are designed to about 8% and rarely exceed 10%, so 200 m is the
+# shortest baseline that puts essentially the whole distribution inside what a
+# road can be, which is the same test used to pick the i3 archive's window.
+# 300 m would clip the tail entirely, at the cost of erasing short real hills:
+# Ann Arbor's relief runs roughly 100 m over 1 to 2 km, and a baseline that
+# long starts averaging one side of the Huron valley against the other.
+GRADE_BASELINE_M = 200.0
+
+VED_DEM_DIALECT = replace(
+    VED_DIALECT, constant_columns=(), grade_distance_m=GRADE_BASELINE_M,
+)
+
+
 def _trip_id(veh_id: int, trip: int) -> str:
     return f"VED_{int(veh_id)}_{int(trip)}"
 
@@ -156,14 +185,21 @@ def load_bev_trips(
     root: Path,
     cache: Path | None = None,
     trip_ids: list[str] | None = None,
-    dialect: Dialect = VED_DIALECT,
+    dialect: Dialect | None = None,
+    dem: DEM | None = None,
 ) -> pd.DataFrame:
     """Return the BEV trips in the canonical schema, tagged with `trip_id`.
 
     `cache`, when it exists, is read instead of rescanning the weekly files.
     `trip_ids` restricts the result, which is how the eligibility rule is
     applied without rewriting anything on disk.
+
+    `dem`, when given, supplies the elevation VED does not log, sampled at each
+    GPS fix, and the gradient is then measured over `GRADE_BASELINE_M` of road.
+    Without it elevation is constant and the gradient is zero everywhere.
     """
+    if dialect is None:
+        dialect = VED_DEM_DIALECT if dem is not None else VED_DIALECT
     root = Path(root)
     if cache is not None and Path(cache).exists():
         raw = pd.read_pickle(cache)
@@ -182,7 +218,13 @@ def load_bev_trips(
         block = block.assign(**{
             "Timestamp(ms)": block["Timestamp(ms)"]
                              - block["Timestamp(ms)"].iloc[0]})
-        frame = canonicalise(block, VED_MAPPING, dialect)
+        mapping = dict(VED_MAPPING)
+        if dem is not None:
+            block = block.assign(_dem_elevation_m=dem.sample(
+                block["Latitude[deg]"].to_numpy(),
+                block["Longitude[deg]"].to_numpy()))
+            mapping["_dem_elevation_m"] = "elevation_m"
+        frame = canonicalise(block, mapping, dialect)
         frame["trip_id"] = tid
         frames.append(frame)
 

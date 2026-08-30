@@ -263,9 +263,107 @@ beyond that while continuing to erase real dynamics.
 
 | Missing | Consequence |
 |---|---|
-| `elevation_m` | **Grade is zero everywhere.** VED logs latitude and longitude but no elevation. On a trip returning near its starting elevation the grade term contributes little net energy, since climbing is partly recovered descending, but instantaneous power on any real hill is wrong. Ann Arbor is not flat. Recovering grade needs the GPS trace map-matched against a digital elevation model, a separate piece of work with its own data licence |
+| `elevation_m` | **Recovered from a digital elevation model.** See the section below |
 | `t_batt_c` | Falls back to ambient, which is right at key-on and increasingly wrong as the pack self-heats |
 | A second heater channel | The i3 logs heater power twice on separate buses, so the two can be required to agree. VED logs each auxiliary channel once, so that instrument check has no counterpart here. A real gap in what can be verified, not an oversight |
+
+### Elevation and gradient, recovered from a DEM
+
+VED logs latitude and longitude but no elevation, so the gradient the road-load
+model needs is sampled from a digital elevation model at each GPS fix.
+
+| Field | Value |
+|---|---|
+| Source | USGS 3D Elevation Program, 1/3 arc-second seamless DEM |
+| Tile | `n43w084`, from The National Map staged products |
+| Licence | Public domain (a work of the United States Government) |
+| Resolution | 0.00009259°, about **10.3 m** |
+| CRS | EPSG:4269 (NAD83), geographic, so no reprojection is needed |
+| Window kept | 1512 x 1836 cells covering 42.20 to 42.34 N, 83.82 to 83.65 W |
+| Valid cells | 100.00% |
+| Elevation range | 219.75 to 331.79 m |
+
+`scripts/build_dem.py` reads only that window out of the 421 MB tile using
+byte-range requests, so the whole file is never downloaded, and writes an 8.8 MB
+array. `evpil.data.dem` then samples it with numpy alone, which keeps the
+geospatial stack a build-time dependency rather than a runtime one.
+
+Sampling is **bilinear**, not nearest neighbour. Nearest neighbour makes
+elevation a staircase one cell wide, and differentiating a staircase gives a
+gradient that is zero almost everywhere and enormous at the risers, which is
+the same failure the i3 archive's raw 10 Hz elevation produced.
+
+#### Checks that the sampling is right
+
+Three, because an elevation model that is subtly mis-registered produces
+plausible-looking numbers that are quietly wrong.
+
+1. **Landmarks.** Sampled against published elevations: the University of
+   Michigan Diag 268.0 m (about 270 m), the Huron River at Argo Dam 235.1 m
+   (about 232 m), Ann Arbor Municipal Airport 252.1 m (about 256 m).
+2. **Coverage.** 100.0000% of the 476,308 battery-electric GPS fixes fall
+   inside the grid.
+3. **Loop closure**, the strongest of the three. Nine eligible trips end within
+   150 m of where they started, so their net elevation change must be zero.
+   Measured: **mean +0.10 m, median −0.18 m, standard deviation 0.78 m**. The
+   434 trips that do not return to their start scatter by 16.52 m for contrast.
+   A vertical bias or a coordinate offset would not survive this.
+
+#### Why the gradient is measured over 200 m of road
+
+At urban speeds consecutive VED samples are about 4 m apart, well inside a
+single 10.3 m DEM cell, so a per-sample difference asks the elevation model for
+detail it does not contain. Gradient is therefore taken as the elevation change
+across a fixed length of road divided by that length, which is what a road
+gradient means. Sweeping the baseline over the eligible trips:
+
+| Baseline | Grade sd | 99th percentile | Max | Steeper than 10% |
+|---|---|---|---|---|
+| 20 m | 0.0565 | 0.2312 | 1.5708 (vertical) | 5.19% |
+| 50 m | 0.0325 | 0.1219 | 0.4404 | 1.89% |
+| 100 m | 0.0258 | 0.0823 | 0.2467 | 0.28% |
+| **200 m** | **0.0206** | **0.0587** | **0.1479** | **0.05%** |
+| 300 m | 0.0181 | 0.0504 | 0.0997 | 0.00% |
+| 500 m | 0.0152 | 0.0430 | 0.0649 | 0.00% |
+
+US roads are designed to about 8% and rarely exceed 10%, so 200 m is the
+shortest baseline that puts essentially the whole distribution inside what a
+road can physically be. That is the same test used to choose the i3 archive's
+smoothing window: pick the least smoothing that brings the data inside an
+independent physical bound, so the bound stays a check rather than becoming the
+thing doing the work. A 300 m baseline would clip the tail completely, at the
+cost of averaging one side of the Huron valley against the other; Ann Arbor's
+relief runs roughly 100 m over 1 to 2 km.
+
+Distance is integrated from speed rather than taken from the GPS trace. The two
+agree closely, with a median ratio of GPS path length to speed-integrated
+distance of 0.976 across the 443 eligible trips, but the speed integral is zero
+while the vehicle is stopped whereas GPS jitter keeps accumulating distance at
+a standstill and would walk the baseline through a parked car.
+
+#### What the gradient is worth
+
+Not a rounding correction. Regressing logged traction power on the road-load
+terms across all 458,319 samples, with and without the gradient term:
+
+| | R² | RMSE |
+|---|---|---|
+| Rolling, aerodynamic and inertial terms | 0.446 | 8362 W |
+| The same, plus the DEM gradient | **0.525** | **7741 W** |
+
+Adding it explains **7.9 more points of variance** and cuts RMSE by 7.4%, and
+its fitted coefficient is **0.779** against a theoretical 1.0, so it enters
+close to the way `m·g·sin θ·v` says it should. A noise channel would fit near
+zero and explain nothing. Integrated over the eligible trips, the magnitude of
+the gradient power is **27.5%** of the magnitude of traction power: treating
+Ann Arbor as flat discards roughly a quarter of the road-load signal.
+
+Two limits remain. The 3DEP model describes bare ground, so it does not know
+about bridges, overpasses or multi-level interchanges, where the sampled
+elevation is whatever lies beneath the vehicle. And consumer GPS scatters
+horizontally by roughly 3 to 5 m under open sky and more between buildings,
+which on a slope turns directly into elevation error; the 200 m baseline is
+what keeps that from reaching the gradient.
 
 ### Trip eligibility
 
@@ -322,6 +420,8 @@ archives are large and redistribution terms are not ours to assume.
 ```
 data/raw/i3/     extracted trip CSVs from Measurement Data.zip
 data/raw/ved/    the two .7z parts, the PHEV/EV static sheet, and LICENSE
+data/raw/ved/csv/  the 54 weekly files, extracted
+data/raw/dem/    the 3DEP window, as GeoTIFF and as a numpy array
 ```
 
 ---

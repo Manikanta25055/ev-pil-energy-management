@@ -180,3 +180,84 @@ def test_raw_trips_yields_sorted_blocks(tmp_path):
     tid, block = pairs[0]
     assert tid == "VED_10_1"
     assert block["Timestamp(ms)"].is_monotonic_increasing
+
+
+# --- DEM-supplied elevation --------------------------------------------------
+
+from evpil.data.dem import DEM  # noqa: E402
+from evpil.data.ved_loader import GRADE_BASELINE_M, VED_DEM_DIALECT  # noqa: E402
+
+
+LAT_REF = 42.25          # where the synthetic trips start
+M_PER_DEG_LAT = 111_320.0
+
+
+def _ramp_dem(slope=0.0, base=250.0):
+    """A DEM over the test coordinates that rises `slope` metres per metre north.
+
+    `slope=0.02` is a 2% climb for a vehicle driving north, so a trip heading
+    north across it must come back with a grade of arcsin(0.02).
+    """
+    lat_n, lon_n = 400, 400
+    lat_step, lon_step = -0.001, 0.001
+    north, west = 42.40, -83.90
+    lats = north + np.arange(lat_n) * lat_step
+    z = base + (lats - LAT_REF) * M_PER_DEG_LAT * slope
+    grid = np.repeat(z[:, None], lon_n, axis=1)
+    return DEM(elevation=grid, west=west, north=north,
+               lon_step=lon_step, lat_step=lat_step)
+
+
+def test_dem_supplies_the_elevation_ved_does_not_log(tmp_path):
+    df = load_bev_trips(_weekly(tmp_path, _block()), dem=_ramp_dem())
+    assert df["elevation_m"].iloc[0] == pytest.approx(250.0, abs=1e-6)
+    assert not (df["elevation_m"] == 0.0).all()
+
+
+def test_without_a_dem_elevation_stays_constant_and_grade_zero(tmp_path):
+    df = load_bev_trips(_weekly(tmp_path, _block()))
+    assert (df["elevation_m"] == 0.0).all()
+    assert (df["grade_rad"] == 0.0).all()
+
+
+def test_flat_terrain_still_gives_zero_grade_with_a_dem(tmp_path):
+    df = load_bev_trips(_weekly(tmp_path, _block()), dem=_ramp_dem())
+    assert df["grade_rad"].abs().max() == pytest.approx(0.0, abs=1e-9)
+
+
+def test_a_climb_produces_a_positive_grade(tmp_path):
+    """Drive north up a 2% slope; the derived gradient must find it."""
+    n = 1200
+    # 10 m/s north for 480 s covers 4.8 km, well past the 200 m baseline.
+    lat = 42.25 + np.arange(n) * (10.0 * (DT_MS / 1000.0)) / 111_320.0
+    block = _block(n=n, **{"Latitude[deg]": lat,
+                           "Vehicle Speed[km/h]": np.full(n, 36.0)})
+    df = load_bev_trips(_weekly(tmp_path, block), dem=_ramp_dem(slope=0.02))
+    mid = df["grade_rad"].iloc[n // 3: 2 * n // 3]
+    assert mid.mean() == pytest.approx(np.arcsin(0.02), rel=0.05)
+
+
+def test_a_descent_produces_a_negative_grade(tmp_path):
+    n = 1200
+    lat = 42.25 + np.arange(n) * (10.0 * (DT_MS / 1000.0)) / 111_320.0
+    block = _block(n=n, **{"Latitude[deg]": lat})
+    df = load_bev_trips(_weekly(tmp_path, block), dem=_ramp_dem(slope=-0.02))
+    assert df["grade_rad"].iloc[n // 3: 2 * n // 3].mean() < -0.015
+
+
+def test_grade_uses_a_distance_baseline_not_a_sample_window():
+    assert VED_DEM_DIALECT.grade_distance_m == GRADE_BASELINE_M
+    assert VED_DEM_DIALECT.constant_columns == ()
+
+
+def test_a_stationary_vehicle_does_not_advance_the_grade_baseline(tmp_path):
+    """Distance comes from speed, so GPS jitter at a standstill cannot move it."""
+    n = 600
+    v = np.full(n, 36.0)
+    v[200:400] = 0.0                      # parked in the middle of the trip
+    lat = 42.25 + np.cumsum(v / 3.6 * (DT_MS / 1000.0)) / 111_320.0
+    block = _block(n=n, **{"Vehicle Speed[km/h]": v, "Latitude[deg]": lat})
+    df = load_bev_trips(_weekly(tmp_path, block), dem=_ramp_dem(slope=0.02))
+    stopped = df["grade_rad"].iloc[210:390]
+    assert np.isfinite(stopped).all()
+    assert stopped.abs().max() < 0.35      # never leaves the schema's bound

@@ -87,6 +87,14 @@ class Dialect:
     # there is no elevation channel to derive one from.
     constant_columns: tuple[tuple[str, float], ...] = ()
 
+    # Road distance, in metres, over which to measure the gradient. When set,
+    # grade is the elevation change across this baseline divided by it, which
+    # is what a road gradient means, and `grade_window_samples` is not used.
+    # Needed where elevation comes from a DEM: consecutive samples can sit
+    # inside one DEM cell, so a per-sample difference is either exactly zero or
+    # the full height of a cell edge.
+    grade_distance_m: float | None = None
+
 
 DEFAULT_DIALECT = Dialect()
 
@@ -192,6 +200,10 @@ def _derive_motion(df: pd.DataFrame, dialect: Dialect) -> pd.DataFrame:
         a = np.clip(a, -dialect.max_accel_mps2, dialect.max_accel_mps2)
     df["a_mps2"] = a
 
+    if dialect.grade_distance_m is not None:
+        df["grade_rad"] = _grade_over_distance(df, dt, v, dialect.grade_distance_m)
+        return df
+
     # Grade is vertical speed over road speed. Elevation is averaged over a
     # centred window first: differencing it sample to sample divides a
     # metre-scale step by a centimetre-scale distance.
@@ -209,3 +221,31 @@ def _derive_motion(df: pd.DataFrame, dialect: Dialect) -> pd.DataFrame:
     ratio = np.clip(np.nan_to_num(ratio, nan=0.0, posinf=0.0, neginf=0.0), -1.0, 1.0)
     df["grade_rad"] = np.arcsin(ratio)
     return df
+
+
+def _grade_over_distance(df: pd.DataFrame, dt: np.ndarray, v: np.ndarray,
+                         baseline_m: float) -> np.ndarray:
+    """Gradient measured across a fixed length of road, centred on each sample.
+
+    Distance is integrated from speed rather than taken from the GPS trace.
+    Both are available where this is used and they agree to within 2.4%, but
+    the speed integral is zero while the vehicle is stopped, whereas GPS jitter
+    keeps accumulating distance at a standstill and would advance the baseline
+    through a stationary vehicle.
+    """
+    z = df["elevation_m"].to_numpy()
+    step = np.nan_to_num(v * np.where(np.isfinite(dt), dt, 0.0), nan=0.0)
+    s = np.concatenate([[0.0], np.cumsum(step[1:])])
+
+    half = baseline_m / 2.0
+    lo = np.clip(np.searchsorted(s, s - half, side="left"), 0, len(s) - 1)
+    hi = np.clip(np.searchsorted(s, s + half, side="right") - 1, 0, len(s) - 1)
+
+    ds = s[hi] - s[lo]
+    dz = z[hi] - z[lo]
+    # A metre of travel cannot support a gradient; report level rather than
+    # dividing by it.
+    with np.errstate(divide="ignore", invalid="ignore"):
+        ratio = np.where(ds > 1.0, dz / ds, 0.0)
+    ratio = np.clip(np.nan_to_num(ratio, nan=0.0, posinf=0.0, neginf=0.0), -1.0, 1.0)
+    return np.arcsin(ratio)
