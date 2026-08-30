@@ -34,6 +34,19 @@ MEASURED_MMAC_PER_S = 29.82
 BUDGET_LATENCY_MS = 40.0
 BUDGET_BYTES = 300 * 1024
 
+# Measured on silicon 2026-08-31, scalar int8 C, one core at 240 MHz, for the
+# deployed encoder shape (seq 32, d_model 32, 2 layers, 4 heads, horizon 30).
+# Repeatable to 0.1 us across resets. See docs/g5-latency.md.
+MEASURED_ENCODER_US = 36_457.2
+
+# What the MAC-count estimate gave for the same graph. The gap is the point:
+# dividing multiply-accumulates by a measured MAC rate ignores softmax, layer
+# normalisation, requantisation and memory traffic, and on this graph that is
+# 64% of the real time. Estimates in this module remain useful for ranking
+# models against each other and must not be quoted as latencies once a
+# measurement exists.
+ESTIMATED_ENCODER_US = 22_284.0
+
 # Storage per decision-tree node: feature index, threshold and a child offset.
 # Deliberately optimistic, so that a footprint judged to exceed the budget here
 # exceeds it on any real encoding too.
@@ -42,12 +55,20 @@ TREE_BYTES_PER_NODE = 8
 
 @dataclass(frozen=True)
 class DeployCost:
-    """One arm's cost against the G5 budget."""
+    """One arm's cost against the G5 budget.
+
+    `int8_bytes` charges one byte per weight and four per bias. Biases are
+    added into a 32-bit accumulator on the device, so quantising them costs
+    accuracy and saves almost no memory. Charging them one byte, as an earlier
+    version did, understated the footprint of the Transformer by 12%, and
+    memory is one of the two things G5 gates on.
+    """
 
     macs: int | None            # None where the arm is not a MAC workload
     int8_bytes: int
     latency_ms: float | None    # None where no MAC-based estimate applies
     footprint_estimated: bool   # True when int8_bytes is an estimate, not arithmetic
+    n_params: int = 0           # element count, for cross-checks against PyTorch
 
     @property
     def latency_fraction(self) -> float | None:
@@ -76,18 +97,29 @@ def _latency(macs: int) -> float:
     return macs / (MEASURED_MMAC_PER_S * 1e6) * 1000.0
 
 
+BIAS_BYTES = 4
+WEIGHT_BYTES = 1
+
+
+def _footprint(weights: int, biases: int) -> int:
+    return weights * WEIGHT_BYTES + biases * BIAS_BYTES
+
+
 def constant_cost() -> DeployCost:
     """Persistence and drift: a multiply and a repeat, below the noise floor."""
-    return DeployCost(macs=0, int8_bytes=0, latency_ms=0.0, footprint_estimated=False)
+    return DeployCost(macs=0, int8_bytes=0, latency_ms=0.0,
+                      footprint_estimated=False, n_params=0)
 
 
 def ridge_cost(seq_len: int, n_features: int, horizon: int) -> DeployCost:
     """A dense matrix-vector product from the flattened window to the horizon."""
     n_in = seq_len * n_features
-    weights = (n_in + 1) * horizon
+    weights = n_in * horizon
+    biases = horizon
     macs = n_in * horizon
-    return DeployCost(macs=macs, int8_bytes=weights, latency_ms=_latency(macs),
-                      footprint_estimated=False)
+    return DeployCost(macs=macs, int8_bytes=_footprint(weights, biases),
+                      latency_ms=_latency(macs), footprint_estimated=False,
+                      n_params=weights + biases)
 
 
 def lstm_cost(seq_len: int, n_features: int, hidden: int, layers: int,
@@ -100,16 +132,20 @@ def lstm_cost(seq_len: int, n_features: int, hidden: int, layers: int,
     are not MACs, and on the S3 they are a lookup, not the binding cost.
     """
     macs = 0
-    params = 0
+    weights = 0
+    biases = 0
     for layer in range(layers):
         n_in = n_features if layer == 0 else hidden
         per_step = 4 * (n_in * hidden + hidden * hidden)
         macs += per_step * seq_len
-        params += per_step + 4 * 2 * hidden        # weights plus the two bias vectors
+        weights += per_step
+        biases += 4 * 2 * hidden                   # PyTorch keeps two bias vectors
     macs += hidden * horizon
-    params += hidden * horizon + horizon
-    return DeployCost(macs=macs, int8_bytes=params, latency_ms=_latency(macs),
-                      footprint_estimated=False)
+    weights += hidden * horizon
+    biases += horizon
+    return DeployCost(macs=macs, int8_bytes=_footprint(weights, biases),
+                      latency_ms=_latency(macs), footprint_estimated=False,
+                      n_params=weights + biases)
 
 
 def tree_ensemble_cost(n_trees: int, max_depth: int) -> DeployCost:
@@ -123,7 +159,8 @@ def tree_ensemble_cost(n_trees: int, max_depth: int) -> DeployCost:
     """
     nodes = n_trees * (2 ** (max_depth + 1) - 1)
     return DeployCost(macs=None, int8_bytes=nodes * TREE_BYTES_PER_NODE,
-                      latency_ms=None, footprint_estimated=True)
+                      latency_ms=None, footprint_estimated=True,
+                      n_params=nodes)
 
 
 def transformer_cost(
@@ -156,19 +193,21 @@ def transformer_cost(
     )
     macs = per_layer * layers
     # 8*d^2 of weights (four attention projections, two feed-forward layers),
-    # 7*d of biases across them, and 4*d for the two layer norms. Dropping the
-    # biases and norms understates the footprint by 4% at d_model 32, which is
-    # the wrong direction to be wrong in when a memory budget is the gate.
-    params = layers * (8 * d_model * d_model + 11 * d_model)
+    # 7*d of biases across them, and 4*d for the two layer norms.
+    weights = layers * 8 * d_model * d_model
+    biases = layers * 11 * d_model
 
     if n_features is not None:
         macs += seq_len * n_features * d_model
-        params += n_features * d_model + d_model
+        weights += n_features * d_model
+        biases += d_model
     if n_outputs is not None and horizon is not None:
         # The head reads the final token only, so it is paid once per
         # inference rather than once per input sample.
         macs += d_model * horizon * n_outputs
-        params += d_model * horizon * n_outputs + horizon * n_outputs
+        weights += d_model * horizon * n_outputs
+        biases += horizon * n_outputs
 
-    return DeployCost(macs=macs, int8_bytes=params, latency_ms=_latency(macs),
-                      footprint_estimated=False)
+    return DeployCost(macs=macs, int8_bytes=_footprint(weights, biases),
+                      latency_ms=_latency(macs), footprint_estimated=False,
+                      n_params=weights + biases)

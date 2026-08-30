@@ -41,12 +41,39 @@ class Standardiser:
 
 
 @dataclass(frozen=True)
+class TrainedNet:
+    """A trained network with the normalisation it was trained inside.
+
+    Kept together because they are only correct together: the network sees
+    standardised inputs and emits standardised outputs, and handing one to a
+    caller without the other is an invitation to score a model in the wrong
+    units. Quantisation needs both, which is why this exists at all.
+    """
+
+    net: object
+    scaler: "Standardiser"
+    y_mu: np.ndarray
+    y_sd: np.ndarray
+    device: str
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        import torch
+
+        self.net.eval()
+        with torch.no_grad():
+            xb = torch.from_numpy(self.scaler.transform(X)).to(self.device)
+            out = self.net(xb).cpu().numpy().astype(np.float64)
+        return out * self.y_sd + self.y_mu
+
+
+@dataclass(frozen=True)
 class ArmResult:
     """Predictions plus whatever the arm can say about how it got there."""
 
     pred: np.ndarray
     n_params: int
     info: dict
+    model: TrainedNet | None = None
 
 
 def fit_ridge(
@@ -402,4 +429,11 @@ def fit_transformer(
               "d_model": d_model, "layers": layers, "n_heads": n_heads,
               "n_outputs": n_out, "seed": seed, "device": device,
               "physics_informed": physics is not None},
+        # The weights are the last epoch's, not the best epoch's. Selecting an
+        # epoch means choosing its predictions; keeping its weights as well
+        # would need a checkpoint every epoch. Quantisation is measured against
+        # whatever this network scores, and that is stated in the report rather
+        # than papered over.
+        model=TrainedNet(net=net, scaler=scaler, y_mu=y_mu, y_sd=y_sd,
+                         device=device),
     )

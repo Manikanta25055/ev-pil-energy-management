@@ -28,7 +28,7 @@ def test_transformer_cost_reproduces_the_g1_config_table():
     # 16.4 k params, 22.0 ms. Measured throughput, not an assumed one.
     c = transformer_cost(seq_len=32, d_model=32, layers=2)
     assert c.macs == 655_360
-    assert c.int8_bytes == pytest.approx(16_384, rel=0.05)
+    assert c.n_params == pytest.approx(16_384, rel=0.05)
     assert c.latency_ms == pytest.approx(22.0, abs=0.1)
 
 
@@ -51,10 +51,10 @@ def test_transformer_parameter_count_agrees_with_pytorch():
         for p in m.parameters()
     )
     predicted = transformer_cost(seq_len, d_model, layers, n_features=n_feat,
-                                 n_outputs=n_out, horizon=horizon).int8_bytes
-    # Biases and layer norms are 4% of the footprint at this width. A memory
-    # gate is the wrong place to be 4% optimistic.
-    assert predicted == actual
+                                 n_outputs=n_out, horizon=horizon)
+    # Biases and layer norms are 4% of the parameter count at this width. A
+    # memory gate is the wrong place to be 4% optimistic.
+    assert predicted.n_params == actual
 
 
 def test_the_deployed_graph_costs_more_than_the_encoder_g1_measured():
@@ -85,7 +85,7 @@ def test_lstm_parameter_count_agrees_with_pytorch():
     actual = sum(p.numel() for p in rnn.parameters()) + sum(
         p.numel() for p in head.parameters()
     )
-    assert lstm_cost(seq_len, n_feat, hidden, 1, horizon).int8_bytes == actual
+    assert lstm_cost(seq_len, n_feat, hidden, 1, horizon).n_params == actual
 
 
 def test_latency_is_macs_divided_by_the_measured_throughput():
@@ -96,7 +96,40 @@ def test_latency_is_macs_divided_by_the_measured_throughput():
 
 def test_ridge_carries_one_bias_per_output():
     c = ridge_cost(seq_len=4, n_features=2, horizon=3)
-    assert c.int8_bytes == (4 * 2 + 1) * 3
+    assert c.n_params == (4 * 2 + 1) * 3
+
+
+def test_biases_are_charged_four_bytes_not_one():
+    # They are added into a 32-bit accumulator on the device, so quantising
+    # them costs accuracy and saves nothing. Charging them one byte understated
+    # the Transformer's footprint by 12%.
+    c = ridge_cost(seq_len=4, n_features=2, horizon=3)
+    assert c.int8_bytes == 4 * 2 * 3 * 1 + 3 * 4
+
+
+def test_the_footprint_matches_what_a_real_quantised_model_occupies():
+    torch = pytest.importorskip("torch")
+    from torch import nn
+
+    from evpil.forecast.quantise import deployed_bytes
+
+    seq_len, d_model, layers, n_feat, horizon, n_out = 32, 32, 2, 8, 30, 1
+    layer = nn.TransformerEncoderLayer(
+        d_model=d_model, nhead=4, dim_feedforward=2 * d_model,
+        dropout=0.0, batch_first=True, norm_first=True,
+    )
+
+    class Net(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.embed = nn.Linear(n_feat, d_model)
+            self.encoder = nn.TransformerEncoder(layer, num_layers=layers,
+                                                 enable_nested_tensor=False)
+            self.head = nn.Linear(d_model, horizon * n_out)
+
+    predicted = transformer_cost(seq_len, d_model, layers, n_features=n_feat,
+                                 n_outputs=n_out, horizon=horizon).int8_bytes
+    assert predicted == deployed_bytes(Net())
 
 
 def test_a_recurrent_layer_pays_its_cost_once_per_input_sample():
@@ -139,3 +172,29 @@ def test_fractions_are_reported_against_the_g5_limits():
     c = ridge_cost(32, 8, 30)
     assert c.latency_fraction == pytest.approx(c.latency_ms / BUDGET_LATENCY_MS)
     assert c.memory_fraction == pytest.approx(c.int8_bytes / BUDGET_BYTES)
+
+
+def test_the_measured_encoder_latency_still_fits_the_g5_budget():
+    from evpil.forecast.deploy import MEASURED_ENCODER_US
+
+    # Measured, not divided. 36.5 ms against a 40 ms budget leaves 9% of
+    # margin, and this is the slowest plausible implementation: scalar C with
+    # no ESP-NN vector kernels and a floating-point exponential in the softmax.
+    assert MEASURED_ENCODER_US / 1000.0 < BUDGET_LATENCY_MS
+    assert MEASURED_ENCODER_US / 1000.0 / BUDGET_LATENCY_MS > 0.85
+
+
+def test_the_mac_count_estimate_understates_the_measurement():
+    from evpil.forecast.deploy import ESTIMATED_ENCODER_US, MEASURED_ENCODER_US
+
+    # This is the finding, not a tolerance. A MAC count cannot see softmax or
+    # normalisation, and on this graph those are most of the difference. The
+    # assertion exists so that a future change to the cost model which quietly
+    # closes the gap has to say so.
+    ratio = MEASURED_ENCODER_US / ESTIMATED_ENCODER_US
+    assert ratio > 1.5
+
+    estimate = transformer_cost(32, 32, 2, n_features=8, n_outputs=1,
+                                horizon=30)
+    assert estimate.latency_ms == pytest.approx(ESTIMATED_ENCODER_US / 1000.0,
+                                                rel=0.01)
