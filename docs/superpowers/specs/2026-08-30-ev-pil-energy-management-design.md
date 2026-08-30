@@ -479,10 +479,19 @@ permit isolating the real-time loop from inference.
 The **ESP32-C6** (single-core RISC-V at 160 MHz, no vector ISA) is unsuitable as
 the primary platform. It may appear as a one-line contrast point.
 
-**Open hardware question, resolved in Week 1:** the DevKitM-1 module marking
-determines PSRAM availability. A base N8 module has no PSRAM, capping usable
-SRAM at roughly 400 KB. N8R2 or N8R8 would provide 2 to 8 MB of headroom. This
-single fact affects the model budget more than any other input.
+**Open hardware question — RESOLVED 2026-08-30.** `esptool chip_id` reports
+`ESP32-S3 (QFN56) revision v0.2, Features: WiFi, BLE, Embedded PSRAM 8MB`, so
+the board is an **N8R8**, not the base N8.
+
+Memory is therefore not a constraint: even the plan-implied configuration
+(~66 k int8 parameters) fits with orders of magnitude to spare. **MACs remain
+the binding constraint**, as section 7.1 predicted, so G1 is still decisive and
+the budget-first procedure is unchanged.
+
+Two caveats keep PSRAM from being free: `CONFIG_SPIRAM` must be enabled before
+the application can see it, and octal PSRAM is substantially slower than
+internal SRAM, so inference-hot weights belong in internal SRAM. Quantifying
+that gap is itself a reportable result. See `docs/hardware-inventory.md`.
 
 ---
 
@@ -539,8 +548,8 @@ None of these block the implementation plan; each has a scheduled owner and week
 
 | Item | Resolved by | Week |
 |---|---|---|
-| ESP32-S3-DevKitM-1 module variant and PSRAM presence | Reading the module marking | 1 |
-| Effective int8 MACs/second with ESP-NN on the S3 | G1 micro-benchmark | 1 |
+| ESP32-S3-DevKitM-1 module variant and PSRAM presence | **RESOLVED 2026-08-30: N8R8, 8 MB embedded PSRAM** (esptool chip_id). Memory is not a constraint; MACs remain binding. See `docs/hardware-inventory.md` | 1 |
+| Effective int8 MACs/second with ESP-NN on the S3 | **RESOLVED 2026-08-30: 29.82 MMAC/s** (scalar int8 loop, 240 MHz, single core). G1 PASS with 6.1x margin. Phase 2 targets seq 32 / d_model 32 / 2 layers at 22.0 ms, 55% of the G5 budget. Lower bound: no ESP-NN vector kernels used. See `docs/g1-compute-budget.md` | 1 |
 | i3 dataset access terms and exact channel list | Downloading from IEEE DataPort | 1 |
 | BMW i3 (60 Ah) vehicle and battery parameters, with citations | Parameter identification plus published specifications | 2 |
 | Whether native USB-Serial-JTAG or external USB-UART gives lower loop latency | G3 measurement | 3 |
