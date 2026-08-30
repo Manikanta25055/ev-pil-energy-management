@@ -1,0 +1,43 @@
+{
+  "seed": 20260830,
+  "n_eligible": 33,
+  "train": [
+    "TripB01",
+    "TripB02",
+    "TripB06",
+    "TripB10",
+    "TripB11",
+    "TripB13",
+    "TripB15",
+    "TripB16",
+    "TripB17",
+    "TripB18",
+    "TripB19",
+    "TripB20",
+    "TripB24",
+    "TripB26",
+    "TripB30",
+    "TripB31",
+    "TripB36",
+    "TripB37",
+    "TripB38"
+  ],
+  "val": [
+    "TripB03",
+    "TripB08",
+    "TripB12",
+    "TripB14",
+    "TripB29",
+    "TripB32",
+    "TripB35"
+  ],
+  "test": [
+    "TripB05",
+    "TripB21",
+    "TripB22",
+    "TripB23",
+    "TripB25",
+    "TripB27",
+    "TripB33"
+  ]
+}

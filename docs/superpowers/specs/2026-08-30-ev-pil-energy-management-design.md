@@ -352,6 +352,31 @@ If the plant cannot reproduce real trips, nothing downstream is meaningful. This
 criterion may be revised once, at G2, only with the reason recorded in this
 document.
 
+**REVISED at G2, 2026-08-30. This is the one permitted revision; it is now
+spent.** Full evidence in `docs/g2-plant-validation.md`.
+
+Neither threshold changed. What changed is which model each threshold is
+applied to, because the single pooled number could not localise a failure.
+
+| Part | Test | Threshold |
+|---|---|---|
+| A | Torque inverted from the logged speed profile, against the archive's logged motor torque | RMSE at most 50% of the trip's logged-torque standard deviation |
+| B | Battery power with logged torque as the input | RMSE at most **10%** of mean absolute power (unchanged) |
+| C | Terminal SoC from full speed-profile replay | at most **2 percentage points** (unchanged) |
+
+Reason: replaying a speed profile requires differentiating a 10 Hz speed
+channel to recover acceleration, and multiplying the result by 1270 kg. That
+injects a zero-mean 10.4 Nm torque residual which no plant model can remove.
+Fitting the chassis parameters directly against logged torque reduces the
+residual only from 10.70 to 10.37 Nm over 276,751 samples, and the correlation
+between a trip's torque spread and its relative power error is −0.85: the error
+is set by signal-to-noise, not by model quality. Driven by logged torque, the
+powertrain, battery and auxiliary models meet the original 10% bound on every
+validation trip (median 7.0%, worst 8.3%).
+
+Trip energy error is reported alongside but not gated, since it integrates the
+same quantity as terminal SoC.
+
 ### 6.2 Metrics
 
 The original plan's Section 22 listed metric headings with no content. These are

@@ -23,11 +23,13 @@ AUX = AuxParams(p_base_w=300.0, k_heat_w_per_c=180.0, k_cool_w_per_c=90.0)
 VP = VehicleParams(
     mass_kg=1400.0, c_rr=0.01, cd=0.29, frontal_area_m2=2.38,
     wheel_radius_m=0.32, gear_ratio=9.7, drivetrain_eta=0.95,
+    rot_mass_factor=0.0,
     battery=BATT, motor=MOTOR, regen=RegenParams(power_limit_w=50000.0), aux=AUX,
     citations={
         "mass_kg": "test fixture", "c_rr": "test fixture", "cd": "test fixture",
         "frontal_area_m2": "test fixture", "wheel_radius_m": "test fixture",
         "gear_ratio": "test fixture", "drivetrain_eta": "test fixture",
+        "rot_mass_factor": "test fixture",
         "battery": "test fixture", "motor": "test fixture",
         "regen": "test fixture", "aux": "test fixture",
     },
@@ -39,6 +41,7 @@ def test_params_reject_a_missing_citation():
         VehicleParams(
             mass_kg=1400.0, c_rr=0.01, cd=0.29, frontal_area_m2=2.38,
             wheel_radius_m=0.32, gear_ratio=9.7, drivetrain_eta=0.95,
+            rot_mass_factor=0.0,
             battery=BATT, motor=MOTOR, regen=RegenParams(power_limit_w=50000.0),
             aux=AUX, citations={"mass_kg": "only this one"},
         )
@@ -153,3 +156,23 @@ def test_distance_and_energy_accumulate_monotonically():
         assert st.distance_m > prev_d
         assert st.energy_wh > prev_e
         prev_d, prev_e = st.distance_m, st.energy_wh
+
+
+def test_measured_aux_overrides_the_aux_model():
+    """A measured HVAC load is an input; the model is only the fallback."""
+    plant = Plant(VP)
+    st = plant.reset(soc0=0.8, t_ambient_c=-10.0, t_batt_c=10.0)
+    kw = dict(torque_nm=0.0, regen_blend=1.0, p_limit_w=1e9, grade_rad=0.0,
+              t_ambient_c=-10.0, dt_s=0.1)
+    modelled = plant.step(st, **kw)
+    measured = plant.step(st, **kw, p_aux_w=250.0)
+    assert modelled.p_aux_w != pytest.approx(250.0)
+    assert measured.p_aux_w == pytest.approx(250.0)
+
+
+def test_measured_aux_of_zero_is_honoured_not_treated_as_absent():
+    plant = Plant(VP)
+    st = plant.reset(soc0=0.8, t_ambient_c=-10.0, t_batt_c=10.0)
+    out = plant.step(st, torque_nm=0.0, regen_blend=1.0, p_limit_w=1e9,
+                     grade_rad=0.0, t_ambient_c=-10.0, dt_s=0.1, p_aux_w=0.0)
+    assert out.p_aux_w == pytest.approx(0.0)

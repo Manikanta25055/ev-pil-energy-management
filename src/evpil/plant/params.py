@@ -15,7 +15,8 @@ from evpil.plant.regen import RegenParams
 
 _CITED_FIELDS = (
     "mass_kg", "c_rr", "cd", "frontal_area_m2", "wheel_radius_m",
-    "gear_ratio", "drivetrain_eta", "battery", "motor", "regen", "aux",
+    "gear_ratio", "drivetrain_eta", "rot_mass_factor",
+    "battery", "motor", "regen", "aux",
 )
 
 
@@ -28,6 +29,7 @@ class VehicleParams:
     wheel_radius_m: float
     gear_ratio: float
     drivetrain_eta: float
+    rot_mass_factor: float
     battery: BatteryParams
     motor: MotorParams
     regen: RegenParams
@@ -47,3 +49,7 @@ class VehicleParams:
                 raise ValueError(f"{name} must be positive, got {getattr(self, name)}")
         if not 0.0 < self.drivetrain_eta <= 1.0:
             raise ValueError(f"drivetrain_eta must be in (0, 1], got {self.drivetrain_eta}")
+        if self.rot_mass_factor < 0.0:
+            raise ValueError(
+                f"rot_mass_factor must be non-negative, got {self.rot_mass_factor}"
+            )

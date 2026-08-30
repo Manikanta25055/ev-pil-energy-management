@@ -75,3 +75,78 @@ def test_load_all_trips_tags_trip_id(raw_csv):
     df = load_all_trips(raw_csv.parent, MAPPING)
     assert set(df["trip_id"].unique()) == {"TripA01"}
     assert len(df) == 5
+
+
+# --- archive dialect ---------------------------------------------------------
+
+from evpil.data.i3_loader import Dialect, load_trip as _load_trip  # noqa: E402
+
+
+def _dialect_csv(tmp_path, **overrides):
+    """A raw file in the i3 archive's own form: semicolon, cp1252, degrees."""
+    data = {
+        "Time [s]": [0.0, 0.1, 0.2, 0.3, 0.4],
+        "Velocity [km/h]": [36.0, 36.0, 36.0, 36.0, 36.0],
+        "SoC [%]": [80.0, 79.9, 79.8, 79.7, 79.6],
+        "Battery Current [A]": [-20.0, -20.0, -20.0, -20.0, 5.0],
+        "Battery Voltage [V]": [350.0] * 5,
+        "Ambient Temperature [°C]": [5.0] * 5,
+        "Battery Temperature [°C]": [10.0] * 5,
+        "Elevation [m]": [100.0] * 5,
+        "Heating Power CAN [kW]": [2.0] * 5,
+        "AirCon Power [kW]": [0.5] * 5,
+    }
+    data.update(overrides)
+    p = tmp_path / "TripB01.csv"
+    pd.DataFrame(data).to_csv(p, sep=";", encoding="cp1252", index=False)
+    return p
+
+
+_ARCHIVE_MAP = {
+    "Time [s]": "t_s", "Velocity [km/h]": "v_mps", "SoC [%]": "soc_frac",
+    "Battery Current [A]": "i_batt_a", "Battery Voltage [V]": "v_batt_v",
+    "Ambient Temperature [°C]": "t_ambient_c",
+    "Battery Temperature [°C]": "t_batt_c", "Elevation [m]": "elevation_m",
+}
+_D = Dialect(sep=";", encoding="cp1252", negate=("i_batt_a",),
+             sum_into=(("p_aux_w", ("Heating Power CAN [kW]",
+                                    "AirCon Power [kW]"), 1000.0),),
+             clip=(("p_aux_w", 0.0, 10000.0),), max_gap_samples=100,
+             max_soc_step=0.01)
+
+
+def test_dialect_reads_semicolons_and_cp1252(tmp_path):
+    df = _load_trip(_dialect_csv(tmp_path), _ARCHIVE_MAP, _D)
+    assert len(df) == 5
+    assert df["t_ambient_c"].iloc[0] == pytest.approx(5.0)
+
+
+def test_dialect_negates_battery_current(tmp_path):
+    """The archive logs discharge negative; canonical is discharge positive."""
+    df = _load_trip(_dialect_csv(tmp_path), _ARCHIVE_MAP, _D)
+    assert df["i_batt_a"].iloc[0] == pytest.approx(20.0)
+    assert df["i_batt_a"].iloc[4] == pytest.approx(-5.0)
+
+
+def test_dialect_composes_aux_from_heater_and_aircon(tmp_path):
+    df = _load_trip(_dialect_csv(tmp_path), _ARCHIVE_MAP, _D)
+    assert df["p_aux_w"].iloc[0] == pytest.approx(2500.0)
+
+
+def test_dialect_clips_an_aux_spike(tmp_path):
+    p = _dialect_csv(tmp_path, **{"Heating Power CAN [kW]": [2.0, 40.0, 2.0, 2.0, 2.0]})
+    df = _load_trip(p, _ARCHIVE_MAP, _D)
+    assert df["p_aux_w"].max() == pytest.approx(10000.0)
+
+
+def test_dialect_repairs_an_impossible_soc_step(tmp_path):
+    """A 79.7 -> 0.0 drop in 0.1 s is a dropout, not a discharge."""
+    p = _dialect_csv(tmp_path, **{"SoC [%]": [80.0, 79.9, 79.8, 79.7, 0.0]})
+    df = _load_trip(p, _ARCHIVE_MAP, _D)
+    assert df["soc_frac"].iloc[4] == pytest.approx(0.797)
+
+
+def test_dialect_keeps_a_plausible_soc_step(tmp_path):
+    p = _dialect_csv(tmp_path, **{"SoC [%]": [80.0, 79.9, 79.8, 79.7, 79.5]})
+    df = _load_trip(p, _ARCHIVE_MAP, _D)
+    assert df["soc_frac"].iloc[4] == pytest.approx(0.795)

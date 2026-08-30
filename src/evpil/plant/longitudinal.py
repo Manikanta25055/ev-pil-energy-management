@@ -28,6 +28,7 @@ def road_load(
     c_rr: float,
     cd: float,
     frontal_area_m2: float,
+    rot_mass_factor: float = 0.0,
     rho_kgm3: float = 1.2,
     g: float = 9.81,
 ) -> RoadLoad:
@@ -36,13 +37,19 @@ def road_load(
     `tractive_n` is the force the powertrain must supply. It is negative when
     the vehicle is being decelerated or is descending, which is the condition
     under which regeneration is available.
+
+    `rot_mass_factor` is the rotational mass factor: accelerating the vehicle
+    also spins up the wheels, the reduction gear and the rotor, so the inertial
+    force is `m(1 + e)a` rather than `ma`. Through a 9.665:1 reduction the
+    rotor's reflected inertia is not small. It defaults to 0 so that callers
+    that have not identified it get the plain translational term.
     """
     direction = 0.0 if v_mps == 0.0 else math.copysign(1.0, v_mps)
 
     rolling = c_rr * mass_kg * g * math.cos(grade_rad) * direction
     aero = 0.5 * rho_kgm3 * cd * frontal_area_m2 * v_mps * v_mps * direction
     grade = mass_kg * g * math.sin(grade_rad)
-    inertia = mass_kg * a_mps2
+    inertia = mass_kg * (1.0 + rot_mass_factor) * a_mps2
 
     return RoadLoad(
         rolling_n=rolling,

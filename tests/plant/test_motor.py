@@ -64,3 +64,16 @@ def test_torque_clamped_by_the_power_limit_at_high_speed():
 
 def test_no_torque_above_the_speed_limit():
     assert clamp_torque(M, 200.0, 1500.0) == pytest.approx(0.0)
+
+
+def test_speed_limit_withholds_drive_torque_but_not_braking():
+    """A limiter stops adding power; it does not disconnect the machine."""
+    over = M.speed_max_radps * 1.05
+    assert clamp_torque(M, 100.0, over) == pytest.approx(0.0)
+    assert clamp_torque(M, -100.0, over) == pytest.approx(-100.0)
+
+
+def test_speed_limit_is_direction_aware_in_reverse():
+    over = -M.speed_max_radps * 1.05
+    assert clamp_torque(M, -100.0, over) == pytest.approx(0.0)
+    assert clamp_torque(M, 100.0, over) == pytest.approx(100.0)

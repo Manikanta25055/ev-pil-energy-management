@@ -1,0 +1,113 @@
+{
+  "identified": {
+    "c_rr": 0.019474808971758434,
+    "cd": 0.22015247123435558,
+    "r0_ohm": 0.010000000000000972,
+    "rot_mass_factor": 0.17062845280771283
+  },
+  "motor_efficiency_grid": [
+    [
+      0.8596074033404146,
+      0.90557799339284,
+      0.9135543755764544,
+      0.8842123044834818
+    ],
+    [
+      0.8636554341262042,
+      0.9163256337910977,
+      0.9252021507256358,
+      0.9185872785008553
+    ],
+    [
+      0.8878304215344185,
+      0.9206006972652327,
+      0.9252835548608975,
+      0.9185872785008553
+    ],
+    [
+      0.9114205517910094,
+      0.9114205517910094,
+      0.9114205517910094,
+      0.9252835548608975
+    ]
+  ],
+  "motor_efficiency_counts": [
+    [
+      1087,
+      44791,
+      41523,
+      5314
+    ],
+    [
+      5719,
+      23376,
+      12594,
+      2803
+    ],
+    [
+      2330,
+      5780,
+      1472,
+      55
+    ],
+    [
+      66,
+      314,
+      113,
+      0
+    ]
+  ],
+  "motor_torque_axis_nm": [
+    0.0,
+    62.5,
+    125.0,
+    250.0
+  ],
+  "motor_speed_axis_radps": [
+    0.0,
+    300.0,
+    700.0,
+    1151.0
+  ],
+  "aux": {
+    "p_base_w": 543.2078749999998,
+    "k_heat_w_per_c": 127.29676976546025,
+    "k_cool_w_per_c": 0.0,
+    "t_setpoint_c": 21.0
+  },
+  "published": {
+    "mass_kg": 1270.0,
+    "frontal_area_m2": 2.38,
+    "wheel_radius_m": 0.3498,
+    "gear_ratio": 9.665,
+    "drivetrain_eta": 0.95,
+    "capacity_ah": 61.7,
+    "power_max_w": 125000.0,
+    "torque_max_nm": 250.0
+  },
+  "citations": {
+    "mass_kg": "BMW Group PressClub, 'The BMW i3' technical data: 1195 kg DIN kerb weight [R1]; +75 kg driver per EU kerb convention [R6]",
+    "c_rr": "identified by least squares against training trips, scripts/identify_params.py",
+    "cd": "identified by least squares against training trips, scripts/identify_params.py; initial value 0.29 (BEV) [R1][R4]",
+    "frontal_area_m2": "derived as CdA/Cd = 0.690/0.29 [R4]. ASSUMPTION-GRADE source (enthusiast forum); low risk because the fitted cd absorbs error in the CdA product",
+    "wheel_radius_m": "geometric radius of the standard 155/70 R19 tyre [R5]",
+    "gear_ratio": "single-speed reduction gear, 9.665:1 [R2]",
+    "drivetrain_eta": "ENGINEERING ASSUMPTION: 0.95, typical single-speed reduction gear. Not a published BMW figure",
+    "battery": "96s, 360 V nominal, Samsung NCA prismatic cells, 21.6 kWh gross / 18.8 kWh usable [R3]. capacity_ah is MEASURED at 61.7 Ah by Coulomb counting against the logged SoC channel [R9]. r0 identified; OCV curve, RC branch and current limits are ASSUMPTIONS (see CAVEATS)",
+    "motor": "125 kW / 250 Nm hybrid-synchronous machine [R1][R2]. The efficiency map is IDENTIFIED from the archive's own logged motor torque and battery power on training trips, evpil.plant.motor_id.identify_efficiency_grid [R8]",
+    "regen": "ENGINEERING ASSUMPTION: 50 kW regenerative ceiling. BMW does not publish a figure for the I01",
+    "aux": "k_heat_w_per_c fitted from the heating-circuit channel, evpil.plant.auxiliary.fit_auxiliary; p_base_w identified against logged battery power, scripts/identify_params.py, because the archive does not log the 12 V DC-DC load; k_cool_w_per_c NOT IDENTIFIED -- no eligible trip is warmer than the cabin setpoint",
+    "rot_mass_factor": "identified by least squares against training trips, scripts/identify_params.py. Standard rotational mass factor of vehicle longitudinal dynamics [R7]"
+  },
+  "fit_trips": [
+    "TripB01",
+    "TripB02",
+    "TripB06",
+    "TripB10",
+    "TripB11",
+    "TripB13",
+    "TripB15",
+    "TripB16"
+  ],
+  "train_residual_rmse_kw": 4.333157396818657
+}

@@ -59,9 +59,16 @@ def electrical_power_w(params: MotorParams, torque_nm: float, omega_radps: float
 
 
 def clamp_torque(params: MotorParams, torque_nm: float, omega_radps: float) -> float:
-    """Clamp to the rated torque, the constant-power envelope, and the speed limit."""
+    """Clamp to the rated torque, the constant-power envelope, and the speed limit.
+
+    Above the speed limit only *driving* torque is withheld. A speed limiter
+    stops adding power; it does not disconnect the machine, and braking and
+    regeneration have to keep working -- they are how the vehicle comes back
+    under the limit. Returning zero for both would make the model produce no
+    power at exactly the moments it is producing the most.
+    """
     if abs(omega_radps) > params.speed_max_radps:
-        return 0.0
+        return min(0.0, torque_nm) if omega_radps >= 0.0 else max(0.0, torque_nm)
 
     limit = params.torque_max_nm
     if abs(omega_radps) > 0.0:

@@ -59,3 +59,29 @@ def test_rolling_and_aero_vanish_at_standstill():
 def test_aero_force_opposes_motion_when_reversing():
     rev = road_load(v_mps=-20.0, a_mps2=0.0, grade_rad=0.0, **PARAMS)
     assert rev.aero_n == pytest.approx(-165.648000, rel=1e-9)
+
+
+def test_rotational_mass_raises_the_inertial_force():
+    """Spinning up wheels, gear and rotor costs force the plain m*a term misses."""
+    plain = road_load(v_mps=10.0, a_mps2=2.0, grade_rad=0.0, **PARAMS)
+    spun = road_load(v_mps=10.0, a_mps2=2.0, grade_rad=0.0,
+                     rot_mass_factor=0.10, **PARAMS)
+    assert spun.inertia_n == pytest.approx(plain.inertia_n * 1.10, rel=1e-12)
+    # Only the inertial term moves; the resistances are unchanged.
+    assert spun.rolling_n == pytest.approx(plain.rolling_n)
+    assert spun.aero_n == pytest.approx(plain.aero_n)
+    assert spun.grade_n == pytest.approx(plain.grade_n)
+
+
+def test_rotational_mass_is_inert_at_constant_speed():
+    """It multiplies acceleration, so it must do nothing when there is none."""
+    plain = road_load(v_mps=20.0, a_mps2=0.0, grade_rad=0.0, **PARAMS)
+    spun = road_load(v_mps=20.0, a_mps2=0.0, grade_rad=0.0,
+                     rot_mass_factor=0.25, **PARAMS)
+    assert spun.tractive_n == pytest.approx(plain.tractive_n)
+
+
+def test_rotational_mass_defaults_to_no_correction():
+    assert (road_load(v_mps=10.0, a_mps2=1.0, grade_rad=0.0, **PARAMS).inertia_n
+            == pytest.approx(road_load(v_mps=10.0, a_mps2=1.0, grade_rad=0.0,
+                                       rot_mass_factor=0.0, **PARAMS).inertia_n))

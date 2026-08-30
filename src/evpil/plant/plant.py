@@ -65,7 +65,17 @@ class Plant:
         grade_rad: float,
         t_ambient_c: float,
         dt_s: float,
+        p_aux_w: float | None = None,
     ) -> PlantOutput:
+        """Advance one step.
+
+        `p_aux_w` overrides the auxiliary model with a measured load. The HVAC
+        draw is an exogenous disturbance set by weather, cabin state and what
+        the driver asked for, not a function of the powertrain, so when it has
+        been measured it is an input like speed or grade. Leaving it None falls
+        back to predicting it from ambient temperature, which is what a
+        deployed controller without a measurement has to do.
+        """
         p = self.p
 
         omega = (state.v_mps / p.wheel_radius_m) * p.gear_ratio
@@ -81,9 +91,10 @@ class Plant:
             v_mps=state.v_mps, a_mps2=0.0, grade_rad=grade_rad,
             mass_kg=p.mass_kg, c_rr=p.c_rr, cd=p.cd,
             frontal_area_m2=p.frontal_area_m2,
+            rot_mass_factor=p.rot_mass_factor,
         )
         f_resist = load.rolling_n + load.aero_n + load.grade_n
-        a_mps2 = (f_wheel - f_resist) / p.mass_kg
+        a_mps2 = (f_wheel - f_resist) / (p.mass_kg * (1.0 + p.rot_mass_factor))
 
         p_mech_w = torque * omega
         p_elec_w = electrical_power_w(p.motor, torque, omega)
@@ -99,7 +110,7 @@ class Plant:
             p_regen_w, p_friction_w = 0.0, 0.0
             p_machine_w = p_elec_w
 
-        p_aux = aux_power_w(p.aux, t_ambient_c)
+        p_aux = aux_power_w(p.aux, t_ambient_c) if p_aux_w is None else p_aux_w
         p_batt_w = min(p_machine_w + p_aux, p_limit_w)
 
         # Exact solve, so p_limit_w is genuinely binding. Clamping afterwards
