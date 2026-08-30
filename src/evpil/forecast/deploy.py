@@ -42,10 +42,23 @@ MEASURED_ENCODER_US = 36_457.2
 # What the MAC-count estimate gave for the same graph. The gap is the point:
 # dividing multiply-accumulates by a measured MAC rate ignores softmax, layer
 # normalisation, requantisation and memory traffic, and on this graph that is
-# 64% of the real time. Estimates in this module remain useful for ranking
-# models against each other and must not be quoted as latencies once a
-# measurement exists.
+# 64% of the real time.
 ESTIMATED_ENCODER_US = 22_284.0
+
+# The LSTM at hidden 64, one layer, measured the same way on the same silicon.
+# It is here because it settles what the Transformer's gap was evidence of. The
+# LSTM has no softmax, so if attention were the explanation its estimate would
+# have been close. It is 77% low, worse than the Transformer's 64%: four gates
+# per timestep over 32 timesteps is 8,192 sigmoid and tanh evaluations, the
+# same order of nonlinear work by a different name.
+#
+# The estimating method was optimistic, not the architecture. What the two
+# measurements also do is close the gap between the arms: estimated, the LSTM
+# looked 11% faster than the Transformer; measured, it is 4% faster. Estimates
+# remain useful for ranking arms and must not be quoted as latencies once a
+# measurement exists.
+MEASURED_LSTM_US = 35_070.8
+ESTIMATED_LSTM_US = 19_844.0
 
 # Storage per decision-tree node: feature index, threshold and a child offset.
 # Deliberately optimistic, so that a footprint judged to exceed the budget here

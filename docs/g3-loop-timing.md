@@ -1,8 +1,9 @@
 # Gate G3: the 10 ms loop on hardware
 
-**Verdict: FAIL on the frame criterion, PASS on timing by a factor of 40.**
-The criterion was not revised. The measurement and its diagnosis are below, and
-the decision it calls for is recorded in the spec rather than taken here.
+**Verdict: FAIL on the frame criterion, PASS on timing by a factor of 40, in
+both of the two loop designs measured.** The criterion was not revised. The
+measurements and their diagnosis are below, and the decision they call for is
+recorded in the spec rather than taken here.
 
 Measured 2026-08-31 on the ESP32-S3 described in `docs/hardware-inventory.md`,
 over a ten-minute continuous run.
@@ -89,15 +90,55 @@ re-scope the loop to 20 ms. Neither addresses what was measured. The transport
 lost nothing. Doubling the period would halve the miss rate at best, and would
 leave the coupling exactly where it is.
 
+## The fix was built and measured
+
+The control task now requests the next state, acts on the most recent state it
+already holds, and reads replies without waiting. Both modes are compiled from
+the same source behind `CTRL_PIPELINED` in `firmware/main/tasks.h`, so the
+comparison is a rebuild and both remain measurable.
+
+| Over 59,650 loops, ten minutes | Synchronous | Pipelined |
+|---|---|---|
+| Jitter p99 | within 25 us | within 25 us |
+| Worst round trip | 7,405 us | **77 us** |
+| Reply timeouts | 6 | 0 |
+| Steps on a stale state | not applicable | 8 |
+| Malformed or lost frames | 0 | 0 |
+
+The round trip falls by a factor of 96, because the loop no longer waits for
+it. Timing is unchanged, which is the expected result: the loop was never the
+problem.
+
+**Eight events remain, and the gate still fails.** What changed is what an
+event costs. In the synchronous loop a miss meant the control task had spent
+9 ms of its 10 ms slot waiting and received nothing, so the loop itself was at
+risk. In the pipelined loop a miss means the controller acted on a state one
+period older than intended and the loop was never in danger. Same criterion,
+different failure.
+
+Zero over ten minutes at 100 Hz against a general-purpose operating system may
+simply not be reachable. That is worth stating as a finding rather than
+treating as a defect to be engineered away.
+
+One implementation note, because it wasted a build. `link_read_frame` treats a
+zero timeout as an already-expired deadline and returns without reading
+anything, so the first pipelined build marked every one of 11,650 steps stale.
+The poll is now bounded at 1 ms of the 10 rather than zero.
+
 ## The decision this calls for
 
 Recorded in the spec's open items for G3 to settle, not taken here.
 
-The fix that matches the diagnosis is to stop blocking. The control task would
-use the most recent state it holds, marked stale when no fresh one arrived,
-rather than waiting for one. That decouples the control period from host
-latency completely, and it is what a real controller does with a sensor that
-misses an update.
+The fix that matched the diagnosis has been built and is measured above. It
+decouples the control period from host latency, and eight events in 59,650
+loops survive it.
+
+What the gate should now distinguish is the question it was trying to ask. A
+loop that misses its own deadline is a defect, and there are zero of those: the
+control task met every deadline in both modes. A host that answers late is a
+property of running the plant on macOS, and there are eight of those, bounded
+and handled. Reading both as the same failure makes the criterion unable to
+tell a working system from a broken one.
 
 It is worth noting that this is already the project's own subject matter.
 Claim C5 is deadline-aware execution with quantified degradation, and ablation

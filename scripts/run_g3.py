@@ -145,7 +145,9 @@ def main() -> int:
     s1, h1 = last_diag
     hist = [b - a for a, b in zip(h0, h1)]
     counters = {k: s1[k] - s0[k] for k in
-                ("loop_count", "rx_timeouts", "rx_bad", "infer_deadline_misses")}
+                ("loop_count", "rx_timeouts", "rx_bad", "infer_deadline_misses",
+                 "stale_steps")}
+    counters["stale_worst"] = s1["stale_worst"]      # a running maximum
     # Running maxima on the MCU, so a difference is meaningless and these are
     # taken as-is. That means they include the startup transient before the
     # settle point: the first loop after boot has no predecessor and the link
@@ -161,8 +163,11 @@ def main() -> int:
     p99 = jitter_percentile(hist, 0.99)
     p999 = jitter_percentile(hist, 0.999)
 
-    dropped = counters["rx_timeouts"] + counters["rx_bad"] \
-        + host_stats["frames_dropped"]
+    # In pipelined mode the firmware does not wait for a reply, so a late one
+    # is a stale step rather than a timeout. Both count against the gate: the
+    # question is whether the loop ran on the state it asked for.
+    dropped = (counters["rx_timeouts"] + counters["rx_bad"]
+               + counters["stale_steps"] + host_stats["frames_dropped"])
 
     print(f"\nmeasured over {args.minutes:.1f} minutes, "
           f"{counters['loop_count']} control loops")
@@ -176,6 +181,9 @@ def main() -> int:
     print(f"  ctrl WCET    {extremes['ctrl_wcet_us']:>8} us")
     print(f"  round trip   {extremes['rtt_max_us']:>8} us worst")
     print(f"\n  MCU rx timeouts     {counters['rx_timeouts']}")
+    print(f"  MCU stale steps     {counters['stale_steps']}"
+          f"   (longest run since boot {counters['stale_worst']}, which"
+          f" includes startup)")
     print(f"  MCU bad frames      {counters['rx_bad']}")
     print(f"  host dropped frames {host_stats['frames_dropped']}")
     print(f"  host bad frames     {host_stats['frames_bad']}")

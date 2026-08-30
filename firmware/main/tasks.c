@@ -51,6 +51,8 @@ static void ctrl_task(void *arg)
     uint32_t t_prev = 0;
     const uint32_t nominal_us = CTRL_PERIOD_MS * 1000u;
 
+    uint32_t stale_run = 0;
+
     for (;;) {
         TIMING_MARK_HIGH(TIMING_CH_COMM);
         uint32_t t_req = (uint32_t) esp_timer_get_time();
@@ -73,7 +75,27 @@ static void ctrl_task(void *arg)
         int m = evpil_pack(tx, sizeof tx, EVPIL_STEP_REQ, seq, t_req, NULL, 0);
         if (m > 0) link_write(tx, (size_t) m);
 
+#if CTRL_PIPELINED
+        /* Take whatever has already arrived and move on. One millisecond of
+           the ten is the whole budget this is allowed to spend: the reply to
+           the previous request has normally been sitting in the buffer for
+           most of a period, so the read returns at once, and when it does not
+           the loop gives up rather than waiting.
+
+           Zero was tried first and is wrong: `link_read_frame` treats a zero
+           timeout as an expired deadline and returns without reading, which
+           made every single step stale. */
+        int n = link_read_frame(rx, sizeof rx, 1);
+        if (n <= 0) {
+            stale_run++;
+            s_diag.stale_steps++;
+            if (stale_run > s_diag.stale_worst) s_diag.stale_worst = stale_run;
+        } else {
+            stale_run = 0;
+        }
+#else
         int n = link_read_frame(rx, sizeof rx, CTRL_PERIOD_MS - 1);
+#endif
         TIMING_MARK_LOW(TIMING_CH_COMM);
 
         if (n > 0) {
@@ -99,9 +121,12 @@ static void ctrl_task(void *arg)
             } else {
                 s_diag.rx_bad++;
             }
-        } else {
+        }
+#if !CTRL_PIPELINED
+        else {
             s_diag.rx_timeouts++;
         }
+#endif
 
         /* Control body. Phase 3 replaces this with PID plus the SAC setpoint. */
         TIMING_MARK_HIGH(TIMING_CH_CTRL);
@@ -174,7 +199,7 @@ static void diag_task(void *arg)
     (void) arg;
     TickType_t next = xTaskGetTickCount();
     uint8_t tx[128];
-    uint8_t payload[9 * 4 + JITTER_N_BINS * 2];
+    uint8_t payload[11 * 4 + JITTER_N_BINS * 2];
     uint32_t seq = 0;
 
     for (;;) {
@@ -183,11 +208,12 @@ static void diag_task(void *arg)
            interleaved into a binary stream costs the host a resynchronisation
            on every diagnostic line. Framing it also means the host parses one
            format instead of scraping a printf. */
-        uint32_t u32[9] = {
+        uint32_t u32[11] = {
             s_diag.loop_count, s_diag.rx_timeouts, s_diag.rx_bad,
             s_diag.infer_deadline_misses, s_diag.ctrl_wcet_us,
             s_diag.infer_wcet_us, s_diag.rtt_max_us,
             s_diag.period_min_us, s_diag.period_max_us,
+            s_diag.stale_steps, s_diag.stale_worst,
         };
         memcpy(payload, u32, sizeof u32);
         memcpy(payload + sizeof u32, s_diag.jitter_hist,

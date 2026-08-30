@@ -107,12 +107,16 @@ JITTER_BIN_EDGES_US: tuple[int, ...] = (
 )
 N_JITTER_BINS = len(JITTER_BIN_EDGES_US) + 1
 
-_DIAG = struct.Struct(f"<9I{N_JITTER_BINS}H")
+_DIAG = struct.Struct(f"<11I{N_JITTER_BINS}H")
 
 DIAG_FIELDS: tuple[str, ...] = (
     "loop_count", "rx_timeouts", "rx_bad", "infer_deadline_misses",
     "ctrl_wcet_us", "infer_wcet_us", "rtt_max_us",
     "period_min_us", "period_max_us",
+    # Pipelined mode only: loops that acted on a state older than one step,
+    # and the longest unbroken run of them. This is the degradation claim C5
+    # is about, so it is counted rather than assumed to be small.
+    "stale_steps", "stale_worst",
 )
 
 DIAG_PAYLOAD_SIZE = _DIAG.size

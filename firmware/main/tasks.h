@@ -2,6 +2,27 @@
 #include <stdint.h>
 
 #define CTRL_PERIOD_MS    10
+
+/* How the control task obtains the plant state.
+
+   0  synchronous: send a request and block for the reply inside the same
+      10 ms slot. Simple, and it ties the control deadline to the host's
+      scheduling tail. Gate G3 measured six missed replies in 59,650 loops
+      this way, all inside one minute on an otherwise idle laptop, and the
+      misses were the host's rather than the device's.
+
+   1  pipelined: request the next state, act on the most recent state already
+      held, and read replies without blocking. The control period is then
+      independent of host latency. The cost is one sample of age on the state,
+      which is 10 ms, and that is a real cost rather than a free win: it is
+      the same quantity spec 6.5 injects deliberately as a communication-delay
+      scenario.
+
+   Both are built so the comparison is a rebuild rather than a rewrite, and so
+   that the loop the paper reports is the loop that was measured. */
+#ifndef CTRL_PIPELINED
+#define CTRL_PIPELINED 1
+#endif
 #define INFER_PERIOD_MS  100
 #define EMS_PERIOD_MS    100
 #define DIAG_PERIOD_MS   500
@@ -31,6 +52,8 @@ typedef struct {
     uint32_t rtt_max_us;
     uint32_t period_min_us;
     uint32_t period_max_us;
+    uint32_t stale_steps;          /* loops that acted on a state older than one step */
+    uint32_t stale_worst;          /* longest run of consecutive stale loops */
     uint16_t jitter_hist[JITTER_N_BINS];
 } diag_stats_t;
 

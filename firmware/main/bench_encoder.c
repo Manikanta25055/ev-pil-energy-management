@@ -184,6 +184,85 @@ static void forward_once(void)
     s_sink = s_out[0];
 }
 
+/* ---- the LSTM arm, for comparison --------------------------------------
+
+   The Transformer's measured time exceeded its MAC-count estimate by 64%, and
+   most of the excess was softmax. That raises an obvious question about the
+   LSTM, whose estimate was produced the same way: it has no softmax, but four
+   gates per timestep means 4 * H sigmoid or tanh evaluations on every one of
+   SEQ steps, which is the same order of nonlinear work. Measuring both is the
+   only way to know whether the gap is a property of attention or of the
+   estimating method. */
+
+#define H_LSTM 64
+
+static int8_t  s_w_ih[4 * H_LSTM * N_FEAT];
+static int8_t  s_w_hh[4 * H_LSTM * H_LSTM];
+static int8_t  s_w_lstm_head[H_LSTM * HORIZON];
+static int8_t  s_h[H_LSTM];
+static int8_t  s_c[H_LSTM];
+static int32_t s_gates[4 * H_LSTM];
+
+/* Same shape as a real int8 kernel: a table would replace expf on the device,
+   and swapping it in is exactly the optimisation this measurement prices. */
+static float sigmoid_f(float x) { return 1.0f / (1.0f + expf(-x)); }
+
+static void lstm_forward_once(void)
+{
+    memset(s_h, 0, sizeof s_h);
+    memset(s_c, 0, sizeof s_c);
+
+    for (int t = 0; t < SEQ; t++) {
+        const int8_t *x = s_input + t * N_FEAT;
+
+        for (int g = 0; g < 4 * H_LSTM; g++) {
+            int32_t acc = 0;
+            const int8_t *wi = s_w_ih + g * N_FEAT;
+            for (int p = 0; p < N_FEAT; p++) acc += (int32_t) wi[p] * (int32_t) x[p];
+            const int8_t *wh = s_w_hh + g * H_LSTM;
+            for (int p = 0; p < H_LSTM; p++) acc += (int32_t) wh[p] * (int32_t) s_h[p];
+            s_gates[g] = acc;
+        }
+
+        for (int j = 0; j < H_LSTM; j++) {
+            float i_g = sigmoid_f((float) s_gates[j] * 0.001f);
+            float f_g = sigmoid_f((float) s_gates[H_LSTM + j] * 0.001f);
+            float g_g = tanhf((float) s_gates[2 * H_LSTM + j] * 0.001f);
+            float o_g = sigmoid_f((float) s_gates[3 * H_LSTM + j] * 0.001f);
+
+            float c = f_g * (float) s_c[j] + i_g * g_g * 127.0f;
+            if (c > 127.0f) c = 127.0f;
+            if (c < -128.0f) c = -128.0f;
+            s_c[j] = (int8_t) c;
+
+            float h = o_g * tanhf(c / 127.0f) * 127.0f;
+            if (h > 127.0f) h = 127.0f;
+            if (h < -128.0f) h = -128.0f;
+            s_h[j] = (int8_t) h;
+        }
+    }
+    matmul_i8(s_h, s_w_lstm_head, s_out, 1, H_LSTM, HORIZON, 7);
+    s_sink = s_out[0];
+}
+
+static void bench_lstm(void)
+{
+    fill_i8(s_w_ih, sizeof s_w_ih, 21);
+    fill_i8(s_w_hh, sizeof s_w_hh, 22);
+    fill_i8(s_w_lstm_head, sizeof s_w_lstm_head, 23);
+
+    lstm_forward_once();
+
+    const int reps = 50;
+    int64_t t0 = esp_timer_get_time();
+    for (int r = 0; r < reps; r++) lstm_forward_once();
+    int64_t t1 = esp_timer_get_time();
+
+    size_t weights = sizeof s_w_ih + sizeof s_w_hh + sizeof s_w_lstm_head;
+    printf("EVPIL-G5 lstm hidden=%d layers=1 forward_us=%.1f weight_bytes=%u\n",
+           H_LSTM, (double) (t1 - t0) / reps, (unsigned) weights);
+}
+
 void bench_encoder_report(void)
 {
     fill_i8(s_input, sizeof s_input, 1);
@@ -233,4 +312,6 @@ void bench_encoder_report(void)
            (double) (c1 - c0) / reps);
     printf("EVPIL-G5 weight_bytes=%u arena_bytes=%u\n",
            (unsigned) weights, (unsigned) arena);
+
+    bench_lstm();
 }

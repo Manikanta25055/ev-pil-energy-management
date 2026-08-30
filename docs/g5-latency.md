@@ -140,10 +140,28 @@ are no longer the right thing to quote as a latency. `evpil.forecast.deploy`
 now carries both `ESTIMATED_ENCODER_US` and `MEASURED_ENCODER_US`, and a test
 asserts the gap between them rather than tidying it away.
 
-The LSTM's 19.84 ms estimate deserves the same scepticism. It has no softmax,
-so its overhead should be smaller in proportion, but it has not been measured
-and it should not be compared against the Transformer's measured 36.5 ms as
-though both numbers were the same kind of thing.
+The LSTM was measured the same way, and it settles what the Transformer's gap
+was evidence of.
+
+| Arm | Estimated | Measured | Ratio |
+|---|---|---|---|
+| Transformer, seq 32, d_model 32, 2 layers | 22.28 ms | 36.46 ms | 1.64x |
+| LSTM, hidden 64, 1 layer | 19.84 ms | 35.07 ms | 1.77x |
+
+The LSTM has no softmax. If attention were the explanation, its estimate would
+have been close. It is further off than the Transformer's, not closer: four
+gates over 64 units on each of 32 timesteps is 8,192 sigmoid and tanh
+evaluations, which is the same order of nonlinear work under a different name.
+
+**The estimating method was optimistic, not the architecture.** That is a more
+useful finding than a result about attention would have been, because it
+applies to every arm in the ladder and to any arm added later.
+
+It also changes the comparison between the two. Estimated, the LSTM looked 11%
+faster than the Transformer. Measured, it is 4% faster, for 0.8% worse
+accuracy. The choice between them is much closer than the estimates implied,
+and it is close enough that the controller ablation A3 should decide it rather
+than the forecasting numbers alone.
 
 ## Reproducing
 

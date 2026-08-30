@@ -3,26 +3,28 @@
   "port": "/dev/cu.usbmodem1101",
   "counters": {
     "loop_count": 59650,
-    "rx_timeouts": 6,
+    "rx_timeouts": 0,
     "rx_bad": 0,
-    "infer_deadline_misses": 0
+    "infer_deadline_misses": 0,
+    "stale_steps": 8,
+    "stale_worst": 288
   },
   "extremes": {
     "ctrl_wcet_us": 16,
-    "infer_wcet_us": 782,
-    "rtt_max_us": 7405,
-    "period_min_us": 126,
-    "period_max_us": 14001
+    "infer_wcet_us": 783,
+    "rtt_max_us": 77,
+    "period_min_us": 9057,
+    "period_max_us": 10011
   },
   "host": {
-    "frames_ok": 121255,
+    "frames_ok": 121206,
     "frames_bad": 0,
     "frames_dropped": 0,
     "open_attempts": 2
   },
   "histogram": [
-    59648,
-    2,
+    59650,
+    0,
     0,
     0,
     0,
@@ -52,7 +54,7 @@
   "p50_us": 25.0,
   "p99_us": 25.0,
   "p999_us": 25.0,
-  "dropped_total": 6,
+  "dropped_total": 8,
   "limits": {
     "p99_us": 1000.0,
     "dropped": 0

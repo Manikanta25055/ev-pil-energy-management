@@ -198,3 +198,31 @@ def test_the_mac_count_estimate_understates_the_measurement():
                                 horizon=30)
     assert estimate.latency_ms == pytest.approx(ESTIMATED_ENCODER_US / 1000.0,
                                                 rel=0.01)
+
+
+def test_the_estimate_is_low_for_the_lstm_too_and_by_more():
+    from evpil.forecast.deploy import (
+        ESTIMATED_ENCODER_US,
+        ESTIMATED_LSTM_US,
+        MEASURED_ENCODER_US,
+        MEASURED_LSTM_US,
+    )
+
+    # If attention were the explanation, the LSTM's estimate would be close.
+    # It is further off, which is what makes the finding about the method
+    # rather than about the architecture.
+    lstm_ratio = MEASURED_LSTM_US / ESTIMATED_LSTM_US
+    encoder_ratio = MEASURED_ENCODER_US / ESTIMATED_ENCODER_US
+    assert lstm_ratio > encoder_ratio > 1.5
+
+    # And the measured arms are far closer together than the estimates said.
+    estimated_gap = ESTIMATED_ENCODER_US / ESTIMATED_LSTM_US - 1.0
+    measured_gap = MEASURED_ENCODER_US / MEASURED_LSTM_US - 1.0
+    assert measured_gap < estimated_gap / 2
+
+
+def test_both_measured_arms_still_fit_the_budget():
+    from evpil.forecast.deploy import MEASURED_ENCODER_US, MEASURED_LSTM_US
+
+    for measured in (MEASURED_ENCODER_US, MEASURED_LSTM_US):
+        assert measured / 1000.0 < BUDGET_LATENCY_MS

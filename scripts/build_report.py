@@ -731,6 +731,29 @@ def on_chip_section(doc: Document, a2) -> None:
               "forward pass, and the estimate assigned it zero. Layer "
               "normalisation adds another 0.64.")
 
+    para(doc, "The same measurement was made for the LSTM, and it settles what "
+              "the gap is evidence of. The LSTM has no softmax, so if attention "
+              "were the explanation its estimate should have been close. It is "
+              "further off, not closer.")
+
+    table(doc, ["Model", "Estimated", "Measured on the chip", "Ratio"], [
+        ["Transformer", "22.28 ms", "36.46 ms", "1.64x"],
+        ["LSTM", "19.84 ms", "35.07 ms", "1.77x"],
+    ], [1.8, 1.5, 1.9, 0.9])
+
+    para(doc, "Four gates over 64 units on each of 32 timesteps is 8,192 "
+              "sigmoid and tanh evaluations, which is the same order of "
+              "non-multiply work under a different name. The estimating "
+              "method was optimistic, not the architecture, and that is the "
+              "more useful finding because it applies to every model in the "
+              "comparison and to any added later.")
+
+    para(doc, "It also changes the choice between the two. Estimated, the LSTM "
+              "looked 11% faster than the Transformer. Measured, it is 4% "
+              "faster, for 0.8% worse accuracy. That is close enough that the "
+              "controller experiments should decide it rather than the "
+              "forecasting numbers alone.")
+
     para(doc, "The multiply rate itself holds up. The largest matrix "
               "multiplication runs at 28.1 million operations per second "
               "against the 29.82 measured on a synthetic loop in week one, a "
@@ -856,24 +879,53 @@ def hardware_section(doc: Document, g3) -> None:
                   "minutes, then six inside one. That is macOS doing something "
                   "else, not a steady overload.")
 
-        doc.add_heading("What this says about the design", level=2)
-        para(doc, "The firmware sends a request and waits for the reply inside "
-                  "the same ten-millisecond slot. That ties its deadline to the "
-                  "scheduling behaviour of a general-purpose operating system. "
-                  "The design already anticipated that the laptop's timing "
-                  "could not be trusted and made the microcontroller the "
-                  "timekeeper, which is why the jitter figure is 25 "
-                  "microseconds. That protects the measurement. It does not "
-                  "decouple the loop.")
-        para(doc, "The fix that matches the diagnosis is to stop waiting: the "
-                  "control task would use the most recent state it holds, "
-                  "marked as stale when no fresh one arrived. That is also "
-                  "what a real controller does when a sensor misses an update, "
-                  "and it is already the subject of one of the project's own "
-                  "claims. The planned experiment A4 compares deadline-miss "
-                  "handling switched on against off, and a test rig that never "
-                  "missed a deadline would leave it nothing to measure. Six "
-                  "misses in 59,650 loops is a measured rate to design against.")
+        doc.add_heading("The fix was built, not deferred", level=2)
+        para(doc, "The original loop sent a request and waited for the reply "
+                  "inside the same ten-millisecond slot, which ties its "
+                  "deadline to the scheduling behaviour of a general-purpose "
+                  "operating system. The control task now requests the next "
+                  "state, acts on the most recent state it already holds, and "
+                  "reads replies without waiting. Both versions build from the "
+                  "same source behind a compile-time switch, so the comparison "
+                  "is a rebuild and both stay measurable.")
+
+        table(doc, ["Over 59,650 loops, ten minutes", "Original", "Pipelined"], [
+            ["Timing spread, 99th percentile", "within 25 us", "within 25 us"],
+            ["Worst round trip to the laptop", "7,405 us", "77 us"],
+            ["Replies that arrived too late", "6", "0"],
+            ["Steps using a state one period old", "not applicable", "8"],
+            ["Corrupted or lost frames", "0", "0"],
+        ], [2.6, 1.5, 1.5])
+
+        para(doc, "The round trip falls by a factor of 96, because the loop no "
+                  "longer waits for it. The timing is unchanged, which is the "
+                  "expected result: the loop was never the problem.")
+
+        para(doc, "Eight events survive and the gate still fails. What changed "
+                  "is what an event costs. In the original loop a miss meant "
+                  "the control task had spent nine of its ten milliseconds "
+                  "waiting and received nothing, so the loop itself was at "
+                  "risk. In the new loop a miss means the controller acted on "
+                  "a state one period older than intended, and the loop was "
+                  "never in danger. Same criterion, completely different "
+                  "failure.")
+
+        para(doc, "The question the gate now has to settle is whether its "
+                  "criterion should separate the two. A loop that misses its "
+                  "own deadline is a defect, and there are none of those in "
+                  "either version. A laptop that answers late is a property of "
+                  "running the simulation on macOS, and there are eight of "
+                  "those, bounded and handled. Reading both as the same "
+                  "failure leaves the criterion unable to tell a working "
+                  "system from a broken one. Zero over ten minutes at a "
+                  "hundred times a second against an ordinary operating system "
+                  "may not be reachable at all, and that is worth reporting as "
+                  "a finding rather than treating as a defect.")
+
+        para(doc, "This is also the project's own subject matter. One of the "
+                  "planned experiments compares deadline-miss handling "
+                  "switched on against off, and a test rig that never missed a "
+                  "deadline would leave it nothing to measure.")
         para(doc, "The criterion has not been loosened to fit the result. One "
                   "revision of one criterion was permitted in the design "
                   "document, it was used at gate G2 with the reason recorded, "
@@ -939,11 +991,12 @@ def negatives_section(doc: Document) -> None:
 
     doc.add_heading("The compute estimate was 64% too optimistic", level=2)
     para(doc, "Dividing a multiply count by a measured multiply rate gave "
-              "22.28 milliseconds. Timing the real graph on the chip gave "
-              "36.46. Softmax, which the estimate priced at zero, is a fifth "
-              "of the forward pass. The model still fits, and the estimates "
-              "remain useful for ranking models against each other, but they "
-              "cannot be quoted as latencies now that a measurement exists.")
+              "22.28 milliseconds for the Transformer. Timing the real graph "
+              "on the chip gave 36.46. The LSTM is worse: 19.84 estimated "
+              "against 35.07 measured. Both still fit inside the 40 "
+              "milliseconds allowed, and the estimates remain useful for "
+              "ranking models against each other, but they cannot be quoted "
+              "as latencies now that measurements exist.")
 
     doc.add_heading("Charge conservation cannot be tested at this horizon",
                     level=2)
