@@ -14,6 +14,13 @@ typedef struct {
     uint32_t rx_t_us;
 } plant_state_t;
 
+/* Absolute deviation of the realised control period from CTRL_PERIOD_MS, in
+   microseconds. Mirrored by JITTER_BIN_EDGES_US in evpil/protocol.py; the two
+   must stay in step or the host will label the bins wrongly. Gate G3 is stated
+   as a p99, and a percentile needs a distribution, so the MCU keeps one. */
+#define JITTER_N_BINS  13
+extern const uint32_t k_jitter_edges_us[JITTER_N_BINS - 1];
+
 typedef struct {
     uint32_t loop_count;
     uint32_t rx_timeouts;
@@ -22,6 +29,9 @@ typedef struct {
     uint32_t ctrl_wcet_us;
     uint32_t infer_wcet_us;
     uint32_t rtt_max_us;
+    uint32_t period_min_us;
+    uint32_t period_max_us;
+    uint16_t jitter_hist[JITTER_N_BINS];
 } diag_stats_t;
 
 void tasks_start(void);

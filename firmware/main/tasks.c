@@ -12,9 +12,29 @@
 #include "freertos/task.h"
 #include "freertos/semphr.h"
 
+const uint32_t k_jitter_edges_us[JITTER_N_BINS - 1] = {
+    25, 50, 100, 150, 200, 300, 500, 750, 1000, 1500, 2000, 5000,
+};
+
 static plant_state_t s_state;
 static diag_stats_t  s_diag;
 static SemaphoreHandle_t s_state_mux;
+
+/* Linear scan over twelve edges. A binary search would be faster and this is
+   on the control path, but twelve compares is under a microsecond at 240 MHz
+   and the measurement must not perturb what it measures by more than it
+   resolves. */
+static void jitter_record(uint32_t dev_us)
+{
+    for (int k = 0; k < JITTER_N_BINS - 1; k++) {
+        if (dev_us <= k_jitter_edges_us[k]) {
+            if (s_diag.jitter_hist[k] < 0xFFFF) s_diag.jitter_hist[k]++;
+            return;
+        }
+    }
+    if (s_diag.jitter_hist[JITTER_N_BINS - 1] < 0xFFFF)
+        s_diag.jitter_hist[JITTER_N_BINS - 1]++;
+}
 
 static float s_torque_cmd  = 0.0f;
 static float s_regen_blend = 0.5f;
@@ -28,10 +48,26 @@ static void ctrl_task(void *arg)
     TickType_t next = xTaskGetTickCount();
     uint8_t tx[64], rx[64];
     uint32_t seq = 0;
+    uint32_t t_prev = 0;
+    const uint32_t nominal_us = CTRL_PERIOD_MS * 1000u;
 
     for (;;) {
         TIMING_MARK_HIGH(TIMING_CH_COMM);
         uint32_t t_req = (uint32_t) esp_timer_get_time();
+
+        /* Jitter is the gap between consecutive loop starts, measured by the
+           MCU against its own clock. The first iteration has no predecessor
+           and is skipped rather than counted as a 10 ms error. */
+        if (t_prev != 0) {
+            uint32_t period = t_req - t_prev;
+            uint32_t dev = (period > nominal_us) ? (period - nominal_us)
+                                                 : (nominal_us - period);
+            jitter_record(dev);
+            if (s_diag.period_min_us == 0 || period < s_diag.period_min_us)
+                s_diag.period_min_us = period;
+            if (period > s_diag.period_max_us) s_diag.period_max_us = period;
+        }
+        t_prev = t_req;
 
         /* The MCU is the clock master: request one plant step. */
         int m = evpil_pack(tx, sizeof tx, EVPIL_STEP_REQ, seq, t_req, NULL, 0);
@@ -137,16 +173,30 @@ static void diag_task(void *arg)
 {
     (void) arg;
     TickType_t next = xTaskGetTickCount();
+    uint8_t tx[128];
+    uint8_t payload[9 * 4 + JITTER_N_BINS * 2];
+    uint32_t seq = 0;
+
     for (;;) {
-        printf("EVPIL-DIAG loops=%u timeouts=%u bad=%u miss=%u "
-               "ctrl_wcet_us=%u infer_wcet_us=%u rtt_max_us=%u "
-               "heap=%u stack_ctrl=%u\n",
-               (unsigned) s_diag.loop_count,   (unsigned) s_diag.rx_timeouts,
-               (unsigned) s_diag.rx_bad,       (unsigned) s_diag.infer_deadline_misses,
-               (unsigned) s_diag.ctrl_wcet_us, (unsigned) s_diag.infer_wcet_us,
-               (unsigned) s_diag.rtt_max_us,
-               (unsigned) esp_get_free_internal_heap_size(),
-               (unsigned) uxTaskGetStackHighWaterMark(NULL));
+        /* Sent as a frame rather than printed. The link and the console share
+           one USB endpoint when the transport is USB-Serial-JTAG, and text
+           interleaved into a binary stream costs the host a resynchronisation
+           on every diagnostic line. Framing it also means the host parses one
+           format instead of scraping a printf. */
+        uint32_t u32[9] = {
+            s_diag.loop_count, s_diag.rx_timeouts, s_diag.rx_bad,
+            s_diag.infer_deadline_misses, s_diag.ctrl_wcet_us,
+            s_diag.infer_wcet_us, s_diag.rtt_max_us,
+            s_diag.period_min_us, s_diag.period_max_us,
+        };
+        memcpy(payload, u32, sizeof u32);
+        memcpy(payload + sizeof u32, s_diag.jitter_hist,
+               sizeof s_diag.jitter_hist);
+
+        int m = evpil_pack(tx, sizeof tx, EVPIL_DIAG, seq++,
+                           (uint32_t) esp_timer_get_time(),
+                           payload, (uint8_t) sizeof payload);
+        if (m > 0) link_write(tx, (size_t) m);
 
         vTaskDelayUntil(&next, pdMS_TO_TICKS(DIAG_PERIOD_MS));
     }

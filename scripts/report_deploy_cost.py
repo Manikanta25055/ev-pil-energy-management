@@ -34,6 +34,7 @@ def main() -> int:
     ap.add_argument("--lstm-hidden", type=int, default=64)
     ap.add_argument("--lstm-layers", type=int, default=1)
     ap.add_argument("--xgb-max-depth", type=int, default=4)
+    ap.add_argument("--transformer-json", default="docs/transformer-a1.json")
     ap.add_argument("--out-csv", default="docs/forecast-deploy-cost.csv")
     args = ap.parse_args()
 
@@ -76,9 +77,27 @@ def main() -> int:
             footprint_estimated=False,
         )
 
-    # Not trained yet. Carried so the Week 5 decision is made against a number
-    # rather than an intention.
-    costs["transformer (G1 trimmed)"] = transformer_cost(seq_len, 32, 2)
+    # The Transformer arms, once they exist. Costed on the full deployed graph
+    # -- embedding and head included -- rather than on the encoder-only figure
+    # G1 published, because the encoder alone is not what runs.
+    tpath = Path(args.transformer_json)
+    if tpath.exists():
+        tmeta = json.loads(tpath.read_text())
+        base = tmeta["persistence_final_rmse_w"]
+        for arm, n_out in (("plain-1ch", 1), ("plain-4ch", 4), ("pi-4ch", 4)):
+            if arm not in tmeta["arms"]:
+                continue
+            entry = tmeta["arms"][arm]
+            per_seed = entry["per_seed_rmse_w"]
+            one = sum(per_seed) / len(per_seed)
+            name = f"transformer {arm}"
+            rmse[name] = one
+            skill[name] = 1.0 - one / base
+            costs[name] = transformer_cost(seq_len, 32, 2,
+                                           n_features=args.n_features,
+                                           n_outputs=n_out, horizon=horizon)
+    else:
+        costs["transformer (G1 trimmed)"] = transformer_cost(seq_len, 32, 2)
 
     print(f"G1 measured throughput  {MEASURED_MMAC_PER_S:.2f} MMAC/s, int8, one core")
     print(f"G5 budget               {BUDGET_LATENCY_MS:.0f} ms, "

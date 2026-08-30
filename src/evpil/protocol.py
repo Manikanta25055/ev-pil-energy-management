@@ -23,6 +23,7 @@ class FrameType(IntEnum):
     STATE = 1
     ACTUATION = 2
     STEP_REQ = 3
+    DIAG = 4
 
 
 class BadFrame(Exception):
@@ -94,3 +95,75 @@ def pack_actuation(seq: int, t_us: int, values: Sequence[float]) -> bytes:
 
 def pack_step_req(seq: int, t_us: int) -> bytes:
     return pack_frame(FrameType.STEP_REQ, seq, t_us, b"")
+
+
+# Absolute deviation of the realised control period from its nominal value, in
+# microseconds. Fixed edges rather than a mean and a standard deviation because
+# G3 is stated as a p99 and a percentile needs a distribution. The MCU owns the
+# histogram: it is the clock master (spec 4.5), and timing measured on a macOS
+# host would carry the host's own scheduling noise (risk R5).
+JITTER_BIN_EDGES_US: tuple[int, ...] = (
+    25, 50, 100, 150, 200, 300, 500, 750, 1000, 1500, 2000, 5000,
+)
+N_JITTER_BINS = len(JITTER_BIN_EDGES_US) + 1
+
+_DIAG = struct.Struct(f"<9I{N_JITTER_BINS}H")
+
+DIAG_FIELDS: tuple[str, ...] = (
+    "loop_count", "rx_timeouts", "rx_bad", "infer_deadline_misses",
+    "ctrl_wcet_us", "infer_wcet_us", "rtt_max_us",
+    "period_min_us", "period_max_us",
+)
+
+DIAG_PAYLOAD_SIZE = _DIAG.size
+
+
+def pack_diag(seq: int, t_us: int, stats: dict, hist: Sequence[int]) -> bytes:
+    """Encode the MCU's diagnostic counters and jitter histogram.
+
+    Present on the host side so the same byte layout is exercised by the tests
+    that check the decoder, rather than only by the firmware that produces it.
+    """
+    if len(hist) != N_JITTER_BINS:
+        raise ValueError(f"histogram needs {N_JITTER_BINS} bins, got {len(hist)}")
+    values = [int(stats[name]) for name in DIAG_FIELDS]
+    return pack_frame(FrameType.DIAG, seq, t_us,
+                      _DIAG.pack(*values, *(int(h) for h in hist)))
+
+
+def unpack_diag(payload: bytes) -> tuple[dict, tuple[int, ...]]:
+    """Decode a DIAG payload into its counters and its jitter histogram."""
+    if len(payload) != DIAG_PAYLOAD_SIZE:
+        raise BadFrame(
+            f"DIAG payload is {len(payload)} bytes, expected {DIAG_PAYLOAD_SIZE}"
+        )
+    fields = _DIAG.unpack(payload)
+    stats = dict(zip(DIAG_FIELDS, fields[: len(DIAG_FIELDS)]))
+    return stats, tuple(fields[len(DIAG_FIELDS):])
+
+
+def jitter_percentile(hist: Sequence[int], q: float) -> float:
+    """Upper bound on the q-th percentile of absolute period deviation, in us.
+
+    A histogram gives a bound, not a value: the answer is the upper edge of the
+    bin the percentile falls in. Reporting the upper edge is the conservative
+    direction, which is the right one for a gate. The overflow bin has no upper
+    edge, so it returns infinity rather than a number that looks measured.
+    """
+    if len(hist) != N_JITTER_BINS:
+        raise ValueError(f"histogram needs {N_JITTER_BINS} bins, got {len(hist)}")
+    if not 0.0 < q < 1.0:
+        raise ValueError(f"q must be in (0, 1), got {q}")
+
+    total = sum(hist)
+    if total == 0:
+        raise ValueError("empty histogram: nothing was measured")
+
+    target = q * total
+    running = 0
+    for k, count in enumerate(hist):
+        running += count
+        if running >= target:
+            return float(JITTER_BIN_EDGES_US[k]) if k < len(JITTER_BIN_EDGES_US) \
+                else float("inf")
+    return float("inf")

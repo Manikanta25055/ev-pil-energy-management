@@ -10,6 +10,7 @@
 #define EVPIL_STATE      1
 #define EVPIL_ACTUATION  2
 #define EVPIL_STEP_REQ   3
+#define EVPIL_DIAG       4
 
 #define EVPIL_ERR_SHORT  (-1)
 #define EVPIL_ERR_MAGIC  (-2)

@@ -54,3 +54,46 @@ def test_assembler_counts_sequence_gaps():
     list(asm.feed(pack_state(1, 1, [0.0] * 8)))
     list(asm.feed(pack_state(4, 4, [0.0] * 8)))
     assert asm.frames_dropped == 2
+
+
+def test_sequence_gaps_are_counted_per_frame_type():
+    """Gate G3 is stated as zero dropped frames, so this counter decides it.
+
+    The control loop and the diagnostics task each run their own sequence
+    counter. Tracking one shared `last_seq` across both reads every alternation
+    between them as a gap: on a real ten-minute run that reported over a
+    thousand drops on a link that dropped nothing.
+    """
+    from evpil.protocol import pack_actuation, pack_state
+
+    asm = FrameAssembler()
+    stream = b""
+    for seq in range(4):
+        stream += pack_state(seq, seq * 100, [0.0] * 8)
+        stream += pack_actuation(seq, seq * 100, [0.0] * 3)
+    # A third type on its own counter, interleaved at a different rate.
+    stream += pack_state(4, 400, [0.0] * 8)
+
+    list(asm.feed(stream))
+    assert asm.frames_ok == 9
+    assert asm.frames_dropped == 0
+
+
+def test_a_genuine_gap_in_one_type_is_still_counted():
+    from evpil.protocol import pack_state
+
+    asm = FrameAssembler()
+    list(asm.feed(pack_state(0, 0, [0.0] * 8)))
+    list(asm.feed(pack_state(3, 0, [0.0] * 8)))     # 1 and 2 lost
+    assert asm.frames_dropped == 2
+    assert asm.dropped_by_type[int(FrameType.STATE)] == 2
+
+
+def test_a_gap_in_one_type_does_not_pollute_another():
+    from evpil.protocol import pack_actuation, pack_state
+
+    asm = FrameAssembler()
+    list(asm.feed(pack_state(0, 0, [0.0] * 8)))
+    list(asm.feed(pack_actuation(50, 0, [0.0] * 3)))
+    list(asm.feed(pack_state(1, 0, [0.0] * 8)))
+    assert asm.frames_dropped == 0

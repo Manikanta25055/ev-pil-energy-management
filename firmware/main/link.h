@@ -2,6 +2,20 @@
 #include <stddef.h>
 #include <stdint.h>
 
+/* Transport selection.
+
+   0 = external USB-UART on GPIO17/18 (UART1)
+   1 = the S3's native USB-Serial-JTAG peripheral
+
+   Spec section 9 leaves the choice open for G3 to settle on measured latency.
+   Both are implemented so the comparison is a rebuild rather than a rewrite.
+   The native peripheral needs no adapter, which is why it is the default: an
+   external UART is only testable when one is physically attached, and a gate
+   that cannot be run is not a gate. */
+#ifndef LINK_TRANSPORT
+#define LINK_TRANSPORT  1
+#endif
+
 #define LINK_UART_NUM   1
 #define LINK_TX_GPIO    17
 #define LINK_RX_GPIO    18

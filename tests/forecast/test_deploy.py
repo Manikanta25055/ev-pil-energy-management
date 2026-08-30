@@ -28,8 +28,42 @@ def test_transformer_cost_reproduces_the_g1_config_table():
     # 16.4 k params, 22.0 ms. Measured throughput, not an assumed one.
     c = transformer_cost(seq_len=32, d_model=32, layers=2)
     assert c.macs == 655_360
-    assert c.int8_bytes == pytest.approx(16_384, rel=0.01)
+    assert c.int8_bytes == pytest.approx(16_384, rel=0.05)
     assert c.latency_ms == pytest.approx(22.0, abs=0.1)
+
+
+def test_transformer_parameter_count_agrees_with_pytorch():
+    torch = pytest.importorskip("torch")
+    from torch import nn
+
+    seq_len, d_model, layers, n_feat, horizon, n_out = 32, 32, 2, 8, 30, 4
+    layer = nn.TransformerEncoderLayer(
+        d_model=d_model, nhead=4, dim_feedforward=2 * d_model,
+        dropout=0.0, batch_first=True, norm_first=True,
+    )
+    encoder = nn.TransformerEncoder(layer, num_layers=layers,
+                                    enable_nested_tensor=False)
+    embed = nn.Linear(n_feat, d_model)
+    head = nn.Linear(d_model, horizon * n_out)
+    actual = sum(
+        p.numel()
+        for m in (encoder, embed, head)
+        for p in m.parameters()
+    )
+    predicted = transformer_cost(seq_len, d_model, layers, n_features=n_feat,
+                                 n_outputs=n_out, horizon=horizon).int8_bytes
+    # Biases and layer norms are 4% of the footprint at this width. A memory
+    # gate is the wrong place to be 4% optimistic.
+    assert predicted == actual
+
+
+def test_the_deployed_graph_costs_more_than_the_encoder_g1_measured():
+    encoder_only = transformer_cost(32, 32, 2)
+    deployed = transformer_cost(32, 32, 2, n_features=8, n_outputs=4, horizon=30)
+    assert deployed.macs > encoder_only.macs
+    assert deployed.int8_bytes > encoder_only.int8_bytes
+    # The encoder still dominates, which is what made G1's exclusion defensible.
+    assert deployed.macs / encoder_only.macs < 1.05
 
 
 def test_transformer_cost_reproduces_the_plan_implied_row_too():

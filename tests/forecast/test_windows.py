@@ -129,3 +129,53 @@ def test_the_target_is_not_reachable_as_a_named_feature():
     # p_batt_w must never be selectable as an input: predicting it from itself
     # is the failure mode the whole module is arranged to prevent.
     assert TARGET_COLUMN not in FEATURE_COLUMNS
+
+
+# --- multi-target windowing -------------------------------------------------
+
+def test_multitarget_returns_one_plane_per_target_in_declared_order():
+    from evpil.forecast.windows import TARGET_COLUMNS, build_multitarget_dataset
+
+    spec = WindowSpec(seq_len=4, horizon=3, stride=1)
+    _, Y, _, _ = build_multitarget_dataset(_trip("A", 12), ["A"], spec)
+    assert Y.shape == (12 - 7 + 1, 3, len(TARGET_COLUMNS))
+
+    # i_batt_a is row index + 1 by construction, and it is the second target.
+    i_plane = Y[:, :, TARGET_COLUMNS.index("i_batt_a")]
+    assert i_plane[0].tolist() == [5.0, 6.0, 7.0]
+
+
+def test_single_target_view_matches_the_first_plane_of_the_multitarget_one():
+    from evpil.forecast.windows import build_multitarget_dataset
+
+    spec = WindowSpec(seq_len=4, horizon=3, stride=2)
+    _, Y1, g1, t1 = build_dataset(_trip("A", 20), ["A"], spec)
+    _, Ym, gm, tm = build_multitarget_dataset(_trip("A", 20), ["A"], spec)
+    np.testing.assert_allclose(Y1, Ym[:, :, 0])
+    np.testing.assert_array_equal(g1, gm)
+    np.testing.assert_allclose(t1, tm)
+
+
+def test_a_channel_that_is_both_feature_and_target_never_shares_a_sample():
+    from evpil.forecast.windows import TARGET_COLUMNS, build_multitarget_dataset
+
+    # i_batt_a is an input channel and also a predicted channel. The window
+    # geometry is the only thing standing between that and self-prediction, so
+    # it is checked on the sample index rather than trusted.
+    spec = WindowSpec(seq_len=4, horizon=3, stride=1)
+    X, Y, _, _ = build_multitarget_dataset(_trip("A", 12), ["A"], spec)
+
+    x_i = X[:, :, FEATURE_COLUMNS.index("i_batt_a")]
+    y_i = Y[:, :, TARGET_COLUMNS.index("i_batt_a")]
+    for w in range(len(Y)):
+        assert x_i[w].tolist() == [float(w + j + 1) for j in range(4)]
+        assert y_i[w].tolist() == [float(w + 4 + j + 1) for j in range(3)]
+        assert not set(x_i[w].tolist()) & set(y_i[w].tolist())
+
+
+def test_an_unknown_target_column_is_refused():
+    from evpil.forecast.windows import build_multitarget_dataset
+
+    with pytest.raises(WindowError, match="target columns not in the frame"):
+        build_multitarget_dataset(_trip("A", 12), ["A"], WindowSpec(4, 3, 1),
+                                  target_columns=("p_batt_w", "no_such_channel"))

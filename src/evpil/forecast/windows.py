@@ -27,6 +27,15 @@ FEATURE_COLUMNS: tuple[str, ...] = (
 
 TARGET_COLUMN = "p_batt_w"
 
+# The physics-informed variant needs a self-consistent electrical state, not
+# just a power number: the residuals of spec 4.2 tie power, current, voltage
+# and charge together, so all four have to be predicted before any of them can
+# be constrained. Power stays first, because it is the channel every metric
+# and every gate is written against.
+TARGET_COLUMNS: tuple[str, ...] = (
+    "p_batt_w", "i_batt_a", "v_batt_v", "soc_frac",
+)
+
 _I_IDX = FEATURE_COLUMNS.index("i_batt_a")
 _V_IDX = FEATURE_COLUMNS.index("v_batt_v")
 
@@ -93,13 +102,17 @@ def contiguous_runs(t_s: np.ndarray, tol: float = 0.5) -> list[tuple[int, int]]:
 
 
 def _windows_from_run(
-    features: np.ndarray, target: np.ndarray, spec: WindowSpec
+    features: np.ndarray, targets: np.ndarray, spec: WindowSpec
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    n = len(target)
+    """Window one contiguous run. `targets` is `(n, k)`; `Y` comes back
+    `(n_windows, horizon, k)`."""
+    n = len(targets)
     if n < spec.span:
-        empty_x = np.empty((0, spec.seq_len, features.shape[1]), dtype=np.float32)
-        empty_y = np.empty((0, spec.horizon), dtype=np.float32)
-        return empty_x, empty_y, np.empty(0, dtype=np.int64)
+        return (
+            np.empty((0, spec.seq_len, features.shape[1]), dtype=np.float32),
+            np.empty((0, spec.horizon, targets.shape[1]), dtype=np.float32),
+            np.empty(0, dtype=np.int64),
+        )
 
     starts = np.arange(0, n - spec.span + 1, spec.stride, dtype=np.int64)
     in_idx = starts[:, None] + np.arange(spec.seq_len)[None, :]
@@ -109,26 +122,30 @@ def _windows_from_run(
 
     return (
         features[in_idx].astype(np.float32, copy=False),
-        target[out_idx].astype(np.float32, copy=False),
+        targets[out_idx].astype(np.float32, copy=False),
         starts + spec.seq_len,
     )
 
 
-def build_dataset(
+def build_multitarget_dataset(
     df: pd.DataFrame,
     trip_ids: Iterable[str],
     spec: WindowSpec = WindowSpec(),
     feature_columns: Sequence[str] = FEATURE_COLUMNS,
+    target_columns: Sequence[str] = TARGET_COLUMNS,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Window the named trips into `(X, Y, groups, t0)`.
+    """Window the named trips into `(X, Y, groups, t0)` with `Y` three-dimensional.
 
-    `X` is `(n, seq_len, len(feature_columns))`, `Y` is `(n, horizon)` of
-    battery power in watts, `groups` names the trip each window came from, and
-    `t0` is the trip-relative time of each window's first predicted step.
+    `X` is `(n, seq_len, len(feature_columns))` and `Y` is
+    `(n, horizon, len(target_columns))`, in the order `target_columns` gives.
 
-    `groups` is the load-bearing return value. Every split, every bootstrap and
-    every leakage check downstream is grouped by it, so a window can only ever
-    appear on one side of a boundary.
+    Note that `i_batt_a` and `v_batt_v` appear in both lists. That is not the
+    leak it looks like: the model reads them up to input sample `seq_len` and
+    is asked for them from sample `seq_len + 1` onward, which is the forecasting
+    problem. What would make it a leak is a window whose inputs and targets
+    shared a sample, and the geometry above rules that out for every channel at
+    once. The by-name audit in `evpil.data.guards` cannot express this
+    distinction, so it is enforced here and asserted in the tests.
     """
     wanted = list(dict.fromkeys(trip_ids))
     if not wanted:
@@ -139,18 +156,22 @@ def build_dataset(
     if missing:
         raise WindowError(f"trips not present in the frame: {missing}")
 
-    if TARGET_COLUMN not in df.columns:
+    if TARGET_COLUMN in target_columns and TARGET_COLUMN not in df.columns:
         df = add_battery_power(df)
+
+    missing_targets = [c for c in target_columns if c not in df.columns]
+    if missing_targets:
+        raise WindowError(f"target columns not in the frame: {missing_targets}")
 
     xs, ys, gs, ts = [], [], [], []
     for trip in wanted:
         sub = df[df["trip_id"] == trip]
         t_s = sub["t_s"].to_numpy()
         features = sub[list(feature_columns)].to_numpy()
-        target = sub[TARGET_COLUMN].to_numpy()
+        targets = sub[list(target_columns)].to_numpy()
 
         for a, b in contiguous_runs(t_s):
-            x, y, first = _windows_from_run(features[a:b], target[a:b], spec)
+            x, y, first = _windows_from_run(features[a:b], targets[a:b], spec)
             if len(y) == 0:
                 continue
             xs.append(x)
@@ -170,6 +191,25 @@ def build_dataset(
         np.concatenate(gs),
         np.concatenate(ts).astype(np.float64),
     )
+
+
+def build_dataset(
+    df: pd.DataFrame,
+    trip_ids: Iterable[str],
+    spec: WindowSpec = WindowSpec(),
+    feature_columns: Sequence[str] = FEATURE_COLUMNS,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Window the named trips for the single-target case, `Y` of `(n, horizon)`.
+
+    The battery-power-only view that the baselines, the ladder and every gate
+    are written against. It is `build_multitarget_dataset` with one column,
+    kept as its own name so that the common call site cannot accidentally
+    acquire a trailing axis.
+    """
+    X, Y, groups, t0 = build_multitarget_dataset(
+        df, trip_ids, spec, feature_columns, target_columns=(TARGET_COLUMN,)
+    )
+    return X, Y[:, :, 0], groups, t0
 
 
 def last_observed_power(X: np.ndarray) -> np.ndarray:

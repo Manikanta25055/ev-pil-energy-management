@@ -126,12 +126,28 @@ def tree_ensemble_cost(n_trees: int, max_depth: int) -> DeployCost:
                       latency_ms=None, footprint_estimated=True)
 
 
-def transformer_cost(seq_len: int, d_model: int, layers: int) -> DeployCost:
-    """The G1 config table's encoder stack, for comparison against the ladder.
+def transformer_cost(
+    seq_len: int,
+    d_model: int,
+    layers: int,
+    n_features: int | None = None,
+    n_outputs: int | None = None,
+    horizon: int | None = None,
+) -> DeployCost:
+    """A Transformer encoder's cost, with or without the parts G1 excluded.
 
     Attention projections, the attention product itself and a feed-forward of
-    width `2 * d_model`. Input embedding and output head are excluded, exactly
-    as in `docs/g1-compute-budget.md`, so the numbers line up with the G1 table.
+    width `2 * d_model`. Called with three arguments this is the encoder stack
+    alone, exactly as in `docs/g1-compute-budget.md`, so it reproduces the G1
+    table. Supply `n_features`, `n_outputs` and `horizon` as well to add the
+    input embedding and the output head, which is what actually gets deployed.
+
+    The gap between the two is the point of offering both. G1 sized the budget
+    on the encoder, and a report that quietly compared a full graph against
+    that number would be flattering itself by the difference.
+
+    Positional encoding is sinusoidal, so it costs no parameters and no MACs:
+    on the device it is a constant table added to the embedded input.
     """
     per_layer = (
         4 * seq_len * d_model * d_model          # q, k, v and output projections
@@ -139,6 +155,20 @@ def transformer_cost(seq_len: int, d_model: int, layers: int) -> DeployCost:
         + 2 * seq_len * d_model * (2 * d_model)  # feed-forward, both directions
     )
     macs = per_layer * layers
-    params = layers * (4 * d_model * d_model + 4 * d_model * d_model)
+    # 8*d^2 of weights (four attention projections, two feed-forward layers),
+    # 7*d of biases across them, and 4*d for the two layer norms. Dropping the
+    # biases and norms understates the footprint by 4% at d_model 32, which is
+    # the wrong direction to be wrong in when a memory budget is the gate.
+    params = layers * (8 * d_model * d_model + 11 * d_model)
+
+    if n_features is not None:
+        macs += seq_len * n_features * d_model
+        params += n_features * d_model + d_model
+    if n_outputs is not None and horizon is not None:
+        # The head reads the final token only, so it is paid once per
+        # inference rather than once per input sample.
+        macs += d_model * horizon * n_outputs
+        params += d_model * horizon * n_outputs + horizon * n_outputs
+
     return DeployCost(macs=macs, int8_bytes=params, latency_ms=_latency(macs),
                       footprint_estimated=False)
