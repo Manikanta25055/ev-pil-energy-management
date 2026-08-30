@@ -39,6 +39,29 @@ def audit_features(
         )
 
 
+def assert_disjoint_groups(**splits: Iterable[str]) -> None:
+    """Fail if any group label appears in more than one split.
+
+    `audit_features` checks the columns; this checks the rows. Trip-level
+    splitting is decided in `data/splits.json`, but the tensors handed to a
+    model carry their own group labels, and it is the labels on the tensors
+    that determine whether an evaluation is honest. Checking the split file
+    would confirm the intent. This confirms the article.
+    """
+    seen: dict[str, str] = {}
+    collisions: list[str] = []
+    for name, groups in splits.items():
+        for g in dict.fromkeys(groups):
+            if g in seen:
+                collisions.append(f"{g!r} in both {seen[g]!r} and {name!r}")
+            else:
+                seen[g] = name
+    if collisions:
+        raise LeakageError(
+            "groups appear on both sides of a split: " + "; ".join(sorted(collisions))
+        )
+
+
 def shuffled_label_control(
     fit_fn: Callable[[np.ndarray, np.ndarray, np.ndarray], np.ndarray],
     X: np.ndarray,

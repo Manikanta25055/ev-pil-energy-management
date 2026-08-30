@@ -1,6 +1,11 @@
 import numpy as np
 import pytest
-from evpil.data.guards import LeakageError, audit_features, shuffled_label_control
+from evpil.data.guards import (
+    LeakageError,
+    assert_disjoint_groups,
+    audit_features,
+    shuffled_label_control,
+)
 
 
 def test_audit_passes_for_clean_feature_set():
@@ -63,3 +68,22 @@ def test_shuffled_label_control_would_detect_leakage():
 
     r2 = shuffled_label_control(oracle_fit, X, y, seed=0)
     assert r2 > 0.99, "an oracle model must score high, or the control is blind"
+
+
+def test_disjoint_groups_passes_when_no_trip_is_shared():
+    assert_disjoint_groups(
+        train=["TripB01", "TripB02"], val=["TripB03"], test=["TripB05"]
+    )
+
+
+def test_disjoint_groups_names_the_trip_and_both_splits_it_landed_in():
+    with pytest.raises(LeakageError, match="'TripB03' in both 'train' and 'val'"):
+        assert_disjoint_groups(
+            train=["TripB01", "TripB03"], val=["TripB03"], test=["TripB05"]
+        )
+
+
+def test_disjoint_groups_tolerates_repeats_within_one_split():
+    # Windowed tensors carry one group label per window, so a trip appears
+    # thousands of times inside its own split. That is not a collision.
+    assert_disjoint_groups(train=["TripB01"] * 500, val=["TripB03"] * 200)

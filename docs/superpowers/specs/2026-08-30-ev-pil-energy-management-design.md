@@ -579,6 +579,7 @@ None of these block the implementation plan; each has a scheduled owner and week
 | BMW i3 (60 Ah) vehicle and battery parameters, with citations | Parameter identification plus published specifications | 2 |
 | Whether native USB-Serial-JTAG or external USB-UART gives lower loop latency | G3 measurement | 3 |
 | Whether the plant validation criterion in 6.1 is achievable as stated | G2 | 2 |
+| Whether G4's threshold is worth what it claims to test | **RAISED 2026-08-31, OPEN.** A 257-parameter ridge on flattened windows already beats persistence by 14.5% RMSE at the 3 s horizon on validation, against G4's required 10%. The gate is passed before any proposed model exists, so passing it is not evidence for one. Reporting every arm against the ridge as well as persistence is adopted now; restating the threshold as 10% over the ridge (10.177 kW at 3 s) is a gate change and is left for G4 to decide. See `docs/forecast-guards.md` | G4 | 4 |
 
 ---
 
