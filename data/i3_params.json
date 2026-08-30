@@ -87,8 +87,8 @@
   },
   "citations": {
     "mass_kg": "BMW Group PressClub, 'The BMW i3' technical data: 1195 kg DIN kerb weight [R1]; +75 kg driver per EU kerb convention [R6]",
-    "c_rr": "identified by least squares against training trips, scripts/identify_params.py",
-    "cd": "identified by least squares against training trips, scripts/identify_params.py; initial value 0.29 (BEV) [R1][R4]",
+    "c_rr": "LUMPED LOSS COEFFICIENT, not a rolling-resistance measurement. Identified by least squares against training trips, scripts/identify_params.py. It occupies the coefficient's place in the force balance and absorbs every speed-weak loss the plant does not model separately. Measured against an independent coastdown it is 2.2x too large to be a tyre property [R10]. See CAVEATS note 6",
+    "cd": "LUMPED LOSS COEFFICIENT, not a drag-coefficient measurement. Identified by least squares against training trips, scripts/identify_params.py; initial value 0.29 (BEV) [R1][R4]. It calibrates the CdA product against logged power and absorbs every speed-squared loss the plant does not model separately. See CAVEATS note 6",
     "frontal_area_m2": "derived as CdA/Cd = 0.690/0.29 [R4]. ASSUMPTION-GRADE source (enthusiast forum); low risk because the fitted cd absorbs error in the CdA product",
     "wheel_radius_m": "geometric radius of the standard 155/70 R19 tyre [R5]",
     "gear_ratio": "single-speed reduction gear, 9.665:1 [R2]",
@@ -97,8 +97,9 @@
     "motor": "125 kW / 250 Nm hybrid-synchronous machine [R1][R2]. The efficiency map is IDENTIFIED from the archive's own logged motor torque and battery power on training trips, evpil.plant.motor_id.identify_efficiency_grid [R8]",
     "regen": "ENGINEERING ASSUMPTION: 50 kW regenerative ceiling. BMW does not publish a figure for the I01",
     "aux": "k_heat_w_per_c fitted from the heating-circuit channel, evpil.plant.auxiliary.fit_auxiliary; p_base_w identified against logged battery power, scripts/identify_params.py, because the archive does not log the 12 V DC-DC load; k_cool_w_per_c NOT IDENTIFIED -- no eligible trip is warmer than the cabin setpoint",
-    "rot_mass_factor": "identified by least squares against training trips, scripts/identify_params.py. Standard rotational mass factor of vehicle longitudinal dynamics [R7]"
+    "rot_mass_factor": "LUMPED COEFFICIENT occupying the place of the standard rotational mass factor [R7]. Identified by least squares against training trips, scripts/identify_params.py. Its identified value is set by how much inertial term the acceleration channel can support, so it is data-rate dependent and not a vehicle property. See CAVEATS note 6"
   },
+  "caveats": "c_rr, cd and rot_mass_factor in `identified` are LUMPED LOSS COEFFICIENTS, not measured vehicle properties. Each was fitted to absorb the residual whose speed dependence matches its own, so each carries losses the plant does not model separately. c_rr identifies to 0.01947 here against 0.00878 measured by coastdown on a comparable BEV, a factor of 2.2. Do not present them as measurements of rolling resistance, drag or rotational inertia, and do not transfer them to another vehicle as physical constants. Full statement in the CAVEATS block of scripts/identify_params.py, note 6; transfer evidence in docs/ved-generalisation.md.",
   "fit_trips": [
     "TripB01",
     "TripB02",

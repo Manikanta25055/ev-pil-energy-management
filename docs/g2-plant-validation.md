@@ -159,6 +159,31 @@ like: the simulated trace tracks peaks, regeneration dips and cruise levels
 closely, with zero-centred scatter around it. Shape is right, sample-by-sample
 amplitude is noisy.
 
+## What the identified coefficients are
+
+Four numbers were fitted: `c_rr`, `cd`, `r0` and `rot_mass_factor`. Between
+them they absorb the entire difference between the modelled force balance and
+logged battery power, and each was parked in the slot of the physical quantity
+whose speed dependence it shares. None of them is a measurement of that
+quantity.
+
+The clearest case is `c_rr`, identified here at 0.01947. An independent
+coastdown on a comparable battery-electric car measures 0.00878, a factor of
+2.2 below it. Rolling resistance does not vary by 2.2x between passenger cars
+on the same roads. The extra 0.011 is drivetrain drag, brake drag, an
+efficiency map that is optimistic away from the cells it was identified in, and
+whatever standing electrical load `p_base_w` did not take. Those losses have to
+go somewhere and least squares puts them in the term whose shape fits.
+
+This does not weaken the gate. G2 asks whether predicted power and SoC match
+logged values, and lumped coefficients that reproduce logged power are what a
+plant needs. What they do not support is a claim about the coefficient itself,
+in this document or in the paper. `data/i3_params.json` now carries the
+statement in its own `caveats` field, and
+`tests/plant/test_params_provenance.py` fails if it is removed. The coastdown
+comparison and its consequences for transfer are in
+`docs/ved-generalisation.md`.
+
 ## Recommendation
 
 **Phase 2 may begin, with one condition recorded.** Parts A and B pass on every

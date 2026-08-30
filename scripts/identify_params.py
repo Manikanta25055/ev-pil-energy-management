@@ -66,10 +66,19 @@ PUBLISHED = dict(
 CITATIONS = {
     "mass_kg": "BMW Group PressClub, 'The BMW i3' technical data: 1195 kg DIN "
                "kerb weight [R1]; +75 kg driver per EU kerb convention [R6]",
-    "c_rr": "identified by least squares against training trips, "
-            "scripts/identify_params.py",
-    "cd": "identified by least squares against training trips, "
-          "scripts/identify_params.py; initial value 0.29 (BEV) [R1][R4]",
+    "c_rr": "LUMPED LOSS COEFFICIENT, not a rolling-resistance measurement. "
+            "Identified by least squares against training trips, "
+            "scripts/identify_params.py. It occupies the coefficient's place "
+            "in the force balance and absorbs every speed-weak loss the plant "
+            "does not model separately. Measured against an independent "
+            "coastdown it is 2.2x too large to be a tyre property [R10]. "
+            "See CAVEATS note 6",
+    "cd": "LUMPED LOSS COEFFICIENT, not a drag-coefficient measurement. "
+          "Identified by least squares against training trips, "
+          "scripts/identify_params.py; initial value 0.29 (BEV) [R1][R4]. It "
+          "calibrates the CdA product against logged power and absorbs every "
+          "speed-squared loss the plant does not model separately. "
+          "See CAVEATS note 6",
     "frontal_area_m2": "derived as CdA/Cd = 0.690/0.29 [R4]. ASSUMPTION-GRADE "
                        "source (enthusiast forum); low risk because the fitted "
                        "cd absorbs error in the CdA product",
@@ -93,9 +102,13 @@ CITATIONS = {
            "logged battery power, scripts/identify_params.py, because the "
            "archive does not log the 12 V DC-DC load; k_cool_w_per_c NOT "
            "IDENTIFIED -- no eligible trip is warmer than the cabin setpoint",
-    "rot_mass_factor": "identified by least squares against training trips, "
-                       "scripts/identify_params.py. Standard rotational mass "
-                       "factor of vehicle longitudinal dynamics [R7]",
+    "rot_mass_factor": "LUMPED COEFFICIENT occupying the place of the standard "
+                       "rotational mass factor [R7]. Identified by least "
+                       "squares against training trips, "
+                       "scripts/identify_params.py. Its identified value is "
+                       "set by how much inertial term the acceleration channel "
+                       "can support, so it is data-rate dependent and not a "
+                       "vehicle property. See CAVEATS note 6",
 }
 
 REFERENCES = """
@@ -125,6 +138,15 @@ REFERENCES = """
      3 pp of SoC change, the time integral of logged battery current divided
      by the logged SoC change. Median 61.7 Ah across 25 trips, 10th-90th
      percentile 61.5-62.0 Ah. See docs/g2-plant-validation.md.
+[R10] Idaho National Laboratory / Intertek for the U.S. Department of Energy,
+     "2013 Nissan Leaf, Advanced Vehicle Testing, Baseline Testing Results".
+     Coastdown road load F = A + B*v + C*v^2 on a 1648 kg test vehicle gives
+     A = 141.9 N, hence a measured c_rr of 0.00878, and 2C/rho = 0.659 m^2 of
+     CdA, hence Cd 0.29 at the published 2.27 m^2 frontal area -- matching
+     Nissan's published Cd, a number the conversion was not fitted to. Used
+     here only as an independent yardstick for the magnitude of an identified
+     c_rr. See src/evpil/plant/leaf.py and docs/ved-generalisation.md.
+
 [R8] Efficiency map identified from this archive: shaft power (logged Motor
      Torque times wheel-derived speed) over inverter electrical power (logged
      battery power less the auxiliary load), median per grid cell, training
@@ -155,7 +177,54 @@ CAVEATS -- read before trusting any downstream number:
  5. The OCV curve below is a representative 96s NCA characteristic, NOT an i3
     measurement. It is the single most likely cause of a systematic SoC error
     at G2 (see Task 16 troubleshooting step 4).
+ 6. c_rr, cd and rot_mass_factor ARE NOT PHYSICAL MEASUREMENTS. They are the
+    four identified degrees of freedom (with r0) that absorb the whole
+    difference between the modelled force balance and logged battery power,
+    each parked in the slot of the physical quantity whose speed dependence it
+    shares: c_rr takes the speed-weak residue, cd the speed-squared residue,
+    rot_mass_factor the acceleration-proportional residue.
+
+    The evidence that c_rr in particular is not a tyre property: this
+    identification returns 0.01947, while an independent coastdown on a
+    comparable BEV measures 0.00878 [R10] -- a factor of 2.2. Real rolling
+    resistance does not vary by 2.2x between passenger cars on the same roads.
+    What the extra 0.011 contains is drivetrain drag, brake drag, an efficiency
+    map that is optimistic off its identified grid, and any standing electrical
+    load p_base_w did not take. Those losses have to go somewhere, and least
+    squares puts them in the term whose shape fits.
+
+    The same coastdown converts to Cd 0.29, matching Nissan's published figure
+    for a vehicle it was not fitted to, which is what makes it usable as a
+    yardstick rather than another fit.
+
+    Consequences, all binding:
+      - The paper must describe these four as identified lumped coefficients,
+        never as measured vehicle properties. A reviewer who reads 0.01947 as a
+        rolling-resistance measurement is entitled to reject it.
+      - They are not transferable as physical constants. Transferring them to
+        another vehicle carries the i3's unmodelled losses with them; measured
+        against VED this costs 3.5 points of energy error, and swapping in the
+        target vehicle's own coastdown recovers 2.5 of them.
+        See docs/ved-generalisation.md.
+      - The plant is still validated: G2 tests predicted power and SoC against
+        logged values, and lumped coefficients that reproduce logged power are
+        exactly what a plant needs. What they do not support is a physical
+        claim about the coefficient itself.
 """
+
+
+CAVEATS_SUMMARY = (
+    "c_rr, cd and rot_mass_factor in `identified` are LUMPED LOSS "
+    "COEFFICIENTS, not measured vehicle properties. Each was fitted to absorb "
+    "the residual whose speed dependence matches its own, so each carries "
+    "losses the plant does not model separately. c_rr identifies to 0.01947 "
+    "here against 0.00878 measured by coastdown on a comparable BEV, a factor "
+    "of 2.2. Do not present them as measurements of rolling resistance, drag "
+    "or rotational inertia, and do not transfer them to another vehicle as "
+    "physical constants. Full statement in the CAVEATS block of "
+    "scripts/identify_params.py, note 6; transfer evidence in "
+    "docs/ved-generalisation.md."
+)
 
 
 # Fallback efficiency surface, used only until the map is identified from the
@@ -419,6 +488,7 @@ def main() -> int:
                 "k_cool_w_per_c": aux.k_cool_w_per_c, "t_setpoint_c": aux.t_setpoint_c},
         "published": PUBLISHED,
         "citations": CITATIONS,
+        "caveats": CAVEATS_SUMMARY,
         "fit_trips": trips,
         "train_residual_rmse_kw": rmse_kw,
     }, indent=2))
