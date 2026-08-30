@@ -2,7 +2,7 @@
 
 Two datasets, with different jobs. The i3 archive identifies and validates the
 plant (gate G2). VED is an independent second source, held for the
-cross-dataset generalisation claim in the paper — it is not part of the G2
+cross-dataset generalisation claim in the paper; it is not part of the G2
 verdict.
 
 The split of duties is deliberate. Identifying and validating on the same
@@ -40,7 +40,7 @@ transfer?", and that second question is the one a reviewer asks.
 ```
 
 `Simulation Data.zip` is excluded on purpose. It is the output of the authors'
-own vehicle model, so validating our plant against it would measure agreement
+own vehicle model, so validating this project's plant against it would measure agreement
 between two models rather than agreement with a vehicle. Only measured data
 enters the G2 verdict.
 
@@ -60,7 +60,7 @@ Three things a default `read_csv` gets wrong, all confirmed by reading the raw
 bytes rather than by assumption:
 
 - the separator is `;`, not `,`
-- the encoding is cp1252, not UTF-8 — the degree signs in `[°C]` headers raise
+- the encoding is cp1252, not UTF-8. The degree signs in `[°C]` headers raise
   `UnicodeDecodeError` under UTF-8
 - headers carry typos. `TripB38` names its speed column `Velocity [km/h]]]`
   with three closing brackets, and `max. SoC [%)` closes with a parenthesis in
@@ -92,7 +92,7 @@ present in all 70, so the layout differences do not restrict the usable set:
 | `Velocity [km/h]` | `v_mps` | ÷ 3.6 |
 | `Elevation [m]` | `elevation_m` | none |
 | `SoC [%]` | `soc_frac` | × 0.01 |
-| `Battery Current [A]` | `i_batt_a` | **negated** — see below |
+| `Battery Current [A]` | `i_batt_a` | **negated**, see below |
 | `Battery Voltage [V]` | `v_batt_v` | none |
 | `Ambient Temperature [°C]` | `t_ambient_c` | none |
 | `Battery Temperature [°C]` | `t_batt_c` | none |
@@ -127,7 +127,7 @@ ceiling far below drive power.
 
 ### Observed sample interval
 
-**Exactly 0.1 s on every one of the 70 files** — minimum, median and maximum
+**Exactly 0.1 s on every one of the 70 files**: minimum, median and maximum
 inter-sample gap are all 0.100 s, with no dropped timestamps. The documented
 10 Hz rate is confirmed rather than assumed.
 
@@ -148,7 +148,7 @@ None.
 | Source | https://github.com/gsoh/VED (branch `master`, directory `Data/`) |
 | Access | Public, no credentials |
 | Licence | Apache License 2.0 |
-| Fleet | 383 personal vehicles, Ann Arbor, Michigan, Nov 2017 – Nov 2018 |
+| Fleet | 383 personal vehicles, Ann Arbor, Michigan, Nov 2017 to Nov 2018 |
 | BEV subset | 3 vehicles, 2013 Nissan Leaf, 24 kWh nameplate |
 | Downloaded | 2026-08-30 |
 
@@ -174,15 +174,16 @@ None.
 `VED_Static_Data_ICE&HEV.xlsx` is not taken: it describes the gasoline and
 hybrid fleet, which this project does not model.
 
-### Columns, as documented by the authors
+### Columns, as the files actually name them
 
-Verified against the repository README before download; re-verified against the
-extracted CSVs below.
+The repository README documents the ambient channel as
+`Outside Air Temperature[DegC]`. **The files call it `OAT[DegC]`.** The loader
+uses what the files say. The rest of the README's list is accurate:
 
 ```
 DayNum, VehId, Trip, Timestamp(ms), Latitude[deg], Longitude[deg],
 Vehicle Speed[km/h], MAF[g/sec], Engine RPM[RPM], Absolute Load[%],
-Outside Air Temperature[DegC], Fuel Rate[L/hr], Air Conditioning Power[kW],
+OAT[DegC], Fuel Rate[L/hr], Air Conditioning Power[kW],
 Air Conditioning Power[Watts], Heater Power[Watts], HV Battery Current[A],
 HV Battery SOC[%], HV Battery Voltage[V], Short Term Fuel Trim Bank 1[%],
 Short Term Fuel Trim Bank 2[%], Long Term Fuel Trim Bank 1[%],
@@ -190,25 +191,126 @@ Long Term Fuel Trim Bank 2[%]
 ```
 
 Each `(VehId, Trip)` pair is one trip. `DayNum` counts days from
-1 November 2017, so `DayNum = 1.5` is noon on that day.
+1 November 2017, so `DayNum = 1.5` is noon on that day. Trip identifiers in
+this project are `VED_<VehId>_<Trip>`.
 
-### What VED does not have
+The mapping used, all of it read off the files:
 
-Three canonical channels are absent, and each has a consequence:
+| Source column | Canonical | Conversion |
+|---|---|---|
+| `Timestamp(ms)` | `t_s` | × 0.001, rebased to trip start |
+| `Vehicle Speed[km/h]` | `v_mps` | ÷ 3.6 |
+| `HV Battery SOC[%]` | `soc_frac` | × 0.01 |
+| `HV Battery Current[A]` | `i_batt_a` | **negated** |
+| `HV Battery Voltage[V]` | `v_batt_v` | none |
+| `OAT[DegC]` | `t_ambient_c` | none |
+| `Air Conditioning Power[Watts]` + `Heater Power[Watts]` | `p_aux_w` | summed, already watts |
 
-| Missing | Consequence |
-|---|---|
-| `elevation_m` | No grade signal. Must be recovered by map-matching the GPS trace against a DEM, or the grade term must be zeroed and the resulting bias reported |
-| `t_batt_c` | The battery temperature model runs open-loop. Ambient is the only thermal input |
-| 10 Hz sampling | VED logs at roughly 1 Hz, so acceleration is a coarser difference and short transients are not resolved |
+`Air Conditioning Power[kW]` appears in the header but is empty on every
+battery-electric row. The watts column is the populated one.
 
-These are why VED is the secondary and not the primary. Reporting them here
-rather than discovering them at review time is the point of this file.
+### The three battery-electric vehicles
+
+`VED_Static_Data_PHEV&EV.xlsx` lists 27 plug-in vehicles, of which
+`EngineType == "EV"` selects **VehId 10, 455 and 541**, all 3500 lb class. The
+other 24 are plug-in hybrids and the remaining 356 vehicles in the fleet are
+gasoline. On BEV rows every channel this project needs is **100% populated**,
+which is not true of the fleet as a whole: on a mixed chunk the high-voltage
+columns are present on about 9% of rows.
+
+| Vehicle | Trips logged | Eligible |
+|---|---|---|
+| 455 | 293 | 257 |
+| 10 | 201 | 178 |
+| 541 | 10 | 8 |
+
+### Battery current sign convention
+
+**Negative is discharge, the same convention as the i3 archive** and the
+opposite of the canonical schema, so the loader negates it. Three checks, all
+on battery-electric rows:
+
+1. Mean current while driving above 30 km/h is **−20.3 A**.
+2. Mean current at rest is **−3.5 A**.
+3. Correlation between per-sample SoC change and current is **+0.30**, making
+   positive current the charging direction.
+
+Pooled `V·I` over the subset is −5757 W, which for vehicles that start fuller
+than they end can only mean the sign is inverted.
 
 ### Observed sample interval
 
-_Pending. To be confirmed from `Timestamp(ms)` when the BEV subset is extracted
-for the generalisation experiment; VED plays no part in the G2 verdict._
+**Not the 1 Hz usually quoted, and not regular.** The median gap between
+samples is **400 ms**, but the distribution is multi-modal: 39% of samples
+arrive less than 250 ms after the previous one and another 32% about a second
+after. The 10th to 90th percentile range is 0.10 to 1.00 s.
+
+This matters more than it looks. Differencing speed across a short, jittery
+interval is what produces implausible acceleration, not the coarse average
+rate: 3.6% of samples taken less than 250 ms apart exceed 5 m/s², against
+0.04% of those about a second apart. Raw peaks reach **54 m/s²**. A 2013 Leaf
+reaches 100 km/h in about 11.5 s, so 2.4 m/s² is sustained acceleration and
+5 m/s² is already hard braking.
+
+The loader bounds acceleration at ±10 m/s² **before** averaging it over a
+3-sample centred window, so one dropout stays local instead of being smeared
+across its neighbours. That removes 98.5% of the implausible tail (1.80% of
+samples above 5 m/s² falls to 0.02%) and brings the spread to 0.83 m/s²,
+against the i3 archive's 0.66. Widening to 5 or 7 samples buys almost nothing
+beyond that while continuing to erase real dynamics.
+
+### What VED does not have
+
+| Missing | Consequence |
+|---|---|
+| `elevation_m` | **Grade is zero everywhere.** VED logs latitude and longitude but no elevation. On a trip returning near its starting elevation the grade term contributes little net energy, since climbing is partly recovered descending, but instantaneous power on any real hill is wrong. Ann Arbor is not flat. Recovering grade needs the GPS trace map-matched against a digital elevation model, a separate piece of work with its own data licence |
+| `t_batt_c` | Falls back to ambient, which is right at key-on and increasingly wrong as the pack self-heats |
+| A second heater channel | The i3 logs heater power twice on separate buses, so the two can be required to agree. VED logs each auxiliary channel once, so that instrument check has no counterpart here. A real gap in what can be verified, not an oversight |
+
+### Trip eligibility
+
+VED fails differently from the i3, so the tests differ. Its battery-electric
+channels are fully populated, so there is no missing-data test to run. What
+VED has instead is time: a trip is whatever the logger bracketed, and some
+brackets contain gaps of twenty minutes. A gap is not a measurement, and
+interpolating across one invents driving that did not happen.
+
+| Test | Threshold | Excluded |
+|---|---|---|
+| Trip duration | at least 120 s | 51 |
+| Distance covered | at least 0.5 km | 6 |
+| Longest gap in the timestamps | at most 30 s | 4 |
+| Sample count | at least 60 | 0 |
+| Net SoC change | not rising (no charging) | 0 |
+
+**443 of 504 trips eligible**, 458,319 samples, 2243 km. Median trip is 465 s
+and 4.1 km, which is a good deal shorter than the i3's: this is commuter
+logging, not instrumented test driving.
+
+### What VED adds that the i3 could not
+
+The i3 eligible set is winter only, so every sample sits below the 21 °C cabin
+setpoint and the cooling coefficient of the auxiliary model is unidentifiable.
+VED spans **−15.5 °C to +36.0 °C**, with 27.7% of samples above the setpoint,
+and closes exactly that gap.
+
+| Auxiliary fit | i3 eligible set | VED battery-electric |
+|---|---|---|
+| Samples above the 21 °C setpoint | 0.0% | 27.7% |
+| `k_heat_w_per_c` | 127.3 | 74.8 |
+| `k_cool_w_per_c` | **0.0, unidentified** | **118.3** |
+| R² against logged auxiliary power | 0.047 | **0.428** |
+
+The measured load traces the expected V-shape about the setpoint: 2005 W below
+freezing, 143 W between 10 and 21 °C, and back up to 820 W above 28 °C. The
+i3's own fit is nearly worthless at R² = 0.047 because it only ever sees one
+arm of that V.
+
+Two cautions before this is used. The coefficients are a Nissan Leaf's, not a
+BMW i3's, so they transfer as an order of magnitude and a shape rather than as
+a calibration. And R² = 0.428 still leaves most of the variance unexplained,
+because cabin heating depends on what the driver asked for and on how cold the
+cabin started, neither of which ambient temperature reveals.
 
 ---
 
@@ -250,14 +352,14 @@ ones the plant reproduces well would make the gate meaningless.
 | **Eligible** | **33** |
 | Heater has no independent LIN channel to corroborate it | 26 (all category A) |
 | Heater CAN and LIN disagree | 6 (TripA23, A24, A25, A28, A31, A32) |
-| SoC missing for 12–60% of samples | 4 (TripB07, B09, B28, B34) |
+| SoC missing for 12 to 60% of samples | 4 (TripB07, B09, B28, B34) |
 | Trip contains charging (SoC rose +24.1 pp) | 1 (TripB04) |
 
 The rule reproduces the readme's own A/B distinction without being told about
 it: every category-A trip fails, and every category-B trip passes unless its
 SoC channel dropped out or it contains a charge event. Category B's two heater
-channels agree to r ≥ 0.94 and 36–100 W; category A's, where a second channel
-exists at all, reach only r = 0.06–0.95 and 112–181 W.
+channels agree to r at least 0.94 and 36 to 100 W; category A's, where a second channel
+exists at all, reach only r = 0.06 to 0.95 and 112 to 181 W.
 
 ### What excluding category A costs
 
@@ -301,7 +403,7 @@ done to the raw file can be read in one place.
 Road gradient does not change in 0.1 s, but differentiating the raw 10 Hz
 elevation channel behaves as if it does. At 0.6 m/s the vehicle covers 6 cm per
 sample, so a decimetre of elevation noise becomes a 90° slope. Differentiating
-the raw signal produces grades up to **1.571 rad** — vertical — on 6 of the 33
+the raw signal produces grades up to **1.571 rad**, vertical, on 6 of the 33
 eligible trips.
 
 Averaging elevation over a centred window first fixes this, and the window
@@ -309,15 +411,15 @@ length was chosen by measurement rather than taste:
 
 | Window | Worst grade across all eligible trips |
 |---|---|
-| 0.1 s (raw) | 1.571 rad — 6 trips exceed the schema's 0.35 rad bound |
-| 5.1 s | 0.602 rad — 1 trip still exceeds it |
-| **10.1 s** | **0.298 rad — no trip exceeds it** |
+| 0.1 s (raw) | 1.571 rad, 6 trips exceed the schema's 0.35 rad bound |
+| 5.1 s | 0.602 rad, 1 trip still exceeds it |
+| **10.1 s** | **0.298 rad, no trip exceeds it** |
 | 20.1 s | 0.156 rad |
 
 10.1 s is the shortest window that brings every trip inside the schema bound on
 its own. That matters: the bound then acts as an independent check that passes,
 rather than as a clip doing the work silently. Widening to 20 s halves the peak
-again, which would begin erasing real short hills — at highway speed 10.1 s is
+again, which would begin erasing real short hills. At highway speed 10.1 s is
 already a 200 m baseline. Median per-trip peak grade is 0.028 rad (1.6°), which
 is what ordinary road driving looks like.
 
@@ -328,7 +430,7 @@ This is not cosmetic. Grade enters road load as `m·g·sin θ`, so at 1270 kg a
 
 Nine samples out of 497,538 exceed 5 m/s². The worst is TripB02 at t = 199.2 s,
 where speed falls from 9.775 m/s to 0 in a single 0.1 s step while battery
-current simultaneously drops from 140 A to 7 A — a bus dropout, not a
+current simultaneously drops from 140 A to 7 A, a bus dropout, not a
 manoeuvre. The i3 reaches 100 km/h in 7.2 s (3.9 m/s²) and cannot brake much
 past 1 g, so a ±10 m/s² bound is outside anything the vehicle does. It touches
 **2 samples in 1 trip**.
