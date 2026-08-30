@@ -146,7 +146,12 @@ def main() -> int:
     hist = [b - a for a, b in zip(h0, h1)]
     counters = {k: s1[k] - s0[k] for k in
                 ("loop_count", "rx_timeouts", "rx_bad", "infer_deadline_misses")}
-    # WCET and extremes are running maxima, so a difference is meaningless.
+    # Running maxima on the MCU, so a difference is meaningless and these are
+    # taken as-is. That means they include the startup transient before the
+    # settle point: the first loop after boot has no predecessor and the link
+    # is still coming up, which is where a 14 ms period and a 124 us one both
+    # come from. The gate is decided on the differenced histogram, which
+    # excludes that window. These are reported for context, not as the verdict.
     extremes = {k: s1[k] for k in
                 ("ctrl_wcet_us", "infer_wcet_us", "rtt_max_us",
                  "period_min_us", "period_max_us")}
@@ -165,7 +170,9 @@ def main() -> int:
     print(f"  jitter p99   {p99:>8.0f} us   (limit {P99_LIMIT_US:.0f})")
     print(f"  jitter p99.9 {p999:>8.0f} us")
     print(f"  period       {extremes['period_min_us']} to "
-          f"{extremes['period_max_us']} us, nominal 10000")
+          f"{extremes['period_max_us']} us since boot, nominal 10000")
+    print(f"               (includes the startup transient; the gate uses the "
+          f"histogram above)")
     print(f"  ctrl WCET    {extremes['ctrl_wcet_us']:>8} us")
     print(f"  round trip   {extremes['rtt_max_us']:>8} us worst")
     print(f"\n  MCU rx timeouts     {counters['rx_timeouts']}")

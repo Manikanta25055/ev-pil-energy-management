@@ -230,18 +230,38 @@ class SerialLink:
         self._ser.write(frame)
 
     def recv(self, timeout_s: float = 0.1):
+        """Return the next whole frame, or None once `timeout_s` has passed.
+
+        Waits in the kernel rather than polling. The earlier version slept
+        200 microseconds between checks, and a measured `time.sleep(0.0002)`
+        on this machine takes 304 microseconds, so every frame arrived up to
+        a third of a millisecond late for no reason. That latency is spent
+        inside the microcontroller's 9 ms reply window, and it is the reason
+        the first G3 run recorded reply timeouts.
+        """
         assert self._ser is not None, "call open() first"
         deadline = time.perf_counter() + timeout_s
         while True:
             if self._pending:
                 return self._pending.pop(0)
+
             waiting = self._ser.in_waiting
             if waiting:
                 self._pending.extend(self.asm.feed(self._ser.read(waiting)))
                 continue
-            if time.perf_counter() >= deadline:
+
+            remaining = deadline - time.perf_counter()
+            if remaining <= 0.0:
                 return None
-            time.sleep(0.0002)
+
+            # Block until the first byte arrives, then take whatever else has
+            # landed behind it in the same wake-up.
+            self._ser.timeout = min(remaining, 0.02)
+            head = self._ser.read(1)
+            if head:
+                self._pending.extend(
+                    self.asm.feed(head + self._ser.read(self._ser.in_waiting))
+                )
 
     @property
     def stats(self) -> dict[str, int]:
