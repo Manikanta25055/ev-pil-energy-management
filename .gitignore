@@ -1,0 +1,21 @@
+.claude/
+.remember/
+.DS_Store
+Icon?
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Dataset archive: large, and redistribution may not be permitted.
+# Two subtleties here, both of which bite silently:
+#   - the leading slash anchors to the repo root; a bare "data/" would also
+#     match src/evpil/data/ and exclude the loader and split modules;
+#   - "/data/*" excludes the CONTENTS rather than the directory, because git
+#     cannot re-include a file whose parent directory is itself excluded.
+/data/*
+!/data/splits.json
+!/data/i3_params.json
+
+firmware/build/
+firmware/host_test/test_protocol
