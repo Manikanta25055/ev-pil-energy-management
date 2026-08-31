@@ -77,3 +77,36 @@ def test_the_outer_loop_is_called_at_a_tenth_of_the_inner_rate(params):
     simulate(params, c, counting)
     # One priming call before the loop, then one every ten inner steps.
     assert len(calls) == 1 + 100
+
+
+def test_the_comparable_scale_charges_shed_cabin_load_back(params):
+    """Raw consumption is not comparable across arms. A controller that turns
+    the heating down shows a lower number without having managed any energy,
+    which is the same trade as driving slower and is rejected in the design
+    document. `equivalent_wh` is the scale every arm is ranked on."""
+    c = short_cycle()
+    cold = {"t_ambient_c": -5.0}
+    plain = simulate(params, c, fixed_policy(EmsAction(1.0, 3e5, 0.0)), **cold)
+    shed = simulate(params, c, fixed_policy(EmsAction(1.0, 3e5, 0.30)), **cold)
+
+    # Shedding wins on the raw number...
+    assert shed.energy_wh < plain.energy_wh
+    # ...and buys nothing once the comfort is charged back at what it saved.
+    assert shed.equivalent_wh == pytest.approx(plain.equivalent_wh, rel=2e-3)
+    assert plain.equivalent_wh == pytest.approx(plain.energy_wh)
+
+
+def test_the_comparable_scale_still_credits_real_recovery(params):
+    """The charge-back must not flatten every difference: regeneration is a
+    real saving and has to survive it."""
+    c = short_cycle()
+    off = simulate(params, c, fixed_policy(EmsAction(0.0, 3e5, 0.0)))
+    on = simulate(params, c, fixed_policy(EmsAction(1.0, 3e5, 0.0)))
+    assert on.equivalent_wh < off.equivalent_wh
+
+
+def test_the_summary_carries_both_scales(params):
+    c = short_cycle()
+    d = simulate(params, c, fixed_policy(EmsAction(1.0, 3e5, 0.1))).summary()
+    assert "wh_per_km" in d and "equivalent_wh_per_km" in d
+    assert d["equivalent_wh_per_km"] > d["wh_per_km"]

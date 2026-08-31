@@ -53,6 +53,37 @@ OBS_NAMES: tuple[str, ...] = (
 # compiled into the firmware when the actor is exported.
 OBS_SCALE = np.array([1.0, 40.0, 5.0, 60.0, 0.1, 5.0, 50000.0, 80000.0],
                      dtype=np.float32)
+OBS_CLIP = 10.0
+
+# 3 s at the 10 ms inner period, matching the forecaster's horizon in spec 4.2.
+FORECAST_STEPS = 300
+
+
+def forecast_summary(
+    cycle: Cycle, a_ref: np.ndarray, k: int, mass_kg: float,
+    rot_mass_factor: float = 0.0,
+) -> tuple[float, float]:
+    """Mean and max of the next 3 s of reference-implied traction power.
+
+    An oracle: it reads the cycle's own future. The trained forecaster
+    replaces it once the actor is on the device, and reporting both is what
+    separates "the preview helps" from "this particular forecaster helps".
+
+    Shared by the training environment and by the evaluation adapter, because
+    an agent evaluated on a differently-computed observation than it was
+    trained on is being tested on a different problem.
+    """
+    end = min(k + FORECAST_STEPS, len(cycle.v_ref_mps))
+    if k >= end:
+        return 0.0, 0.0
+    v = cycle.v_ref_mps[k:end]
+    a = a_ref[k:end]
+    p = mass_kg * (1.0 + rot_mass_factor) * a * v
+    return float(p.mean()), float(p.max())
+
+
+def scale_observation(raw: np.ndarray) -> np.ndarray:
+    return np.clip(raw / OBS_SCALE, -OBS_CLIP, OBS_CLIP).astype(np.float32)
 
 
 @dataclass(frozen=True)
@@ -104,7 +135,7 @@ class EnergyManagementEnv(gym.Env):
         # near unit range, and a declared bound is what the exported actor's
         # fixed-point input range will be derived from.
         self.observation_space = spaces.Box(
-            -10.0, 10.0, shape=(len(OBS_NAMES),), dtype=np.float32)
+            -OBS_CLIP, OBS_CLIP, shape=(len(OBS_NAMES),), dtype=np.float32)
 
         self._p_limit_lo = 40000.0
         self._p_limit_hi = params.motor.power_max_w
@@ -157,21 +188,11 @@ class EnergyManagementEnv(gym.Env):
         return self._observe(), {}
 
     def _forecast(self) -> tuple[float, float]:
-        """Mean and max of the next 3 s of reference-implied traction power.
-
-        Week 7 uses the cycle's own future, which is an oracle. The trained
-        forecaster replaces it in week 8, and reporting both is what separates
-        "the preview helps" from "this particular forecaster helps".
-        """
         if not self.use_forecast:
             return 0.0, 0.0
-        end = min(self._k + 300, len(self.cycle.v_ref_mps))
-        v = self.cycle.v_ref_mps[self._k:end]
-        a = self._a_ref[self._k:end]
-        if len(v) == 0:
-            return 0.0, 0.0
-        p = self.params.mass_kg * (1.0 + self.params.rot_mass_factor) * a * v
-        return float(p.mean()), float(p.max())
+        return forecast_summary(self.cycle, self._a_ref, self._k,
+                                self.params.mass_kg,
+                                self.params.rot_mass_factor)
 
     def _observe(self) -> np.ndarray:
         f_mean, f_max = self._forecast()
@@ -181,7 +202,7 @@ class EnergyManagementEnv(gym.Env):
             self.state.battery.t_batt_c, self.cycle.grade_rad[k],
             self.cycle.v_ref_mps[k] - self.state.v_mps, f_mean, f_max,
         ], dtype=np.float32)
-        return np.clip(raw / OBS_SCALE, -10.0, 10.0).astype(np.float32)
+        return scale_observation(raw)
 
     def step(self, action: np.ndarray):
         blend, p_limit, derate = self.decode_action(action)

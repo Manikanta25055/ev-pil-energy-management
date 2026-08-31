@@ -80,8 +80,33 @@ class Result:
     aux_shed_wh: float
     trace: Trace | None = None
 
+    @property
+    def equivalent_wh(self) -> float:
+        """Energy with shed cabin load charged back at what it saved.
+
+        The comparable scalar across arms. Raw consumption is not: a
+        controller that turns the heating down in a Munich winter shows a
+        lower number without having managed any energy, in the same way a
+        controller that drove slower would. Charging the shed load back at
+        price 1.0 is the same convention the DP's comfort-priced arm uses and
+        the same one the reinforcement-learning reward uses, so the three are
+        on one scale.
+
+        Report this beside raw consumption, never instead of it -- the gap
+        between them is how much comfort an arm spent.
+        """
+        return self.energy_wh + self.aux_shed_wh
+
+    @property
+    def equivalent_wh_per_km(self) -> float:
+        return (self.equivalent_wh / self.distance_km
+                if self.distance_km > 0 else float("nan"))
+
     def summary(self) -> dict:
-        return {k: v for k, v in self.__dict__.items() if k != "trace"}
+        d = {k: v for k, v in self.__dict__.items() if k != "trace"}
+        d["equivalent_wh"] = self.equivalent_wh
+        d["equivalent_wh_per_km"] = self.equivalent_wh_per_km
+        return d
 
 
 DEFAULT_GAINS = PidGains(

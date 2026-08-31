@@ -6,23 +6,23 @@
     "rx_timeouts": 0,
     "rx_bad": 0,
     "infer_deadline_misses": 0,
-    "stale_steps": 4,
+    "stale_steps": 3,
     "ctrl_late": 0,
     "ctrl_fallback_steps": 0,
     "limp_steps": 0,
     "ems_fallback_steps": 0,
-    "stale_worst": 290,
+    "stale_worst": 287,
     "boot_reason": 11
   },
   "extremes": {
     "ctrl_wcet_us": 97,
     "infer_wcet_us": 836,
-    "rtt_max_us": 799,
-    "period_min_us": 9872,
-    "period_max_us": 10012
+    "rtt_max_us": 1766,
+    "period_min_us": 9845,
+    "period_max_us": 10011
   },
   "host": {
-    "frames_ok": 121207,
+    "frames_ok": 121206,
     "frames_bad": 0,
     "frames_dropped": 0,
     "open_attempts": 2
@@ -59,7 +59,7 @@
   "p50_us": 25.0,
   "p99_us": 25.0,
   "p999_us": 25.0,
-  "dropped_total": 4,
+  "dropped_total": 3,
   "limits": {
     "p99_us": 1000.0,
     "dropped": 0

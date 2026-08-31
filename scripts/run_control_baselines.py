@@ -97,16 +97,19 @@ def main() -> int:
             r.__dict__["dp_predicted_wh"] = sol.predicted_wh
             r.__dict__["dp_solve_s"] = time.time() - t0
 
-        optimum = results["dp-comfort-priced"].energy_wh
+        # The optimum is taken on the comparable scale, so that an arm which
+        # sheds cabin load cannot appear to beat it.
+        optimum = results["dp-comfort-priced"].equivalent_wh
         for arm, r in results.items():
             row = {
                 "cycle": name, "split": split_of(name), "arm": arm,
                 "tracking_rmse_mps": r.tracking_rmse_mps,
                 "tracking_max_mps": r.tracking_max_mps,
                 "energy_wh": r.energy_wh, "wh_per_km": r.wh_per_km,
+                "equivalent_wh_per_km": r.equivalent_wh_per_km,
                 "soc_end": r.soc_end, "peak_current_a": r.peak_current_a,
                 "regen_wh": r.regen_wh, "aux_shed_wh": r.aux_shed_wh,
-                "gap_to_dp_pct": 100.0 * (r.energy_wh - optimum) / optimum,
+                "gap_to_dp_pct": 100.0 * (r.equivalent_wh - optimum) / optimum,
             }
             if "dp_predicted_wh" in r.__dict__:
                 row["dp_predicted_wh"] = r.__dict__["dp_predicted_wh"]
@@ -115,8 +118,8 @@ def main() -> int:
                 row["dp_solve_s"] = r.__dict__["dp_solve_s"]
             rows.append(row)
             print(f"  {arm:19} {r.wh_per_km:7.2f} Wh/km  "
+                  f"(equiv {r.equivalent_wh_per_km:7.2f})  "
                   f"regen {r.regen_wh:7.1f} Wh  shed {r.aux_shed_wh:6.1f} Wh  "
-                  f"rmse {r.tracking_rmse_mps:.5f} m/s  "
                   f"gap {row['gap_to_dp_pct']:+6.2f}%")
 
     keys = sorted({k for r in rows for k in r})

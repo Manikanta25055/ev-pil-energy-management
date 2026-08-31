@@ -8,6 +8,9 @@
 
 #include "bench_encoder.h"
 #include "bench_mac.h"
+#if HAVE_SAC_ACTOR
+#include "bench_actor.h"
+#endif
 #include "link.h"
 #include "tasks.h"
 #include "timing.h"
@@ -20,6 +23,16 @@
    including the softmax, normalisation and memory traffic that a MAC count
    cannot see. */
 #define RUN_G5_BENCHMARK 0
+
+/* Set by -DRUN_ACTOR_BENCH=1: run the exported SAC actor over a fixed set of
+   observations, print each action for the host to check against numpy, and
+   time it. Week 8's on-device verification. */
+#ifndef RUN_ACTOR_BENCH
+#define RUN_ACTOR_BENCH 0
+#endif
+#if RUN_ACTOR_BENCH && !HAVE_SAC_ACTOR
+#error "RUN_ACTOR_BENCH needs sac_actor_weights.h; run scripts/verify_actor.py --export"
+#endif
 
 void app_main(void)
 {
@@ -36,12 +49,15 @@ void app_main(void)
     printf("EVPIL-BOARD psram=no size=0\n");
 #endif
 
-#if RUN_G1_BENCHMARK || RUN_G5_BENCHMARK
+#if RUN_G1_BENCHMARK || RUN_G5_BENCHMARK || RUN_ACTOR_BENCH
 #if RUN_G1_BENCHMARK
     bench_mac_report();
 #endif
 #if RUN_G5_BENCHMARK
     bench_encoder_report();
+#endif
+#if RUN_ACTOR_BENCH
+    bench_actor_report();
 #endif
     while (1) {
         vTaskDelay(pdMS_TO_TICKS(1000));

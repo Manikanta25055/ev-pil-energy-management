@@ -14,6 +14,8 @@ import argparse
 import json
 from pathlib import Path
 
+import numpy as np
+
 from docx import Document
 from docx.enum.section import WD_SECTION
 from docx.enum.table import WD_TABLE_ALIGNMENT
@@ -130,7 +132,7 @@ def cover(doc: Document, date: str) -> None:
     doc.add_page_break()
 
 
-def summary(doc: Document, ladder, tf, cost_rows, g3, a2) -> None:
+def summary(doc: Document, ladder, tf, cost_rows, g3, a2, sac, onchip) -> None:
     doc.add_heading("1. Summary", level=1)
 
     para(doc, "The project builds an energy-management controller for an "
@@ -193,6 +195,29 @@ def summary(doc: Document, ladder, tf, cost_rows, g3, a2) -> None:
             f"week-one compute budget was 22.28, so it was 64% low, and "
             f"section 11 explains why that gap is a useful result rather "
             f"than a problem.",
+        ])
+    if sac:
+        w = sac["summary"]["with-forecast"]
+        bullets(doc, [
+            f"The learned controller, trained five times over, finishes at "
+            f"{w['mean']:.2f} watt-hours per kilometre against the "
+            f"conventional controller's "
+            f"{sac['baseline']['equivalent_wh_per_km']:.2f}, once the cabin "
+            f"heating it switched off is charged back at what it saved. It is "
+            f"reliably slightly worse, which is what week 7's offline optimum "
+            f"predicted. Section 16.",
+            f"Removing the forecast from what the controller can see changes "
+            f"nothing measurable: "
+            f"{sac['a3']['diff_mean_wh_per_km']:+.3f} watt-hours per "
+            f"kilometre with an interval that contains zero.",
+        ])
+    if onchip:
+        bullets(doc, [
+            f"The learned controller runs on the chip in "
+            f"{onchip['latency_mean_ms']:.3f} milliseconds of the 40 allowed "
+            f"and {onchip['cost']['footprint_kb']:.1f} KB of the 300, and its "
+            f"answers match the Python original to "
+            f"{onchip['max_action_error']:.0e}.",
         ])
     if g3:
         bullets(doc, [
@@ -1278,12 +1303,212 @@ def fallback_section(doc: Document, fb, wdt) -> None:
               "will be a rebuild rather than a reconstruction.")
 
 
+
+def sac_section(doc: Document, sac, onchip) -> None:
+    doc.add_heading("16. The learned controller, and what it found", level=1)
+
+    para(doc, "Week 8 trained the reinforcement-learning controller the "
+              "project is named after: five independent training runs, "
+              "because a single result from a method this temperamental is "
+              "not publishable, and a matched pair of runs with the forecast "
+              "removed from what the controller can see. Week 7's offline "
+              "optimum had already predicted what this would find. The "
+              "prediction was written down before the runs, and the runs were "
+              "done anyway, because a predicted result is not a measured one.")
+
+    if not sac:
+        para(doc, "The training campaign had not finished when this report "
+                  "was generated. Rebuild the report to include it.",
+             italic=True, colour=MUTED)
+        return
+
+    doc.add_heading("How the arms are compared, and why it matters here",
+                    level=2)
+    para(doc, "Two numbers are reported for every controller. The raw figure "
+              "is watt-hours per kilometre as measured. The comparable figure "
+              "adds back the cabin heating the controller switched off, "
+              "valued at exactly the energy it saved.")
+    para(doc, "That second column is not bookkeeping. Every trained "
+              "controller in this table looks better than the conventional "
+              "one on the raw number and worse on the comparable one, and the "
+              "whole of the difference is cabin heat. A controller that saves "
+              "energy by turning the heating down in a Munich winter has done "
+              "the same thing as one that saves energy by driving slower, and "
+              "the project rejected that trade in its design document before "
+              "any of this was measured.")
+
+    b = sac["baseline"]
+    w = sac["summary"]["with-forecast"]
+    wo = sac["summary"]["without-forecast"]
+    table(doc, ["Controller", "Raw Wh/km", "Comparable Wh/km",
+                "Cabin heat shed", "vs conventional"], [
+        ["Conventional rules", f"{b['wh_per_km']:.2f}",
+         f"{b['equivalent_wh_per_km']:.2f}", f"{b['aux_shed_wh']:.1f} Wh",
+         "-"],
+        ["Learned, with forecast",
+         f"{np.mean([r['wh_per_km'] for r in sac['rows'] if r['arm'] == 'with-forecast']):.2f}",
+         f"{w['mean']:.2f} +- {w['std']:.2f}",
+         f"{w['aux_shed_wh_mean']:.1f} Wh",
+         f"{w['gap_to_rule_pct_mean']:+.2f}%"],
+        ["Learned, forecast removed",
+         f"{np.mean([r['wh_per_km'] for r in sac['rows'] if r['arm'] == 'without-forecast']):.2f}",
+         f"{wo['mean']:.2f} +- {wo['std']:.2f}",
+         f"{wo['aux_shed_wh_mean']:.1f} Wh",
+         f"{wo['gap_to_rule_pct_mean']:+.2f}%"],
+    ], [2.1, 1.2, 1.7, 1.2, 1.4])
+
+    para(doc, f"Five seeds each, {sac['steps']:,} training steps per seed, "
+              f"evaluated on complete runs of the validation cycle. The test "
+              f"cycle is still sealed. Speed tracking is unchanged across "
+              f"every arm, which is the point of putting tracking in a "
+              f"separate loop the controller cannot touch.")
+
+    doc.add_heading("Ablation A3: does the forecast help?", level=2)
+    a3 = sac["a3"]
+    para(doc, "A3 was the experiment carrying the most risk to the story. It "
+              "removes the forecast from what the controller can see and "
+              "changes nothing else.")
+    para(doc, f"Difference, forecast minus no forecast: "
+              f"{a3['diff_mean_wh_per_km']:+.3f} Wh/km, with a 95% interval "
+              f"of [{a3['ci95'][0]:+.3f}, {a3['ci95'][1]:+.3f}].")
+    if a3["null"]:
+        para(doc, "The interval contains zero. The forecast makes no "
+                  "measurable difference to the controller, which is the "
+                  "result week 7 predicted from the structure of the problem "
+                  "rather than from any property of this particular "
+                  "forecaster: when the speed profile is fixed, the best "
+                  "action does not depend on what happens next, so knowing "
+                  "what happens next cannot help.")
+        para(doc, "This was accepted as publishable in the design document "
+                  "before it was run, and it frees the memory the forecaster "
+                  "occupies. It is a finding about preview horizons in "
+                  "embedded energy management, not a failure of the "
+                  "experiment.")
+    else:
+        para(doc, "The interval excludes zero: the forecast changes the "
+                  "result. That contradicts the week 7 prediction and the "
+                  "reason needs finding before it is reported.")
+
+    figure(doc, DOCS / "figures" / "week8-sac.png",
+           "Figure 10. Left: five training runs per arm, each evaluated on "
+           "complete cycles, against the conventional controller and the "
+           "offline optimum. Right: where the ten runs finished, with 95% "
+           "intervals.")
+
+    doc.add_heading("What this means for the project", level=2)
+    para(doc, "Two independent methods now agree. The offline optimum says "
+              "the best possible policy is a constant instruction, and the "
+              "learned controller, given five attempts and a third of a "
+              "million training steps each, does not beat two thresholds and "
+              "a taper. Neither result depends on the other being right.")
+    para(doc, "That is a finding, and it is the one the paper should lead "
+              "with in this section. The decision about what to do next -- "
+              "report it, widen the controller's authority, or make the "
+              "problem harder honestly -- is section 13's open question and "
+              "is still the supervisor's to take.")
+
+
+def actor_onchip_section(doc: Document, sac, onchip) -> None:
+    doc.add_heading("17. Putting the learned controller on the chip", level=1)
+
+    para(doc, "A policy that has only ever run in Python is a claim. The "
+              "trained controller was exported, compiled into the firmware, "
+              "and run on the board, and its answers were checked against the "
+              "Python original on the same inputs.")
+
+    if not onchip:
+        para(doc, "The on-chip verification had not been run when this report "
+                  "was generated. Rebuild the report to include it.",
+             italic=True, colour=MUTED)
+        return
+
+    c = onchip["cost"]
+    table(doc, ["Check", "Result"], [
+        ["Network shape on the chip",
+         f"{'-'.join(str(x) for x in c['layer_sizes'])}, "
+         f"{c['n_params']:,} numbers"],
+        ["Weights on the chip are the weights that were trained",
+         "confirmed by checksum" if onchip.get("checksum_ok")
+         else "MISMATCH"],
+        ["Answers match the Python original",
+         f"worst difference {onchip['max_action_error']:.1e}, "
+         f"tolerance {onchip['tolerance']:.0e}"],
+        ["Memory used",
+         f"{c['footprint_kb']:.1f} KB of the 300 KB allowed"],
+        ["Time per decision, measured on the chip",
+         f"{onchip['latency_mean_ms']:.3f} ms of the 40 ms allowed"],
+    ], [3.2, 3.2])
+
+    para(doc, f"The controller costs "
+              f"{onchip['latency_mean_ms'] / onchip['budget_ms']:.1%} of the "
+              f"time budget and {c['footprint_kb'] / 300:.1%} of the memory. "
+              f"It is, in embedded terms, free. The forecaster it consumes is "
+              f"not: that takes 36.46 milliseconds of the same 40.")
+
+    doc.add_heading("The compute estimate was wrong in the other direction",
+                    level=2)
+    para(doc, f"Section 11 reported that dividing a multiply count by a "
+              f"measured multiply rate underestimated the forecaster's real "
+              f"time on the chip by 64%. For this controller the same "
+              f"arithmetic predicts "
+              f"{onchip['estimated_latency_ms']:.3f} milliseconds against "
+              f"{onchip['latency_mean_ms']:.3f} measured, so it is 25% too "
+              f"pessimistic instead.")
+    para(doc, "The two are not in conflict and the reason is worth a "
+              "sentence. The forecaster spends much of its time on operations "
+              "a multiply count cannot see, and it moves more data than fits "
+              "close to the processor. This controller is a few thousand "
+              "multiplications on numbers that stay in fast memory, and the "
+              "chip has hardware that does a multiply and an add together. "
+              "The estimate is unreliable in both directions and by different "
+              "amounts, which is a stronger reason to measure than a "
+              "consistent bias would have been.")
+
+    para(doc, "The chain from a trained policy to a running one has four "
+              "links, and each is checked against the one before it. Building "
+              "that chain found a real fault: the test that compares the C "
+              "controller against Python was, for a while, compiling the "
+              "wrong weights and comparing them against themselves. It passed "
+              "for exactly as long as no policy had been deployed. Section 18 "
+              "records it.")
+
+
 def negatives_section(doc: Document) -> None:
-    doc.add_heading("16. Results that went against expectation", level=1)
+    doc.add_heading("18. Results that went against expectation", level=1)
 
     para(doc, "Each one is reported because each one changes what the paper "
               "may claim, and a supervisor reading the work will find them "
               "more convincing than the successes.")
+
+    doc.add_heading("The learned controller loses to two thresholds", level=2)
+    para(doc, "Five independent training runs, and every one of them finishes "
+              "worse than a controller that is two thresholds and a taper, "
+              "once the cabin heating they switched off is charged back. The "
+              "offline optimum predicted it and the training measured it, and "
+              "the two do not depend on each other. Section 16.")
+
+    doc.add_heading("The forecast makes no difference to the controller",
+                    level=2)
+    para(doc, "Removing it changes the result by an amount whose confidence "
+              "interval contains zero, and whose sign is not consistent "
+              "across the five runs. This was accepted as publishable in the "
+              "design document before it was run, and week 7 gave it a "
+              "reason rather than leaving it a possibility.")
+
+    doc.add_heading("A parity test was passing without testing anything",
+                    level=2)
+    para(doc, "The test that compares the controller written in C against the "
+              "same controller in Python was, for a while, compiling one set "
+              "of weights and comparing them against another network's "
+              "expected answers. The cause is a C rule: an include written "
+              "with quotes is resolved against the including file's own "
+              "directory before any search path, so the file under test kept "
+              "finding the deployed weights whatever the test asked for. It "
+              "passed honestly for exactly as long as nothing had been "
+              "deployed. Two fixes: the include now searches the path only, "
+              "and the weights carry a checksum that the inference code "
+              "itself reports, because two policies of the same shape are "
+              "indistinguishable without one.")
 
     doc.add_heading("The energy-management problem has almost no room in it",
                     level=2)
@@ -1332,7 +1557,7 @@ def negatives_section(doc: Document) -> None:
 
 
 def remaining_section(doc: Document) -> None:
-    doc.add_heading("17. What is left to do", level=1)
+    doc.add_heading("19. What is left to do", level=1)
 
     para(doc, "Phase 1 and Phase 2 are complete. The remaining work is the "
               "controller, the on-chip deployment, and the measurement "
@@ -1350,10 +1575,11 @@ def remaining_section(doc: Document) -> None:
          "DONE: watchdog and fallback path built, and all four failure modes "
          "triggered on the board. Gate G3 re-measured on the changed firmware",
          "-"],
-        ["8", "Train the reinforcement-learning controller, five random "
-              "starts (measured at 1.8 hours); run ablation A3. Both depend "
-              "on the section 13 decision",
-         "Export the trained controller and verify it on the chip", "-"],
+        ["8", "DONE: five training runs per arm. The learned controller "
+              "finishes slightly worse than the conventional one, and the "
+              "forecast makes no measurable difference. Sections 16 and 17",
+         "DONE: the controller runs on the chip, matches Python, and takes "
+         "0.121 ms of the 40 allowed", "-"],
         ["9", "Tune the reward function", "Full system on the chip; ablation A4",
          "-"],
         ["10", "-", "Measurement campaign: six scenarios, several controllers, "
@@ -1398,7 +1624,7 @@ def remaining_section(doc: Document) -> None:
 
 
 def reproduce_section(doc: Document) -> None:
-    doc.add_heading("18. Reproducing everything in this report", level=1)
+    doc.add_heading("20. Reproducing everything in this report", level=1)
 
     para(doc, "Every result comes from a command that can be re-run. The "
               "report itself is generated from the result files rather than "
@@ -1418,6 +1644,12 @@ def reproduce_section(doc: Document) -> None:
          "python3 scripts/run_control_baselines.py"],
         ["Speed-controller robustness", "python3 scripts/run_pid_robustness.py"],
         ["Reinforcement-learning ramp-up", "python3 scripts/run_rl_rampup.py"],
+        ["Train the controller, five seeds, plus ablation A3",
+         "python3 scripts/run_sac.py"],
+        ["Export the trained controller to the firmware",
+         "python3 scripts/verify_actor.py --export"],
+        ["Verify it on the chip (needs -DRUN_ACTOR_BENCH=1)",
+         "python3 scripts/verify_actor.py --check"],
         ["Build the firmware", "./scripts/idf.sh build"],
         ["Fault-injection build",
          "./scripts/idf.sh -DFAULT_INJECT=1 build && ./scripts/idf.sh flash"],
@@ -1430,10 +1662,10 @@ def reproduce_section(doc: Document) -> None:
     para(doc, "All Python commands need PYTHONPATH=\"src:.\" set. The "
               "reinforcement-learning ramp-up additionally needs "
               "stable-baselines3 and gymnasium. The test suite runs with "
-              "python3 -m pytest and currently holds 364 tests, all passing, "
-              "including one that drives the controller in C and the same "
-              "controller in Python through identical inputs and requires "
-              "them to agree step for step.", size=11, colour=MUTED)
+              "python3 -m pytest and currently holds 387 tests, all passing, "
+              "including ones that drive the controller and the learned "
+              "policy in C and in Python through identical inputs and require "
+              "them to agree.", size=11, colour=MUTED)
 
 
 def main() -> int:
@@ -1450,6 +1682,8 @@ def main() -> int:
     robust = load("week7-pid-robustness.json")
     rl = load("week7-rl-rampup.json")
     fb = load("week7-fallback.json")
+    sac = load("week8-sac.json")
+    onchip = load("week8-actor-onchip.json")
     wdt = load("week7-watchdog.json")
 
     cost_path = DOCS / "forecast-deploy-cost.csv"
@@ -1467,7 +1701,7 @@ def main() -> int:
         section.right_margin = Inches(0.9)
 
     cover(doc, args.date)
-    summary(doc, ladder, tf, cost_rows, g3, a2)
+    summary(doc, ladder, tf, cost_rows, g3, a2, sac, onchip)
     background(doc)
     gates_explained(doc)
     plant_section(doc)
@@ -1482,6 +1716,8 @@ def main() -> int:
     control_section(doc, baselines, robust)
     rl_section(doc, rl)
     fallback_section(doc, fb, wdt)
+    sac_section(doc, sac, onchip)
+    actor_onchip_section(doc, sac, onchip)
     negatives_section(doc)
     remaining_section(doc)
     reproduce_section(doc)
@@ -1493,7 +1729,8 @@ def main() -> int:
     tracked = (("ladder", ladder), ("transformer", tf), ("G3", g3),
                ("A2/G5", a2), ("cost", cost_rows),
                ("controller baselines", baselines), ("PID robustness", robust),
-               ("RL ramp-up", rl), ("fallback", fb), ("watchdog", wdt))
+               ("RL ramp-up", rl), ("fallback", fb), ("watchdog", wdt),
+               ("SAC campaign", sac), ("actor on chip", onchip))
     have = [n for n, v in tracked if v]
     missing = [n for n, v in tracked if not v]
     print(f"wrote {out}")

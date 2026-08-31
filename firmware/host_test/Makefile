@@ -9,10 +9,23 @@ test_protocol: test_protocol.c ../main/protocol.c
 test_control: test_control.c ../main/control.c
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 
+# Built against a weights header supplied on the include path, so the same
+# inference code the board runs can be checked without a board. The header
+# comes from evpil.control.actor.write_c_header; ACTOR_INC points at whichever
+# directory holds it.
+# ACTOR_INC comes BEFORE CFLAGS, which already carries -I../main. With the
+# order reversed the compiler found firmware/main/sac_actor_weights.h first
+# and the harness silently tested the deployed policy instead of the one the
+# caller asked for. It passed while no deployed header existed and started
+# failing the moment one did, which is the worst possible time to find out.
+ACTOR_INC ?= ../main
+test_actor: test_actor.c ../main/actor.c
+	$(CC) -I$(ACTOR_INC) $(CFLAGS) -o $@ $^ -lm
+
 .PHONY: check clean
 check: test_protocol test_control
 	./test_protocol
 	./test_control > /dev/null && echo "ok:   control dump builds and runs"
 
 clean:
-	rm -f test_protocol test_control
+	rm -f test_protocol test_control test_actor
