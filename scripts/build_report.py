@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
 
 import numpy as np
@@ -100,13 +101,108 @@ def table(doc: Document, headers: list[str], rows: list[list[str]],
     doc.add_paragraph().paragraph_format.space_after = Pt(2)
 
 
+# Section and figure numbers count themselves. Numbering them by hand is how
+# this report ended up with a Figure 6 followed by a Figure 8, and how every
+# new section in the middle meant renumbering every heading after it.
+_COUNTERS = {"section": 0, "figure": 0}
+
+
+def reset_counters() -> None:
+    _COUNTERS["section"] = 0
+    _COUNTERS["figure"] = 0
+
+
+# Cross-references resolve themselves too. Hardcoded "see section 12" text
+# silently became wrong the moment two sections were inserted ahead of it, and
+# nothing in the build would have caught that. Sections register a key, the
+# prose writes a token, and a pass at the end substitutes the number.
+_SECTION_NUMBERS: dict[str, int] = {}
+
+
+def h1(doc: Document, title: str, key: str | None = None) -> None:
+    _COUNTERS["section"] += 1
+    if key:
+        _SECTION_NUMBERS[key] = _COUNTERS["section"]
+    doc.add_heading(f"{_COUNTERS['section']}. {title}", level=1)
+
+
+def ref(key: str) -> str:
+    """A token standing in for a section number, resolved by resolve_refs."""
+    return f"[[SEC:{key}]]"
+
+
+def resolve_refs(doc: Document) -> None:
+    """Replace every section-reference token with its number.
+
+    Raises if a token names a section that does not exist, so a stale
+    reference fails the build instead of reaching a supervisor's desk.
+    """
+    pattern = re.compile(r"\[\[SEC:([a-z0-9-]+)\]\]")
+
+    def fix(runs):
+        for run in runs:
+            if "[[SEC:" not in run.text:
+                continue
+            def sub(m):
+                k = m.group(1)
+                if k not in _SECTION_NUMBERS:
+                    raise KeyError(f"cross-reference to unknown section {k!r}")
+                return str(_SECTION_NUMBERS[k])
+            run.text = pattern.sub(sub, run.text)
+
+    for para_ in doc.paragraphs:
+        fix(para_.runs)
+    for tbl in doc.tables:
+        for row in tbl.rows:
+            for cell in row.cells:
+                for para_ in cell.paragraphs:
+                    fix(para_.runs)
+
+
 def figure(doc: Document, path: Path, caption: str, width: float = 6.4) -> None:
+    """Place a figure. `caption` is the text AFTER the auto-numbered label."""
     if not path.exists():
         return
+    _COUNTERS["figure"] += 1
     doc.add_picture(str(path), width=Inches(width))
     doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
-    para(doc, caption, size=9, italic=True, align=WD_ALIGN_PARAGRAPH.CENTER,
-         colour=MUTED, space_after=12)
+    para(doc, f"Figure {_COUNTERS['figure']}. {caption}", size=9, italic=True,
+         align=WD_ALIGN_PARAGRAPH.CENTER, colour=MUTED, space_after=12)
+
+
+def panels(doc: Document, items: list[tuple[str, str, str]]) -> None:
+    """Panel-by-panel breakdown under a figure.
+
+    Every figure in this report is a multi-panel figure, and a caption that
+    says "left: X, right: Y" tells a reader what is plotted without telling
+    them what to look for or why the panel is built that way. These entries
+    do both, so the report can be read by someone meeting the subject for the
+    first time.
+    """
+    for label, headline, desc in items:
+        p = doc.add_paragraph()
+        p.paragraph_format.left_indent = Inches(0.28)
+        p.paragraph_format.space_after = Pt(6)
+        run = p.add_run(f"{label} \u2014 {headline}. ")
+        run.bold = True
+        run.font.size = Pt(10.5)
+        rest = p.add_run(desc)
+        rest.font.size = Pt(10.5)
+
+
+def defs(doc: Document, items: list[tuple[str, str]]) -> None:
+    """A term-and-definition list, for the glossary."""
+    for term, meaning in items:
+        p = doc.add_paragraph()
+        p.paragraph_format.left_indent = Inches(0.28)
+        p.paragraph_format.space_after = Pt(5)
+        run = p.add_run(f"{term} \u2014 ")
+        run.bold = True
+        run.font.size = Pt(10.5)
+        # A bold term, a full stop and then a lowercase word reads as a broken
+        # sentence. An em dash makes it a definition list, which is what it is.
+        rest = p.add_run(meaning[:1].upper() + meaning[1:])
+        rest.font.size = Pt(10.5)
 
 
 # --------------------------------------------------------------------------
@@ -133,7 +229,7 @@ def cover(doc: Document, date: str) -> None:
 
 
 def summary(doc: Document, ladder, tf, cost_rows, g3, a2, sac, onchip) -> None:
-    doc.add_heading("1. Summary", level=1)
+    h1(doc, "Summary")
 
     para(doc, "The project builds an energy-management controller for an "
               "electric car and runs it on a real ESP32-S3 microcontroller. "
@@ -193,7 +289,7 @@ def summary(doc: Document, ladder, tf, cost_rows, g3, a2, sac, onchip) -> None:
             f"Timed on the chip itself, one prediction takes 36.46 "
             f"milliseconds against the 40 allowed. The estimate from the "
             f"week-one compute budget was 22.28, so it was 64% low, and "
-            f"section 11 explains why that gap is a useful result rather "
+            f"section " + ref("on-chip") + " explains why that gap is a useful result rather "
             f"than a problem.",
         ])
     if sac:
@@ -205,7 +301,7 @@ def summary(doc: Document, ladder, tf, cost_rows, g3, a2, sac, onchip) -> None:
             f"{sac['baseline']['equivalent_wh_per_km']:.2f}, once the cabin "
             f"heating it switched off is charged back at what it saved. It is "
             f"reliably slightly worse, which is what week 7's offline optimum "
-            f"predicted. Section 16.",
+            f"predicted. Section {ref('learned')}.",
             f"Removing the forecast from what the controller can see changes "
             f"nothing measurable: "
             f"{sac['a3']['diff_mean_wh_per_km']:+.3f} watt-hours per "
@@ -228,13 +324,13 @@ def summary(doc: Document, ladder, tf, cost_rows, g3, a2, sac, onchip) -> None:
             f"Gate G3 still fails, on {g3['counters']['stale_steps']} "
             f"occasions where the laptop did not answer in time. The count of "
             f"loops that missed their own deadline, measured for the first "
-            f"time this week, is {g3['counters']['ctrl_late']}. Section 12 "
-            f"explains why that distinction matters.",
+            f"time this week, is {g3['counters']['ctrl_late']}. Section "
+            f"{ref('realtime')} explains why that distinction matters.",
         ])
 
 
 def background(doc: Document) -> None:
-    doc.add_heading("2. What the project is, in plain terms", level=1)
+    h1(doc, "What the project is, in plain terms")
 
     para(doc, "An electric car wastes energy in ways a driver cannot see. How "
               "hard the motor pushes, how much braking energy is recovered, "
@@ -290,8 +386,344 @@ def background(doc: Document) -> None:
               "direct.")
 
 
+def glossary_section(doc: Document) -> None:
+    h1(doc, "The words you need")
+
+    para(doc, "Everything below recurs through the rest of the report. Nothing "
+              "after this point assumes you have met any of these terms before.")
+
+    doc.add_heading("The car and the journey", level=2)
+    defs(doc, [
+        ("Drive cycle", "a standard speed-against-time profile that regulators "
+         "use to test cars, so that two vehicles are compared on identical "
+         "journeys. UDDS is stop-start city traffic, HWFET is steady highway, "
+         "US06 is deliberately aggressive, and WLTC is the modern European "
+         "standard. They are published second by second."),
+        ("Regenerative braking", "running the motor backwards as a generator "
+         "when slowing down, so that braking energy returns to the battery "
+         "instead of becoming heat in the brake pads. It is the single largest "
+         "energy lever on an electric car, and this project measures it as worth "
+         "between 5 and 23 percent."),
+        ("State of charge", "how full the battery is, as a fraction from 0 to 1. "
+         "Errors in it are quoted in percentage points: being at 62 percent when "
+         "you should be at 64 is a 2 percentage point error."),
+        ("Watt-hours per kilometre", "how much energy the car uses to travel a "
+         "kilometre. Lower is better. This vehicle sits around 150 to 190 "
+         "depending on the cycle and the weather."),
+    ])
+
+    doc.add_heading("Judging a prediction", level=2)
+    defs(doc, [
+        ("RMSE", "root-mean-square error: the typical size of the gap between a "
+         "prediction and reality, in the same units as the thing predicted. Large "
+         "mistakes count much more heavily than small ones. Zero is perfect and "
+         "lower is better."),
+        ("R-squared", "the fraction of the real variation a model explains. One "
+         "is perfect, zero means the model is no better than always guessing the "
+         "average, and a negative value means it is worse than guessing the "
+         "average."),
+        ("Horizon", "how far ahead a forecast reaches. Here it is three seconds, "
+         "checked at every tenth-of-a-second step along the way. Predicting a "
+         "tenth of a second ahead is nearly free; three seconds is not."),
+        ("Persistence baseline", "the naive forecast: whatever the power is now, "
+         "it will still be that in three seconds. It sounds trivial and is "
+         "famously hard to beat over short horizons, so any model that cannot "
+         "beat it is worthless. That is why it is a mandatory comparison."),
+        ("Held-out and sealed data", "data the models are never allowed to see "
+         "while being built. Seven validation trips are used for tuning. The test "
+         "trips and the US06 cycle have not been opened at all and will be touched "
+         "once, at the very end."),
+        ("Confidence interval", "a range expressing how sure a result is. If the "
+         "interval around a difference includes zero, the honest reading is that "
+         "the difference cannot be told apart from no difference at all."),
+        ("Seed", "machine learning that involves randomness gives a different "
+         "answer each time it is run. Reporting one run is not evidence, so this "
+         "project trains five per arm and reports the spread."),
+        ("Ablation", "deliberately removing one component to find out whether it "
+         "was doing anything. Ablation A1 removes the physics from the training; "
+         "A3 removes the forecast from the controller."),
+    ])
+
+    doc.add_heading("The models", level=2)
+    defs(doc, [
+        ("Ridge regression", "about the simplest useful model there is, a "
+         "weighted sum of the inputs fitted by solving one equation. 257 numbers. "
+         "It is in this project as a floor: if an elaborate model cannot beat it, "
+         "the elaboration bought nothing."),
+        ("LSTM and Transformer", "two kinds of neural network built for "
+         "sequences. An LSTM reads the past one step at a time; a Transformer "
+         "looks at all of it at once. The Transformer is the candidate model this "
+         "project set out to test."),
+        ("Reinforcement learning and SAC", "training a controller by letting it "
+         "drive the simulation many times over and rewarding good outcomes. SAC, "
+         "Soft Actor-Critic, is a specific and well-regarded algorithm for "
+         "continuous controls. This is the AI controller under test."),
+        ("Dynamic programming", "an offline method that finds the genuinely best "
+         "possible sequence of decisions by working backwards from the end of the "
+         "journey. Far too slow to run in a car, which is fine: its only job is "
+         "to say what the best score was, so that a real controller can be "
+         "measured against it."),
+    ])
+
+    doc.add_heading("The chip", level=2)
+    defs(doc, [
+        ("int8 and quantisation", "shrinking a model by storing every number as "
+         "an 8-bit integer instead of a 32-bit decimal. Four times smaller and "
+         "faster, at the cost of a little accuracy. Essential on a chip this size."),
+        ("MAC", "multiply-accumulate: one multiplication plus one addition, the "
+         "basic unit of work in a neural network. Counting them is the standard "
+         "way to estimate whether a model will fit a time budget, imperfectly, as "
+         "this project found twice and in opposite directions."),
+        ("Deadline and jitter", "the control loop must complete every 10 "
+         "milliseconds. Jitter is how far the actual gap between loops wanders "
+         "from that figure. The gate allows 1000 microseconds of wander and the "
+         "chip achieves 25."),
+        ("Watchdog", "a hardware timer that resets the chip if the software stops "
+         "feeding it. The last line of defence against a controller that has "
+         "silently hung."),
+        ("PID controller", "the standard workhorse of control engineering. It "
+         "combines the error now, the error accumulated so far, and how fast the "
+         "error is changing. A cruise control is a PID."),
+        ("Feedforward", "working out most of the answer in advance from physics, "
+         "so the feedback loop only has to correct what is left over. Here it "
+         "means computing the force needed to follow the target speed, leaving "
+         "the PID to fix only what the physics got wrong."),
+    ])
+
+
+def charts_section(doc: Document) -> None:
+    h1(doc, "How to read the charts in this report")
+
+    para(doc, "Every figure in this report has more than one panel, and each "
+              "panel is explained individually where it appears. The chart types "
+              "themselves are standard, and this is all that is needed to read "
+              "them.")
+
+    defs(doc, [
+        ("Parity plot", "predicted value on one axis, real value on the other, "
+         "with a diagonal line. A perfect model puts every point exactly on the "
+         "diagonal. Fuzz around the line is noise. A systematic bend away from it "
+         "means the model is wrong in a particular operating region, which is far "
+         "more serious than fuzz."),
+        ("Histogram", "bars counting how many times a measurement fell into each "
+         "range. Used here for loop timing: how many of the 59,650 control cycles "
+         "landed within 25 microseconds of perfect, how many within 50, and so on."),
+        ("Cumulative curve", "instead of how many landed in each band, it answers "
+         "what percentage landed at or below a given value. It climbs from left "
+         "to right and ends at 100 percent, which makes it the right chart for "
+         "reading off a statement like '99 percent of loops were within this'."),
+        ("Box plot", "summarises a whole distribution in one shape. The line "
+         "inside the box is the median, the box holds the middle half of the "
+         "data, and the whiskers reach most of the rest. It shows spread, which a "
+         "single average hides."),
+        ("Logarithmic axis", "an axis where each step is a multiplication rather "
+         "than an addition, so 0.1, 1, 10, 100 are evenly spaced. It is used when "
+         "the numbers span orders of magnitude. On an ordinary axis, values of 23 "
+         "percent and 0.01 percent cannot both be visible; on a logarithmic axis "
+         "they can."),
+        ("Error bars and strip plots", "individual runs drawn as dots so that "
+         "every one can be seen, with a bar showing the confidence interval and a "
+         "tick at the mean. If two groups' bars overlap heavily, the two groups "
+         "are not meaningfully different."),
+    ])
+
+    doc.add_heading("One convention used throughout, and it reverses a conclusion",
+                    level=2)
+    para(doc, "Several charts report energy on a comparable scale rather than as "
+              "raw consumption. A controller is free to turn the cabin heating "
+              "down to save energy, and measured in plain watt-hours it looks "
+              "excellent for doing so. But that is the same trick as driving more "
+              "slowly: it buys the number by giving up something the driver "
+              "actually wanted.")
+    para(doc, "So wherever a controller sheds cabin heat, that energy is added "
+              "back at exactly what shedding it saved, and both numbers are always "
+              "shown. The gap between them is how much comfort the controller "
+              "spent. The correction is not cosmetic. Without it the week 8 result "
+              "reads as the learned controller saving 1.3 percent. With it, the "
+              "same controller is 0.66 percent worse than hand-written rules.")
+
+
+def changes_section(doc: Document) -> None:
+    h1(doc, "What changed from the original plan")
+
+    para(doc, "Twenty-two changes, in two classes, and the distinction matters. "
+              "Eleven were agreed in the design document before any code was "
+              "written. Eleven more happened during the eight weeks, each one "
+              "forced by something that had been measured.")
+
+    doc.add_heading("Agreed before implementation", level=2)
+
+    para(doc, "It is Processor-in-the-Loop, not Hardware-in-the-Loop. The "
+              "original used HIL throughout. HIL means real electrical hardware "
+              "in the loop, with motors, power electronics and sensors. There is "
+              "none of that here, only a processor. Reviewers in embedded and "
+              "control venues spot a misused HIL immediately, and the correct "
+              "term costs nothing.")
+
+    para(doc, "The embedded work moved from last to first, which is the largest "
+              "single change. The original schedules the ESP32 for weeks 10 and "
+              "11, after all the modelling is finished. That is the one "
+              "arrangement in which a failure has no recovery: if the model does "
+              "not fit in week 10, there is no time left to build a smaller one. "
+              "The compute-feasibility question is now gate G1 in week 1, and the "
+              "plan already names the fallback. This inversion is why the project "
+              "knew in week 4, rather than week 10, that XGBoost was never "
+              "deployable.")
+
+    para(doc, "Real logged trips replaced a physics-generated dataset. The "
+              "original creates the training data by pushing drive cycles through "
+              "the physics model, which makes the thing being predicted a "
+              "closed-form function of the very inputs used to predict it. The "
+              "model then appears to do brilliantly while having learned nothing "
+              "about a real car. The predecessor work has exactly this defect. "
+              "This project trains on 72 real logged trips at 10 Hz instead.")
+
+    para(doc, "Data is split by trip and never by row. The predecessor split "
+              "2,000 rows at random, and because consecutive rows come from the "
+              "same drive a fraction of a second apart, near-identical samples "
+              "landed on both sides. The model was effectively tested on data it "
+              "had trained on, which inflates every score. Here no sample from a "
+              "trip ever appears on both sides, and the calibration data used for "
+              "8-bit quantisation is drawn from training trips only, which is a "
+              "subtler version of the same leak.")
+
+    para(doc, "The communication task runs at 10 ms rather than 50. This was "
+              "arithmetic rather than judgement: the original specifies a 10 ms "
+              "control loop and a 50 ms communication task, and a loop cannot "
+              "close five times faster than the messages it depends on arrive.")
+
+    para(doc, "Budget first, then model. The model size is not chosen and then "
+              "checked, it is derived from what gate G1 measured. The Transformer "
+              "is 32 sequence steps, 32 units wide and 2 layers deep because that "
+              "is what fits in 40 milliseconds on this chip.")
+
+    para(doc, "The model comparison was rebuilt. Linear regression, random forest "
+              "and XGBoost became a mandatory naive baseline, one strong tabular "
+              "model, an LSTM fed genuinely sequential data, and a Transformer, "
+              "each in plain and physics-informed versions at matched size. "
+              "Re-running the LSTM correctly is deliberate: the predecessor "
+              "flattened its data first, which removes the time ordering the "
+              "architecture exists to exploit, and then reported that recurrent "
+              "models underperform.")
+
+    para(doc, "Gates, ablations and explicit non-claims are entirely new. Five "
+              "gates each with a written action on failure; four numbered "
+              "ablations; a metrics table with actual metrics where the original "
+              "listed headings and left them empty; and a list of things this work "
+              "will explicitly not claim. Stating the non-claims in advance is "
+              "what allows two null results to be reported as findings rather "
+              "than as embarrassments.")
+
+    para(doc, "Thirteen scenario variations became six axes, keeping full "
+              "robustness coverage at roughly half the runs.")
+
+    para(doc, "The ESP32-S3 is the primary platform rather than the C6. Two "
+              "processor cores matter enormously here, because the hard real-time "
+              "loop is pinned to core 0 where inference on core 1 cannot disturb "
+              "it. The single-core C6 cannot make that separation at all.")
+
+    para(doc, "A second, independent dataset was added, held purely as an "
+              "out-of-distribution check. Building and testing on one car answers "
+              "whether the model fits; the question a reviewer actually asks is "
+              "whether it transfers, and nothing in the original plan could have "
+              "answered it.")
+
+    doc.add_heading("Changed in flight, because something was measured", level=2)
+
+    para(doc, "These are the ones to be most transparent about, because each "
+              "represents the plan meeting reality. In every case the measurement "
+              "came first and the change followed.")
+
+    para(doc, "Gate G2 was split into three parts instead of one pooled number, "
+              "and this was the one revision the design document permits. Neither "
+              "threshold was loosened; what changed is which part of the model "
+              "each threshold is applied to. Applied literally the original "
+              "criterion failed all seven trips at a median error of 23.7 percent, "
+              "because that single number pooled three independent models and "
+              "could not say which was wrong. Driving the plant with the "
+              "archive's own logged torque drops the error to a median of 7.0 "
+              "percent, inside the original bound on every trip. The revision is "
+              "now spent and nothing else may be adjusted without the same "
+              "treatment.")
+
+    para(doc, "The control loop became pipelined rather than synchronous. "
+              "Originally the chip sent a request and then waited for the reply "
+              "inside the same 10 millisecond slot, tying its deadline to the "
+              "scheduling behaviour of a general-purpose laptop. It now requests "
+              "the next state and acts on the most recent one it holds, and the "
+              "worst round trip fell from 7,405 microseconds to 77. This is a "
+              "genuine trade rather than a free win, because the controller now "
+              "acts on information one cycle old, and that cost is measured and "
+              "reported.")
+
+    para(doc, "The link runs over the chip's built-in USB rather than a separate "
+              "adapter. The design deliberately left this open for gate G3 to "
+              "settle on measured evidence, and the built-in peripheral carries "
+              "the loop with zero corrupted and zero lost messages.")
+
+    para(doc, "Three identified parameters were relabelled as lumped losses. The "
+              "fitted rolling-resistance coefficient came out 2.2 times larger "
+              "than an independent measurement on a comparable car, so it is not "
+              "a tyre property. It is a coefficient occupying that place in the "
+              "equation and absorbing every speed-dependent loss the model does "
+              "not represent separately. The parameter file says so, and an "
+              "automated test fails if that statement is removed.")
+
+    para(doc, "One of the three physics constraints was switched off. Charge "
+              "conservation has nothing to constrain over a three-second window, "
+              "because the logged charge channel does not measurably move within "
+              "one. Its weight is held at zero and the cost of switching it on is "
+              "reported as its own arm rather than quietly omitted.")
+
+    para(doc, "The message format grew to carry a real controller. The state "
+              "message went from 8 numbers to 10 so that the laptop can send the "
+              "target speed and its rate of change, the command message from 3 to "
+              "4, and the diagnostics message from 11 counters to 16. Gate G3 was "
+              "then re-measured in full, because the loop the report describes has "
+              "to be the loop that was measured.")
+
+    para(doc, "The offline optimiser searches two dimensions rather than three. "
+              "This is not a simplification for speed. With the speed trajectory "
+              "fixed by the tracking constraint, the battery power limit can only "
+              "ever remove power the speed controller needs, which the constraint "
+              "forbids. It is a safety limiter and not an optimisation lever, and "
+              "that applies to the learned controller in exactly the same way.")
+
+    para(doc, "Controllers are now ranked with shed cabin heat charged back. Raw "
+              "consumption is not comparable between controllers, because one that "
+              "turns the heating down looks excellent without having managed any "
+              "energy. Without this correction the week 8 table reads as the "
+              "learned controller saving 1.3 percent; with it, the same controller "
+              "is 0.66 percent worse, and the entire difference was 48 to 50 "
+              "watt-hours of cabin heat per cycle.")
+
+    para(doc, "The learned controller is 64 units wide rather than the library "
+              "default of 256. The default would be 68,867 numbers and 269 "
+              "kilobytes, which is 90 percent of the entire memory budget the "
+              "forecaster also has to fit inside. At 64 wide it is 4,931 numbers "
+              "and 19.3 kilobytes, and both figures were measured in a pilot run "
+              "before the main campaign.")
+
+    para(doc, "XGBoost and the LSTM ensemble were dropped as deployable options. "
+              "XGBoost needs roughly 3.7 megabytes against a 300 kilobyte budget, "
+              "over twelve times too large. The best-looking accuracy figure in "
+              "the whole comparison was a five-model LSTM ensemble, which takes 99 "
+              "milliseconds against a 40 millisecond budget. Both remain offline "
+              "reference points, and the reported number is now always "
+              "distinguished from the deployable one.")
+
+    para(doc, "The watchdog was switched on and a fallback path built. Three "
+              "different failures now get three different responses and three "
+              "separate counters rather than one generic fault state, because "
+              "collapsing them is how a controller ends up limping owing to a slow "
+              "logging task. All three were then triggered deliberately on the "
+              "board, plus a fourth test that hung the control task on purpose to "
+              "confirm the watchdog resets the chip. A fallback path that has "
+              "never been taken is a claim, not a result.")
+
+
 def gates_explained(doc: Document) -> None:
-    doc.add_heading("3. Why the project is organised around gates", level=1)
+    h1(doc, "Why the project is organised around gates")
 
     para(doc, "A gate is a measurement taken early, with a decision attached "
               "to it in advance. The compute budget is measured in week one, "
@@ -307,7 +739,7 @@ def gates_explained(doc: Document) -> None:
 
 
 def plant_section(doc: Document) -> None:
-    doc.add_heading("4. The vehicle model", level=1)
+    h1(doc, "The vehicle model")
 
     para(doc, "The vehicle model is the foundation. If it cannot reproduce a "
               "real drive, nothing built on top of it means anything, which is "
@@ -350,13 +782,100 @@ def plant_section(doc: Document) -> None:
     ], [0.6, 2.6, 2.0, 1.3])
 
     figure(doc, DOCS / "figures" / "g2-criteria.png",
-           "Figure 1. Gate G2. Each panel is one part of the split criterion, "
+           "Gate G2. Each panel is one part of the split criterion, "
            "with the pass threshold marked. Splitting the original single "
            "number is what made the failure attributable.")
+    panels(doc, [
+        ("Left panel", "every trip plotted against both thresholds at once",
+         "Horizontal axis is the battery-power error as a percentage of that trip's "
+         "own average power; vertical axis is the error in battery charge at the end "
+         "of the trip, in percentage points. Each dot is one held-out trip, labelled "
+         "with its number. The two dashed lines are the thresholds, so the pass "
+         "region is the rectangle below and to the left of both. Plotting two "
+         "criteria on two axes rather than as two separate charts shows at a glance "
+         "which criterion a trip is close to failing, and whether any trip is "
+         "marginal on both at once."),
+        ("Right panel", "the evidence for splitting the criterion in the first place",
+         "Two horizontal bars per trip. The dark bar is the torque part of the gate, "
+         "as a percentage of that trip's own torque variation; the grey bar is the "
+         "single pooled number this criterion replaced, shown for contrast and not "
+         "itself gated. The dashed line at 50 percent is the torque bound. The gap "
+         "between the two bars is the whole argument for the revision: the pooled "
+         "number was dominated by noise from one specific step, not by a bad model."),
+    ])
+    para(doc, "Reading it: every trip clears the torque bound and every trip is left "
+              "of the 10 percent power line. One trip sits above the 2 percentage "
+              "point line at 2.45, missing by 0.45 of a point. Six of seven pass, "
+              "and that miss is reported rather than rounded away.", size=11)
 
     para(doc, "The one failure misses by 0.45 of a percentage point and is "
               "traceable to road-load differences between trips rather than to "
               "the physics. Gate G2 passes with that recorded.")
+
+    doc.add_heading("Is the model right everywhere, or only on average?",
+                    level=2)
+    para(doc, "An average error can hide a model that is systematically wrong. "
+              "Being consistently 10% high while accelerating and 10% low while "
+              "braking averages out to nothing and is a broken model. The next "
+              "two figures exist to expose that, and neither can be replaced by "
+              "a summary statistic.")
+
+    figure(doc, DOCS / "figures" / "g2-parity.png",
+           "Predicted against actual battery power, for the best and the worst "
+           "held-out trip. A perfect model puts every point on the diagonal.")
+    panels(doc, [
+        ("Left panel", "the best-performing held-out trip",
+         "Horizontal axis is the battery power the real car recorded; vertical "
+         "axis is what the simulation predicted, both in kilowatts. Every dot is "
+         "one tenth-of-a-second sample, thousands of them, drawn semi-transparent "
+         "so that density is visible. The diagonal line is the ideal, where "
+         "prediction equals reality. The panel title carries that trip's error "
+         "both in kilowatts and as a percentage."),
+        ("Right panel", "the worst-performing held-out trip, on identical axes",
+         "The same construction at the same scale, so the two are directly "
+         "comparable by eye. Showing the best and the worst rather than a typical "
+         "pair is deliberate: the best alone would flatter the model and the worst "
+         "alone would misrepresent it."),
+    ])
+    para(doc, "Reading it: both clouds sit along the diagonal with no visible bend "
+              "or S-shape, and that matters more than how wide the cloud is. Width "
+              "is measurement noise; a bend would be a real modelling error, such "
+              "as the efficiency map being wrong at high torque. Note that the "
+              "points extend well into negative power on both axes. That is "
+              "regenerative braking, energy flowing back into the battery, and the "
+              "plant reproduces it.", size=11)
+
+    figure(doc, DOCS / "figures" / "g2-timeseries.png",
+           "The same comparison along the timeline of an actual drive, so an "
+           "error can be traced to the moment that produced it.")
+    panels(doc, [
+        ("Top panel", "what the car was doing",
+         "Horizontal axis is time in seconds; vertical axis is speed in kilometres "
+         "per hour. This is the real logged speed profile of the drive, and it is "
+         "the context strip: accelerations, cruises and stops are all visible. The "
+         "two panels below share this exact time axis, so any feature can be read "
+         "straight down the figure."),
+        ("Middle panel", "predicted against actual battery power",
+         "Two traces overlaid on the same time axis: what the real car drew, and "
+         "what the plant predicted. Positive values are discharging to drive the "
+         "car; negative values are energy being recovered under braking. This "
+         "panel is drawn taller than the others because it is the comparison the "
+         "gate is about."),
+        ("Bottom panel", "the error on its own, so that it can be seen at all",
+         "The difference between the two traces above, with a line at zero. "
+         "Separating it out matters: when both traces are swinging across 60 "
+         "kilowatts, a 3 kilowatt error is invisible in the overlay and obvious "
+         "here."),
+    ])
+    para(doc, "Reading it: compare the bottom panel against the top one. The error "
+              "spikes line up with hard accelerations and hard braking, and falls "
+              "close to zero during steady cruising. That is the signature of a "
+              "differentiation artefact rather than a wrong parameter. Working out "
+              "acceleration from a 10 Hz speed signal and multiplying it by 1,270 "
+              "kilograms amplifies sampling noise exactly at the moments when speed "
+              "changes fastest, whereas a wrong parameter would produce an offset "
+              "that persists through the cruise. This panel is the direct evidence "
+              "behind splitting the gate criterion.", size=11)
 
     doc.add_heading("Seven faults the gate caught", level=2)
     para(doc, "The gate did its job. Five of the seven faults it exposed would "
@@ -375,7 +894,7 @@ def plant_section(doc: Document) -> None:
 
 
 def crr_section(doc: Document) -> None:
-    doc.add_heading("5. A finding that changes what the paper may claim", level=1)
+    h1(doc, "A finding that changes what the paper may claim")
 
     para(doc, "Four numbers in the vehicle model were fitted to the data rather "
               "than looked up: rolling resistance, drag coefficient, internal "
@@ -411,7 +930,7 @@ def crr_section(doc: Document) -> None:
 
 
 def transfer_section(doc: Document) -> None:
-    doc.add_heading("6. Does the model transfer to a different car?", level=1)
+    h1(doc, "Does the model transfer to a different car?")
 
     para(doc, "The question was tested three ways on 89 held-out Nissan Leaf "
               "trips, so that a failure would be attributable rather than "
@@ -445,9 +964,37 @@ def transfer_section(doc: Document) -> None:
               "right for compensating reasons is not right.")
 
     figure(doc, DOCS / "figures" / "ved-generalisation.png",
-           "Figure 2. Cross-vehicle transfer. Left: energy error by arm. "
+           "Cross-vehicle transfer. Left: energy error by arm. "
            "Middle: charge error against the two-point criterion. Right: the "
            "temperature slope that no arm removes.")
+    panels(doc, [
+        ("Panel A", "how much energy error each arm makes, as a distribution",
+         "Vertical axis is absolute trip energy error in percent. Each arm gets a box "
+         "summarising the middle half of the 89 trips, with the median as a line, and "
+         "every individual trip scattered over it as a faint dot. Showing the dots as "
+         "well as the box is deliberate: a box alone cannot say whether a wide spread "
+         "is a few bad trips or a genuinely broad distribution."),
+        ("Panel B", "how many trips land inside the charge criterion",
+         "Horizontal axis is end-of-trip charge error in percentage points; vertical "
+         "axis is the percentage of trips at or below that error. Read it as 'this "
+         "fraction of trips were this good or better'. The dashed vertical line at 2 "
+         "percentage points is the same criterion gate G2 used, carried over so both "
+         "datasets are judged by one standard. A curve that climbs early is a good arm."),
+        ("Panel C", "the residual that none of the three arms removes",
+         "Horizontal axis is outside air temperature in four bands from minus 20 to "
+         "plus 40 degrees; vertical axis is the median signed energy error. Signed "
+         "rather than absolute, so over-prediction and under-prediction separate "
+         "instead of cancelling out."),
+    ])
+    para(doc, "Reading it: panel A gives medians of 16.9, 14.4 and 13.4 percent, so "
+              "transferring everything costs 3.5 points over refitting in domain and "
+              "substituting the Leaf's own road load recovers 2.5 of them. Panel B "
+              "puts 55, 64 and 67 of 89 trips inside the criterion. Panel C is the "
+              "real finding: every arm slopes with temperature including the "
+              "re-identified control, and since that control was fitted on this very "
+              "data the slope cannot be a failure of transfer. It is a real thermal "
+              "effect that a fixed-parameter plant cannot track. Without the control "
+              "arm in the picture it would have been misread.", size=11)
 
     para(doc, "The honest limits: three cars in one city, so transfer to a "
               "Leaf is not transfer to any electric vehicle. The coastdown "
@@ -459,7 +1006,7 @@ def transfer_section(doc: Document) -> None:
 
 
 def guards_section(doc: Document, ladder) -> None:
-    doc.add_heading("7. Checks run before any model was trained", level=1)
+    h1(doc, "Checks run before any model was trained")
 
     para(doc, "Three checks had to pass before a single model was fitted, "
               "because each one decides whether later numbers mean anything.")
@@ -490,10 +1037,33 @@ def guards_section(doc: Document, ladder) -> None:
                   f"which is larger than the average size of the signal itself. "
                   f"That is what makes the problem worth solving.")
     figure(doc, DOCS / "figures" / "forecast-guards.png",
-           "Figure 3. Baselines before any model was trained. Left: error "
+           "Baselines before any model was trained. Left: error "
            "grows with how far ahead the model looks. Middle: nothing survives "
            "three seconds intact. Right: a linear regression already clears "
            "the gate.")
+    panels(doc, [
+        ("Left panel", "error grows with how far ahead you look",
+         "Horizontal axis is the forecast horizon from 0.1 to 3.0 seconds; vertical "
+         "axis is prediction error in kilowatts. Three baseline methods are drawn, "
+         "plus a dashed line marking the bar gate G4 sets, which is 10 percent below "
+         "the naive baseline at every step."),
+        ("Middle panel", "how much of reality each method actually explains",
+         "Same horizontal axis; vertical axis is R-squared, the fraction of real "
+         "variation explained. The line at zero is the level of simply guessing the "
+         "average every time. Anything below it is worse than useless."),
+        ("Right panel", "the uncomfortable one",
+         "Just the linear model, plotted as how much better it is than the naive "
+         "baseline, against two reference lines: zero, and the dashed line at 10 "
+         "percent which is exactly what gate G4 demands."),
+    ])
+    para(doc, "Reading it: error climbs from 0.86 kW at a tenth of a second to 13.2 kW "
+              "at three seconds, a factor of fifteen. The naive baseline explains 99.7 "
+              "percent of the variation at a tenth of a second and only 18 percent at "
+              "three, while extrapolating the current trend reaches minus 2.2, which "
+              "means it is considerably worse than assuming nothing changes. The right "
+              "panel is the finding: the linear model ends at 14.5 percent, above the "
+              "10 percent requirement, so a 257-number model passes gate G4 before any "
+              "proposed model exists.", size=11)
 
     para(doc, "A second naive method, extrapolating the recent trend in a "
               "straight line, is worse than doing nothing beyond about half a "
@@ -505,7 +1075,7 @@ def guards_section(doc: Document, ladder) -> None:
 
 
 def ladder_section(doc: Document, ladder, tf) -> None:
-    doc.add_heading("8. The forecasting models", level=1)
+    h1(doc, "The forecasting models")
 
     para(doc, "Six methods were compared on the same windows: 3.2 seconds of "
               "history at ten samples a second, predicting the next 3.0 "
@@ -533,15 +1103,78 @@ def ladder_section(doc: Document, ladder, tf) -> None:
               rows, [2.2, 1.4, 1.2, 1.8])
 
     figure(doc, DOCS / "figures" / "forecast-ladder.png",
-           "Figure 4. The model comparison. Rightmost panel is where the "
+           "The model comparison. Rightmost panel is where the "
            "deployment decision is made: accuracy against time on the chip, "
            "with the 40 millisecond budget marked. Crosses do not fit.")
+    panels(doc, [
+        ("Panel 1", "the whole comparison, against horizon",
+         "Horizontal axis is the forecast horizon; vertical axis is error in "
+         "kilowatts. All five arms on one axis. Mostly useful for seeing that the "
+         "trend-extrapolation method is catastrophic and that the other four bunch "
+         "tightly together, which is itself the story."),
+        ("Panel 2", "the same arms measured against the linear model instead",
+         "The linear model becomes the dashed zero line and everything is replotted "
+         "relative to it. This is the comparison that can actually separate the arms, "
+         "because measuring against the naive baseline flatters all of them equally."),
+        ("Panel 3", "broken down by individual trip",
+         "Horizontal axis is the seven validation trips; vertical axis is error at the "
+         "three-second horizon. Three bars per trip. Seven trips is few enough to show "
+         "every one rather than an average, which is the direct fix for a defect in "
+         "the predecessor work where the figures and the tables disagreed."),
+        ("Panel 4", "the panel the deployment decision is actually made on",
+         "Horizontal axis is estimated time per prediction on one chip core, on a "
+         "logarithmic scale; vertical axis is error. Each arm is one point. A circle "
+         "means it fits the budget and a cross means it does not. The dotted "
+         "horizontal line is the naive baseline, which is free and which every model "
+         "must get under to justify itself. The dashed vertical line is the 40 "
+         "millisecond budget."),
+    ])
+    para(doc, "Reading it: against the linear model, the naive baseline is 17 percent "
+              "worse, XGBoost is 0.2 percent better and the LSTM's 1.7 percent "
+              "advantage appears only in the far half of the horizon. Panel 3 is "
+              "quietly important, because the bars vary more between trips than "
+              "between models: which trip you evaluate on matters more than which "
+              "model you use. Panel 4 is where two arms leave the running, and it is "
+              "the panel most papers omit.", size=11)
 
     figure(doc, DOCS / "figures" / "transformer-a1.png",
-           "Figure 5. Left: error against how far ahead the model predicts. "
+           "Left: error against how far ahead the model predicts. "
            "Second: every model measured against the linear regression. Third: "
            "what the physics term bought. Right: how the residual weight trades "
            "accuracy against physical consistency.")
+    panels(doc, [
+        ("Panel 1", "the Transformer placed against everything before it",
+         "Horizontal axis is the horizon; vertical axis is error. The dotted line is "
+         "the naive baseline and the dashed line the LSTM, both carried over from the "
+         "previous figure so the comparison is direct. The three solid lines are "
+         "Transformer variants."),
+        ("Panel 2", "the ablation itself, with every seed shown",
+         "Two columns, plain and physics-informed; vertical axis is error at three "
+         "seconds. Three dots per column, one per random seed, with a bar at the mean. "
+         "Individual seeds are drawn rather than only an average because with three "
+         "runs the spread is the result, and an average alone would imply more "
+         "precision than three runs support."),
+        ("Panel 3", "what the physics penalty actually bought",
+         "Horizontal axis is the three physical laws; vertical axis is violation size "
+         "relative to the plain model, which is normalised to 1.0 for each law. "
+         "Normalising is necessary because the three quantities are in watts, per "
+         "second and volts, three different units that cannot otherwise share an axis. "
+         "The multiplier is printed above each bar."),
+        ("Panel 4", "the dial that trades one against the other",
+         "Horizontal axis is the strength of the physics penalty on a logarithmic "
+         "scale. Two series on two different vertical axes: accuracy on the left, "
+         "physical consistency on the right. The dashed vertical line marks the "
+         "setting chosen, 0.1."),
+    ])
+    para(doc, "Reading it: panel 2 is a null result, with the two columns overlapping "
+              "almost completely and a difference of about five watts on eleven "
+              "kilowatts. Panel 3 is not a null: the electrical law improves to 0.37 "
+              "times the plain model's violation and terminal voltage to 0.60 times, "
+              "but the third law gets worse at 1.65 times. That is why panel 3 exists. "
+              "Plotting accuracy alone would have reported this ablation as a plain "
+              "failure, when the honest answer is that the physics term buys physical "
+              "consistency rather than accuracy, and that one of the three laws is "
+              "unusable at this horizon.", size=11)
 
     doc.add_heading("What the comparison shows", level=2)
     bullets(doc, [
@@ -580,8 +1213,7 @@ def ladder_section(doc: Document, ladder, tf) -> None:
 
 
 def physics_section(doc: Document, tf) -> None:
-    doc.add_heading("9. The physics-informed model, and what it actually buys",
-                    level=1)
+    h1(doc, "The physics-informed model, and what it actually buys")
 
     para(doc, "A physics-informed model is trained on two things at once: "
               "matching the recorded data, and obeying equations that must "
@@ -671,7 +1303,7 @@ def physics_section(doc: Document, tf) -> None:
 
 
 def cost_section(doc: Document, cost_rows) -> None:
-    doc.add_heading("10. What each model costs on the chip", level=1)
+    h1(doc, "What each model costs on the chip")
 
     para(doc, "Accuracy without cost is half a result. The deliverable is a "
               "forecaster running on an ESP32-S3, so every model is costed at "
@@ -735,7 +1367,7 @@ def cost_section(doc: Document, cost_rows) -> None:
 
 
 def on_chip_section(doc: Document, a2) -> None:
-    doc.add_heading("11. Measuring it on the chip", level=1)
+    h1(doc, "Measuring it on the chip", key="on-chip")
 
     para(doc, "The previous section estimated what each model costs by "
               "dividing its multiply count by a speed measured on the chip in "
@@ -849,7 +1481,7 @@ def on_chip_section(doc: Document, a2) -> None:
 
 
 def hardware_section(doc: Document, g3) -> None:
-    doc.add_heading("12. The real-time loop on hardware", level=1)
+    h1(doc, "The real-time loop on hardware", key="realtime")
 
     para(doc, "Gate G3 asks whether the control loop actually closes on the "
               "hardware: the microcontroller requests the vehicle state, "
@@ -888,10 +1520,33 @@ def hardware_section(doc: Document, g3) -> None:
                   f"{g3['limits']['p99_us'] / max(g3['p99_us'], 1):.0f}.")
 
         figure(doc, DOCS / "figures" / "g3-jitter.png",
-               "Figure 6. Loop timing over ten minutes. Left: how many loops "
+               "Loop timing over ten minutes. Left: how many loops "
                "landed in each timing band, on a log scale. Right: the same "
                "data cumulatively, against the gate limit. Everything lands in "
                "the first two bands.")
+        panels(doc, [
+            ("Left panel", "how many loops landed in each timing band",
+             "Horizontal axis is how far each loop's actual period strayed from a perfect "
+             "10 milliseconds, sorted into thirteen bands from 'within 25 microseconds' up "
+             "to 'more than 5 milliseconds'. For scale, 25 microseconds is a quarter of "
+             "one percent of the period. The vertical axis counts loops on a logarithmic "
+             "scale, because otherwise a band holding one loop and a band holding sixty "
+             "thousand cannot both be visible, and the rare cases are exactly what a "
+             "deadline study is about. Bars inside the limit and outside it are coloured "
+             "differently."),
+            ("Right panel", "the same data as a running total, against the limit",
+             "Same horizontal bands; vertical axis is the cumulative percentage of loops, "
+             "zoomed to the range 90 to 100 percent because everything interesting happens "
+             "in the top tenth. The dashed horizontal line marks 99 percent, which is the "
+             "level the gate is written against, and the dashed vertical line marks the "
+             "1000 microsecond limit."),
+        ])
+        para(doc, "Reading it: everything lands in the first band. The 99th percentile is "
+                  "25 microseconds against a 1000 microsecond limit, so the loop passes its "
+                  "timing criterion by a factor of forty, and on the right panel the curve "
+                  "has already reached the top before it gets anywhere near the limit line. "
+                  "What fails the gate is not the loop. The gate also demands zero lost "
+                  "messages, and a handful of those were the laptop answering late.", size=11)
 
         doc.add_heading("Which side failed", level=2)
         para(doc, "The evidence separates them cleanly, and the answer is not "
@@ -1029,8 +1684,7 @@ def hardware_section(doc: Document, g3) -> None:
 
 
 def control_section(doc: Document, baselines, robust) -> None:
-    doc.add_heading("13. The controller, and how much room it has to improve",
-                    level=1)
+    h1(doc, "The controller, and how much room it has to improve", key="headroom")
 
     para(doc, "Week 7 built the two things a proposed controller has to be "
               "measured against: the conventional controller anyone would "
@@ -1134,10 +1788,33 @@ def control_section(doc: Document, baselines, robust) -> None:
     ], [1.5, 3.6, 1.5])
 
     figure(doc, DOCS / "figures" / "week7-control.png",
-           "Figure 8. Left: consumption by controller on each cycle. Right: "
+           "Left: consumption by controller on each cycle. Right: "
            "how far each controller sits from the theoretical best, on a log "
            "scale. Recovering braking energy is worth tens of percent; "
            "everything after that is worth hundredths.")
+    panels(doc, [
+        ("Left panel", "what each controller consumes on each cycle",
+         "Horizontal axis is the four standard drive cycles, running from stop-start "
+         "city traffic through steady highway to the deliberately aggressive US06; "
+         "vertical axis is energy use in watt-hours per kilometre, where lower is "
+         "better. Five bars per cycle, one per controller. Two of the five are not "
+         "serious controllers: one throws all braking energy away and one recovers "
+         "everything it can, and between them they bracket what recovery is worth."),
+        ("Right panel", "the same runs as distance from the theoretical best",
+         "Same four cycles; vertical axis is the gap to the offline optimum in "
+         "percent, on a logarithmic scale. The scale has to be logarithmic because the "
+         "numbers span from 23 percent down to a hundredth of a percent, and on a "
+         "normal axis four of the five arms would be a single flat line on zero. The "
+         "always-regenerate arm is drawn on the floor of the axis because its true gap "
+         "is exactly zero, which a logarithmic scale cannot show."),
+    ])
+    para(doc, "Reading it: the left panel's story is the tall bar. Recovering braking "
+              "energy is worth between 5 percent on the highway and 23 percent in city "
+              "traffic, and that is the entire energy story of this car. The right "
+              "panel is the finding that reshaped the project: once regeneration is on "
+              "at all, everything after it is worth hundredths of a percent, and the "
+              "hand-written rules sit between 0.01 and 0.16 percent from the "
+              "theoretical optimum.", size=11)
 
     doc.add_heading("The speed controller holds under disturbance", level=2)
     para(doc, "The energy comparison is only honest if every controller "
@@ -1175,13 +1852,32 @@ def control_section(doc: Document, baselines, robust) -> None:
                   "reversals. That is a sensor-quality argument with a price "
                   "attached, and it belongs in the paper.")
         figure(doc, DOCS / "figures" / "week7-pid-robustness.png",
-               "Figure 9. Speed-tracking error under model error and "
+               "Speed-tracking error under model error and "
                "disturbance, log scale. The clean run at the bottom is the "
                "least informative bar in the chart.")
+        panels(doc, [
+            ("Single panel", "tracking error under eight different disturbances",
+             "Horizontal axis is speed-tracking error in metres per second, on a "
+             "logarithmic scale because the cases span three orders of magnitude; the "
+             "vertical axis lists the disturbance applied. Two bars per condition, one for "
+             "the city cycle and one for the aggressive one. Reading down the list: the "
+             "clean run; the car 10 percent heavier than the model believes; 30 percent "
+             "more aerodynamic drag; 50 percent more rolling resistance; a road gradient "
+             "the model cannot see; noise on the speed sensor; a 100 millisecond delay on "
+             "the link; and finally the feedforward term removed altogether."),
+        ])
+        para(doc, "Reading it: the clean run is the least informative bar in the chart, and "
+                  "it is drawn precisely so that it cannot be quoted alone. On a clean run "
+                  "the feedforward is computed from the same vehicle the simulation uses, "
+                  "so it is exact by construction and the resulting sub-millimetre error "
+                  "says nothing about the controller. The worst case across every "
+                  "disturbance is 0.30 metres per second of average error. One bar is a "
+                  "result rather than a check: realistic sensor noise costs 5.6 percent of "
+                  "consumption, because the controller chases the noise.", size=11)
 
 
 def rl_section(doc: Document, rl) -> None:
-    doc.add_heading("14. The reinforcement-learning ramp-up", level=1)
+    h1(doc, "The reinforcement-learning ramp-up")
 
     para(doc, "Reinforcement learning is the identified skill gap on this "
               "project and it is genuinely temperamental, so the schedule "
@@ -1229,8 +1925,7 @@ def rl_section(doc: Document, rl) -> None:
 
 
 def fallback_section(doc: Document, fb, wdt) -> None:
-    doc.add_heading("15. What the controller does when something fails",
-                    level=1)
+    h1(doc, "What the controller does when something fails")
 
     para(doc, "The design document requires that when the slow part of the "
               "system misses its deadline, the fast part falls back to simple "
@@ -1305,7 +2000,7 @@ def fallback_section(doc: Document, fb, wdt) -> None:
 
 
 def sac_section(doc: Document, sac, onchip) -> None:
-    doc.add_heading("16. The learned controller, and what it found", level=1)
+    h1(doc, "The learned controller, and what it found", key="learned")
 
     para(doc, "Week 8 trained the reinforcement-learning controller the "
               "project is named after: five independent training runs, "
@@ -1390,10 +2085,32 @@ def sac_section(doc: Document, sac, onchip) -> None:
                   "reason needs finding before it is reported.")
 
     figure(doc, DOCS / "figures" / "week8-sac.png",
-           "Figure 10. Left: five training runs per arm, each evaluated on "
+           "Left: five training runs per arm, each evaluated on "
            "complete cycles, against the conventional controller and the "
            "offline optimum. Right: where the ten runs finished, with 95% "
            "intervals.")
+    panels(doc, [
+        ("Left panel", "all ten training runs, evaluated as they learn",
+         "Horizontal axis is training steps in thousands; vertical axis is energy on "
+         "the validation cycle in comparable watt-hours per kilometre, where lower is "
+         "better. Ten faint lines, five per arm. Every point is a complete run of the "
+         "validation cycle using the policy as it stood at that moment, not the "
+         "training reward, because training reward is a different quantity that "
+         "improves for reasons which do not always mean better driving. The two "
+         "horizontal reference lines are the hand-written controller and the "
+         "theoretical optimum, and they sit on top of each other because they are the "
+         "same number."),
+        ("Right panel", "where all ten runs finished",
+         "Two columns, forecast in the controller's state and forecast removed. Five "
+         "dots per column, one per training run, with a thick bar for the 95 percent "
+         "confidence interval and a tick at the mean. The same two reference lines "
+         "carry across, and the ablation result is stated numerically underneath."),
+    ])
+    para(doc, "Reading it: lower is better, and not one of the ten runs finishes below "
+              "the two reference lines. Both confidence intervals sit entirely above "
+              "the hand-written baseline, so the learned controller is not merely no "
+              "better, it is reliably slightly worse. The two columns overlap almost "
+              "completely, which is the ablation returning null.", size=11)
 
     doc.add_heading("What this means for the project", level=2)
     para(doc, "Two independent methods now agree. The offline optimum says "
@@ -1404,12 +2121,12 @@ def sac_section(doc: Document, sac, onchip) -> None:
     para(doc, "That is a finding, and it is the one the paper should lead "
               "with in this section. The decision about what to do next -- "
               "report it, widen the controller's authority, or make the "
-              "problem harder honestly -- is section 13's open question and "
+              "problem harder honestly -- is section " + ref("headroom") + "'s open question and "
               "is still the supervisor's to take.")
 
 
 def actor_onchip_section(doc: Document, sac, onchip) -> None:
-    doc.add_heading("17. Putting the learned controller on the chip", level=1)
+    h1(doc, "Putting the learned controller on the chip")
 
     para(doc, "A policy that has only ever run in Python is a claim. The "
               "trained controller was exported, compiled into the firmware, "
@@ -1447,7 +2164,7 @@ def actor_onchip_section(doc: Document, sac, onchip) -> None:
 
     doc.add_heading("The compute estimate was wrong in the other direction",
                     level=2)
-    para(doc, f"Section 11 reported that dividing a multiply count by a "
+    para(doc, f"Section " + ref("on-chip") + " reported that dividing a multiply count by a "
               f"measured multiply rate underestimated the forecaster's real "
               f"time on the chip by 64%. For this controller the same "
               f"arithmetic predicts "
@@ -1469,12 +2186,12 @@ def actor_onchip_section(doc: Document, sac, onchip) -> None:
               "that chain found a real fault: the test that compares the C "
               "controller against Python was, for a while, compiling the "
               "wrong weights and comparing them against themselves. It passed "
-              "for exactly as long as no policy had been deployed. Section 18 "
-              "records it.")
+              "for exactly as long as no policy had been deployed. Section "
+              + ref("negatives") + " records it.")
 
 
 def negatives_section(doc: Document) -> None:
-    doc.add_heading("18. Results that went against expectation", level=1)
+    h1(doc, "Results that went against expectation", key="negatives")
 
     para(doc, "Each one is reported because each one changes what the paper "
               "may claim, and a supervisor reading the work will find them "
@@ -1485,7 +2202,7 @@ def negatives_section(doc: Document) -> None:
               "worse than a controller that is two thresholds and a taper, "
               "once the cabin heating they switched off is charged back. The "
               "offline optimum predicted it and the training measured it, and "
-              "the two do not depend on each other. Section 16.")
+              "the two do not depend on each other. Section " + ref("learned") + ".")
 
     doc.add_heading("The forecast makes no difference to the controller",
                     level=2)
@@ -1515,7 +2232,7 @@ def negatives_section(doc: Document) -> None:
     para(doc, "The theoretically optimal strategy is a constant instruction, "
               "and two thresholds get within a sixth of a percent of it. This "
               "is the largest of these findings and it is the subject of "
-              "section 13, including the three routes open and the fact that "
+              "section " + ref("headroom") + ", including the three routes open and the fact that "
               "choosing between them is the supervisor's decision rather than "
               "one taken here.")
 
@@ -1557,7 +2274,7 @@ def negatives_section(doc: Document) -> None:
 
 
 def remaining_section(doc: Document) -> None:
-    doc.add_heading("19. What is left to do", level=1)
+    h1(doc, "What is left to do")
 
     para(doc, "Phase 1 and Phase 2 are complete. The remaining work is the "
               "controller, the on-chip deployment, and the measurement "
@@ -1571,7 +2288,7 @@ def remaining_section(doc: Document) -> None:
         ["7", "DONE: the offline optimum, the conventional controller, the "
               "speed controller and its robustness tests, and the "
               "reinforcement-learning ramp-up. The optimum came back smaller "
-              "than expected; see section 13",
+              "than expected; see section " + ref("headroom"),
          "DONE: watchdog and fallback path built, and all four failure modes "
          "triggered on the board. Gate G3 re-measured on the changed firmware",
          "-"],
@@ -1605,7 +2322,7 @@ def remaining_section(doc: Document) -> None:
     doc.add_heading("Decisions waiting on a gate or on the supervisor", level=2)
     bullets(doc, [
         "What to do about the missing headroom in the energy-management "
-        "problem, described in section 13. This is the one that should be "
+        "problem, described in section " + ref("headroom") + ". This is the one that should be "
         "settled first, because weeks 8 and 9 are built on top of it.",
         "Whether gate G3's zero-lost-frame rule should distinguish a "
         "controller that missed its own deadline, of which there are none, "
@@ -1624,7 +2341,7 @@ def remaining_section(doc: Document) -> None:
 
 
 def reproduce_section(doc: Document) -> None:
-    doc.add_heading("20. Reproducing everything in this report", level=1)
+    h1(doc, "Reproducing everything in this report")
 
     para(doc, "Every result comes from a command that can be re-run. The "
               "report itself is generated from the result files rather than "
@@ -1700,9 +2417,12 @@ def main() -> int:
         section.left_margin = Inches(0.9)
         section.right_margin = Inches(0.9)
 
+    reset_counters()
     cover(doc, args.date)
     summary(doc, ladder, tf, cost_rows, g3, a2, sac, onchip)
     background(doc)
+    glossary_section(doc)
+    charts_section(doc)
     gates_explained(doc)
     plant_section(doc)
     crr_section(doc)
@@ -1719,8 +2439,11 @@ def main() -> int:
     sac_section(doc, sac, onchip)
     actor_onchip_section(doc, sac, onchip)
     negatives_section(doc)
+    changes_section(doc)
     remaining_section(doc)
     reproduce_section(doc)
+
+    resolve_refs(doc)
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
