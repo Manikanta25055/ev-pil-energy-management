@@ -26,6 +26,7 @@ from evpil.link import SerialLink, reset_and_reexec
 from evpil.protocol import (
     JITTER_BIN_EDGES_US,
     N_JITTER_BINS,
+    RESET_REASONS,
     FrameType,
     jitter_percentile,
     pack_state,
@@ -55,6 +56,14 @@ def plant_state(step: int) -> list[float]:
         12.0,                                # t_ambient_c
         0.01 * math.sin(t * 0.05),           # grade_rad
         600.0,                               # p_aux_w
+        # The reference the on-device PID follows. Week 7 gives the controller
+        # a real target: the same sine, offset so the tracking error is
+        # non-zero and the loop is doing arithmetic rather than idling. The
+        # numbers are still closed-form for the reason above -- a per-step cost
+        # that varies would show up in the timing as jitter the loop did not
+        # cause.
+        15.5 + 5.0 * math.sin(t * 0.2),      # v_ref_mps
+        1.0 * math.cos(t * 0.2),             # a_ref_mps2
     ]
 
 
@@ -146,8 +155,10 @@ def main() -> int:
     hist = [b - a for a, b in zip(h0, h1)]
     counters = {k: s1[k] - s0[k] for k in
                 ("loop_count", "rx_timeouts", "rx_bad", "infer_deadline_misses",
-                 "stale_steps")}
+                 "stale_steps", "ctrl_late", "ctrl_fallback_steps",
+                 "limp_steps", "ems_fallback_steps")}
     counters["stale_worst"] = s1["stale_worst"]      # a running maximum
+    counters["boot_reason"] = s1["boot_reason"]
     # Running maxima on the MCU, so a difference is meaningless and these are
     # taken as-is. That means they include the startup transient before the
     # settle point: the first loop after boot has no predecessor and the link
@@ -180,6 +191,14 @@ def main() -> int:
           f"histogram above)")
     print(f"  ctrl WCET    {extremes['ctrl_wcet_us']:>8} us")
     print(f"  round trip   {extremes['rtt_max_us']:>8} us worst")
+    print(f"\n  MCU loops late vs own deadline  {counters['ctrl_late']}")
+    print(f"  MCU rule-manager fallbacks      "
+          f"{counters['ctrl_fallback_steps']}")
+    print(f"  MCU limp steps                  {counters['limp_steps']}")
+    print(f"  MCU inference-late outer steps  "
+          f"{counters['ems_fallback_steps']}")
+    print(f"  MCU boot reason                 "
+          f"{RESET_REASONS.get(counters['boot_reason'], counters['boot_reason'])}")
     print(f"\n  MCU rx timeouts     {counters['rx_timeouts']}")
     print(f"  MCU stale steps     {counters['stale_steps']}"
           f"   (longest run since boot {counters['stale_worst']}, which"

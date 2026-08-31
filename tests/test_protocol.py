@@ -26,65 +26,67 @@ def test_pack_frame_layout():
 
 
 def test_roundtrip_state():
-    values = [12.5, 0.75, 0.62, -18.0, 352.25, 21.0, 0.035, 480.0]
+    values = [12.5, 0.75, 0.62, -18.0, 352.25, 21.0, 0.035, 480.0, 13.0, 0.5]
     frame = pack_state(seq=99, t_us=1_000_000, values=values)
-    assert len(frame) == 46
+    assert len(frame) == 54
 
     ftype, seq, t_us, payload = unpack_frame(frame)
     assert ftype is FrameType.STATE
     assert seq == 99
     assert t_us == 1_000_000
 
-    got = list(struct.unpack("<8f", payload))
+    got = list(struct.unpack("<10f", payload))
     assert got == pytest.approx(values, rel=1e-6)
 
 
 def test_roundtrip_actuation():
-    values = [145.0, 0.4, 30000.0]
+    values = [145.0, 0.4, 30000.0, 0.15]
     frame = pack_actuation(seq=1, t_us=5, values=values)
-    assert len(frame) == 26
+    assert len(frame) == 30
 
     ftype, seq, t_us, payload = unpack_frame(frame)
     assert ftype is FrameType.ACTUATION
-    assert list(struct.unpack("<3f", payload)) == pytest.approx(values, rel=1e-6)
+    assert list(struct.unpack("<4f", payload)) == pytest.approx(values, rel=1e-6)
 
 
 def test_corrupt_payload_rejected():
-    frame = bytearray(pack_state(1, 1, [0.0] * 8))
+    frame = bytearray(pack_state(1, 1, [0.0] * 10))
     frame[20] ^= 0xFF
     with pytest.raises(BadFrame, match="crc"):
         unpack_frame(bytes(frame))
 
 
 def test_bad_magic_rejected():
-    frame = bytearray(pack_state(1, 1, [0.0] * 8))
+    frame = bytearray(pack_state(1, 1, [0.0] * 10))
     frame[0] ^= 0xFF
     with pytest.raises(BadFrame, match="magic"):
         unpack_frame(bytes(frame))
 
 
 def test_truncated_frame_rejected():
-    frame = pack_state(1, 1, [0.0] * 8)
+    frame = pack_state(1, 1, [0.0] * 10)
     with pytest.raises(BadFrame, match="short"):
         unpack_frame(frame[:10])
 
 
 def test_wrong_state_payload_length():
-    with pytest.raises(ValueError, match="8 values"):
-        pack_state(1, 1, [0.0] * 7)
+    with pytest.raises(ValueError, match="10 values"):
+        pack_state(1, 1, [0.0] * 9)
 
 
 def test_shared_vector_for_c_parity():
     """This exact frame is asserted byte-for-byte in firmware/host_test/test_protocol.c."""
-    frame = pack_actuation(seq=0x01020304, t_us=0x0A0B0C0D, values=[1.0, 0.5, 0.25])
+    frame = pack_actuation(seq=0x01020304, t_us=0x0A0B0C0D,
+                           values=[1.0, 0.5, 0.25, 0.125])
     assert frame.hex() == (
         "1ce7"      # magic 0xE71C, little-endian
         "02"        # type ACTUATION
-        "0c"        # payload length 12
+        "10"        # payload length 16
         "04030201"  # seq  0x01020304
         "0d0c0b0a"  # t_us 0x0A0B0C0D
         "0000803f"  # 1.0f
         "0000003f"  # 0.5f
         "0000803e"  # 0.25f
-        "e9ba"      # crc 0xBAE9
+        "0000003e"  # 0.125f
+        "9060"      # crc 0x6090
     )

@@ -1,0 +1,35 @@
+{
+  "versions": {
+    "stable_baselines3": "2.9.0",
+    "gymnasium": "1.3.0"
+  },
+  "seed": 20260831,
+  "pendulum": {
+    "steps": 10000,
+    "return_mean": -191.0116046623118,
+    "target": -300.0,
+    "pass": true,
+    "wall_s": 40.60049510002136,
+    "steps_per_s": 246.30241516426085
+  },
+  "energy_env": {
+    "steps": 15000,
+    "episode_steps": 300,
+    "wall_s": 65.15659999847412,
+    "steps_per_s": 230.2145906991967,
+    "env_only_steps_per_s": 2648.6557656974683,
+    "sac": {
+      "return_mean": -47.81258562135788,
+      "return_std": 8.953648017042429,
+      "energy_wh_mean": 45.54277457332957,
+      "tracking_rmse_mps": 0.000308966412878005
+    },
+    "rule": {
+      "return_mean": -46.510143551830836,
+      "return_std": 9.45704587919198,
+      "energy_wh_mean": 46.50964101291919,
+      "tracking_rmse_mps": 0.000308966412878005
+    },
+    "projected_5_seed_hours": 1.80990555551317
+  }
+}

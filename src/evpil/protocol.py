@@ -78,19 +78,59 @@ def unpack_frame(buf: bytes) -> tuple[FrameType, int, int, bytes]:
     return ftype, seq, t_us, buf[HEADER_SIZE : HEADER_SIZE + length]
 
 
+# Extended in week 7. The reference speed and its derivative are sent by the
+# host because the plant owns the road and the driver; the controller owns
+# only how it follows them. Mirrored by STATE_PAYLOAD_BYTES in
+# firmware/main/tasks.h, and the firmware rejects any other length outright
+# rather than reading a short frame as a long one.
+STATE_FIELDS: tuple[str, ...] = (
+    "v_mps", "a_mps2", "soc_frac", "i_batt_a", "v_batt_v", "t_ambient_c",
+    "grade_rad", "p_aux_w", "v_ref_mps", "a_ref_mps2",
+)
+# Also week 7: the auxiliary derate joins the actuation frame, so that the
+# third dimension of the energy-management action reaches the plant instead of
+# being applied only in the host-side simulation.
+ACTUATION_FIELDS: tuple[str, ...] = (
+    "torque_nm", "regen_blend", "p_limit_w", "aux_derate",
+)
+
+STATE_PAYLOAD_SIZE = 4 * len(STATE_FIELDS)
+ACTUATION_PAYLOAD_SIZE = 4 * len(ACTUATION_FIELDS)
+
+
 def pack_state(seq: int, t_us: int, values: Sequence[float]) -> bytes:
-    """values: [v_mps, a_mps2, soc_frac, i_batt_a, v_batt_v, t_ambient_c,
-    grade_rad, p_aux_w]"""
-    if len(values) != 8:
-        raise ValueError(f"STATE needs 8 values, got {len(values)}")
-    return pack_frame(FrameType.STATE, seq, t_us, struct.pack("<8f", *values))
+    """values in STATE_FIELDS order."""
+    if len(values) != len(STATE_FIELDS):
+        raise ValueError(
+            f"STATE needs {len(STATE_FIELDS)} values, got {len(values)}")
+    return pack_frame(FrameType.STATE, seq, t_us,
+                      struct.pack(f"<{len(STATE_FIELDS)}f", *values))
 
 
 def pack_actuation(seq: int, t_us: int, values: Sequence[float]) -> bytes:
-    """values: [torque_nm, regen_blend, p_limit_w]"""
-    if len(values) != 3:
-        raise ValueError(f"ACTUATION needs 3 values, got {len(values)}")
-    return pack_frame(FrameType.ACTUATION, seq, t_us, struct.pack("<3f", *values))
+    """values in ACTUATION_FIELDS order."""
+    if len(values) != len(ACTUATION_FIELDS):
+        raise ValueError(
+            f"ACTUATION needs {len(ACTUATION_FIELDS)} values, got {len(values)}")
+    return pack_frame(FrameType.ACTUATION, seq, t_us,
+                      struct.pack(f"<{len(ACTUATION_FIELDS)}f", *values))
+
+
+def unpack_state(payload: bytes) -> dict:
+    if len(payload) != STATE_PAYLOAD_SIZE:
+        raise BadFrame(
+            f"STATE payload is {len(payload)} bytes, expected {STATE_PAYLOAD_SIZE}")
+    return dict(zip(STATE_FIELDS,
+                    struct.unpack(f"<{len(STATE_FIELDS)}f", payload)))
+
+
+def unpack_actuation(payload: bytes) -> dict:
+    if len(payload) != ACTUATION_PAYLOAD_SIZE:
+        raise BadFrame(
+            f"ACTUATION payload is {len(payload)} bytes, expected "
+            f"{ACTUATION_PAYLOAD_SIZE}")
+    return dict(zip(ACTUATION_FIELDS,
+                    struct.unpack(f"<{len(ACTUATION_FIELDS)}f", payload)))
 
 
 def pack_step_req(seq: int, t_us: int) -> bytes:
@@ -107,8 +147,6 @@ JITTER_BIN_EDGES_US: tuple[int, ...] = (
 )
 N_JITTER_BINS = len(JITTER_BIN_EDGES_US) + 1
 
-_DIAG = struct.Struct(f"<11I{N_JITTER_BINS}H")
-
 DIAG_FIELDS: tuple[str, ...] = (
     "loop_count", "rx_timeouts", "rx_bad", "infer_deadline_misses",
     "ctrl_wcet_us", "infer_wcet_us", "rtt_max_us",
@@ -117,7 +155,27 @@ DIAG_FIELDS: tuple[str, ...] = (
     # and the longest unbroken run of them. This is the degradation claim C5
     # is about, so it is counted rather than assumed to be small.
     "stale_steps", "stale_worst",
+    # Week 7. These five separate three failures the earlier counters pooled.
+    # `ctrl_late` is the loop missing its own deadline; `stale_steps` is the
+    # host answering late. The open G3 question is whether the gate's
+    # dropped-frame criterion should distinguish them, and it cannot be
+    # answered without measuring them apart.
+    "ctrl_late", "ctrl_fallback_steps", "limp_steps", "ems_fallback_steps",
+    # esp_reset_reason() at startup. A watchdog reset can only be reported
+    # after the reset, by the firmware that replaced the one that hung.
+    "boot_reason",
 )
+
+_DIAG = struct.Struct(f"<{len(DIAG_FIELDS)}I{N_JITTER_BINS}H")
+
+# esp_reset_reason() values that matter here (esp_system.h). Anything else is
+# reported by number rather than guessed at.
+RESET_REASONS: dict[int, str] = {
+    0: "unknown", 1: "power-on", 2: "external pin", 3: "software",
+    4: "panic", 5: "interrupt watchdog", 6: "task watchdog", 7: "other watchdog",
+    8: "deep sleep", 9: "brownout", 10: "SDIO", 11: "USB peripheral",
+    12: "JTAG", 13: "efuse error", 14: "power glitch", 15: "CPU lockup",
+}
 
 DIAG_PAYLOAD_SIZE = _DIAG.size
 

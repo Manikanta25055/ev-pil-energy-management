@@ -1,0 +1,55 @@
+/* Dumps the C controller's output for a fixed input sequence, so that
+   tests/control/test_c_parity.py can compare it against the Python
+   implementation the simulation results came from.
+
+   It prints rather than asserts: the reference values live in Python, and
+   duplicating them here would mean maintaining the same numbers twice and
+   discovering a divergence only when someone updated both. */
+#include <stdio.h>
+#include "control.h"
+
+int main(void)
+{
+    printf("# feedforward: v_ref a_ref grade torque\n");
+    const float vs[] = {0.0f, 5.0f, 15.0f, 30.0f, 40.0f};
+    const float as[] = {-2.0f, -0.5f, 0.0f, 0.5f, 2.0f};
+    const float gs[] = {-0.05f, 0.0f, 0.03f};
+    for (unsigned i = 0; i < sizeof vs / sizeof *vs; i++)
+        for (unsigned j = 0; j < sizeof as / sizeof *as; j++)
+            for (unsigned k = 0; k < sizeof gs / sizeof *gs; k++)
+                printf("ff %.6f %.6f %.6f %.6f\n", vs[i], as[j], gs[k],
+                       control_feedforward_nm(&k_vehicle, vs[i], as[j], gs[k]));
+
+    printf("# torque limit: omega limit\n");
+    const float ws[] = {0.0f, 100.0f, 500.0f, 900.0f, 1191.0f, 1300.0f};
+    for (unsigned i = 0; i < sizeof ws / sizeof *ws; i++)
+        printf("lim %.6f %.6f\n", ws[i],
+               control_torque_limit_nm(&k_vehicle, ws[i]));
+
+    /* A closed sequence: constant reference, a measurement that lags, then a
+       saturating demand. It exercises the integrator, the derivative filter
+       and the anti-windup branch in one run. */
+    printf("# pid: step v_ref v_meas torque integral\n");
+    pid_state_t st = {0};
+    for (int n = 0; n < 200; n++) {
+        float v_ref = (n < 100) ? 12.0f : 30.0f;
+        float v_meas = (n < 100) ? 11.5f : 5.0f;
+        float limit = (n < 150) ? 250.0f : 8.0f;
+        float tq = control_pid_step(&k_pid_gains, &st, v_ref, v_meas,
+                                    3.5f, limit, 0.01f, NULL);
+        printf("pid %d %.6f %.6f %.6f %.6f\n", n, v_ref, v_meas, tq,
+               st.integral_nm);
+    }
+
+    printf("# rule: soc v blend p_limit derate\n");
+    const float socs[] = {0.05f, 0.07f, 0.12f, 0.20f, 0.50f, 0.85f, 0.90f,
+                          0.94f, 0.99f};
+    const float vms[] = {0.0f, 1.0f, 2.0f, 20.0f};
+    for (unsigned i = 0; i < sizeof socs / sizeof *socs; i++)
+        for (unsigned j = 0; j < sizeof vms / sizeof *vms; j++) {
+            ems_action_t a = control_rule_action(socs[i], vms[j]);
+            printf("rule %.6f %.6f %.6f %.6f %.6f\n", socs[i], vms[j],
+                   a.regen_blend, a.p_limit_w, a.aux_derate);
+        }
+    return 0;
+}

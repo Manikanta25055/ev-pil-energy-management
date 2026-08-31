@@ -286,6 +286,22 @@ def build_params(c_rr: float, cd: float, r0: float, aux,
     )
 
 
+def params_from_json(path: str | Path = "data/i3_params.json") -> VehicleParams:
+    """Rebuild the identified vehicle from the file identification wrote.
+
+    Every consumer downstream of gate G2 needs the same object, and each one
+    reassembling it from the JSON by hand is how two scripts end up running
+    slightly different vehicles.
+    """
+    d = json.loads(Path(path).read_text())
+    ident = d["identified"]
+    return build_params(
+        ident["c_rr"], ident["cd"], ident["r0_ohm"],
+        AuxParams(**d["aux"]), ident["rot_mass_factor"],
+        np.array(d["motor_efficiency_grid"]),
+    )
+
+
 def simulate_trip(params: VehicleParams, trip: pd.DataFrame,
                   use_logged_aux: bool = True) -> np.ndarray:
     """Replay a trip's logged speed profile and return simulated battery power.

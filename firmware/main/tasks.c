@@ -1,4 +1,5 @@
 #include "tasks.h"
+#include "control.h"
 #include "link.h"
 #include "protocol.h"
 #include "timing.h"
@@ -7,6 +8,7 @@
 #include <string.h>
 #include "esp_timer.h"
 #include "esp_system.h"
+#include "esp_task_wdt.h"
 #include "esp_heap_caps.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -36,9 +38,31 @@ static void jitter_record(uint32_t dev_us)
         s_diag.jitter_hist[JITTER_N_BINS - 1]++;
 }
 
+#if FAULT_INJECT
+/* True while `now_us` lies in the [at_s, at_s + FAULT_WINDOW_S) window. */
+static bool fault_window(uint32_t now_us, uint32_t at_s)
+{
+    uint32_t t_s = now_us / 1000000u;
+    return t_s >= at_s && t_s < at_s + FAULT_WINDOW_S;
+}
+#endif
+
 static float s_torque_cmd  = 0.0f;
-static float s_regen_blend = 0.5f;
-static float s_p_limit_w   = 50000.0f;
+
+/* The outer loop's published setpoint, with the time it was published. The
+   timestamp is the whole mechanism behind the fallback: the control task
+   never asks whether the energy manager is alive, it asks how old its last
+   answer is, which is a question with an answer even when the answer is
+   "the task is gone". */
+static volatile float    s_regen_blend = 0.5f;
+static volatile float    s_p_limit_w   = 50000.0f;
+static volatile float    s_aux_derate  = 0.0f;
+static volatile uint32_t s_ems_t_us    = 0;
+
+/* Set by infer when it overruns, cleared by ems once it has acted on it. */
+static volatile bool s_infer_late = false;
+
+static pid_state_t s_pid;
 
 /* ---- core 0: the hard real-time loop ------------------------------------ */
 
@@ -68,6 +92,11 @@ static void ctrl_task(void *arg)
             if (s_diag.period_min_us == 0 || period < s_diag.period_min_us)
                 s_diag.period_min_us = period;
             if (period > s_diag.period_max_us) s_diag.period_max_us = period;
+            /* A loop late against its own deadline, which is a different
+               failure from the host answering late and is counted apart from
+               it. The open G3 question is exactly whether the gate should
+               distinguish the two. */
+            if (dev > CTRL_LATE_US) s_diag.ctrl_late++;
         }
         t_prev = t_req;
 
@@ -101,12 +130,12 @@ static void ctrl_task(void *arg)
         if (n > 0) {
             evpil_frame_t f;
             if (evpil_unpack(rx, (size_t) n, &f) == 0 && f.type == EVPIL_STATE
-                && f.len == 32) {
+                && f.len == STATE_PAYLOAD_BYTES) {
                 uint32_t t_rx = (uint32_t) esp_timer_get_time();
                 uint32_t rtt  = t_rx - t_req;
                 if (rtt > s_diag.rtt_max_us) s_diag.rtt_max_us = rtt;
 
-                float v[8];
+                float v[10];
                 memcpy(v, f.payload, sizeof v);
 
                 xSemaphoreTake(s_state_mux, portMAX_DELAY);
@@ -114,6 +143,7 @@ static void ctrl_task(void *arg)
                 s_state.soc_frac    = v[2];  s_state.i_batt_a    = v[3];
                 s_state.v_batt_v    = v[4];  s_state.t_ambient_c = v[5];
                 s_state.grade_rad   = v[6];  s_state.p_aux_w     = v[7];
+                s_state.v_ref_mps   = v[8];  s_state.a_ref_mps2  = v[9];
                 s_state.seq         = f.seq;
                 s_state.host_t_us   = f.t_us;
                 s_state.rx_t_us     = t_rx;
@@ -126,30 +156,91 @@ static void ctrl_task(void *arg)
         else {
             s_diag.rx_timeouts++;
         }
+        /* Synchronous mode has no separate staleness notion -- a reply either
+           arrived inside the slot or did not -- but the limp path is defined
+           against the same run length in both, so the run is kept here too.
+           Without this the ablation would compare a mode that can limp
+           against one that cannot. */
+        if (n > 0) stale_run = 0; else stale_run++;
 #endif
 
-        /* Control body. Phase 3 replaces this with PID plus the SAC setpoint. */
+        /* Control body: PID on speed with a physics feedforward, plus the
+           fallback path. */
         TIMING_MARK_HIGH(TIMING_CH_CTRL);
         uint32_t t0 = (uint32_t) esp_timer_get_time();
 
         xSemaphoreTake(s_state_mux, portMAX_DELAY);
         float v_meas = s_state.v_mps;
+        float v_ref  = s_state.v_ref_mps;
+        float a_ref  = s_state.a_ref_mps2;
+        float grade  = s_state.grade_rad;
+        float soc    = s_state.soc_frac;
         xSemaphoreGive(s_state_mux);
-        s_torque_cmd = 10.0f * (15.0f - v_meas);   /* placeholder P controller */
+
+        float blend  = s_regen_blend;
+        float p_lim  = s_p_limit_w;
+        float derate = s_aux_derate;
+
+#if FALLBACK_ENABLED
+        /* The outer loop has gone quiet: run the rule manager here instead.
+           It costs a handful of compares, which is why it can live inside the
+           10 ms task at all. */
+        if ((uint32_t) (t0 - s_ems_t_us) > EMS_STALE_LIMIT_US) {
+            ems_action_t a = control_rule_action(soc, v_meas);
+            blend = a.regen_blend;
+            p_lim = a.p_limit_w;
+            derate = a.aux_derate;
+            s_diag.ctrl_fallback_steps++;
+        }
+#endif
+
+        float omega = (v_meas / k_vehicle.wheel_radius_m) * k_vehicle.gear_ratio;
+        float t_lim = control_torque_limit_nm(&k_vehicle, omega);
+        if (t_lim <= 0.0f) t_lim = 1e-6f;
+
+#if FALLBACK_ENABLED
+        if (stale_run > STALE_LIMIT_STEPS) {
+            /* The speed this loop holds is too old to act on. Ramp the torque
+               out rather than dropping it, and freeze the integrator: an
+               integrator fed a stale error charges up against a vehicle that
+               has already moved on. */
+            if (s_torque_cmd > LIMP_RAMP_NM)       s_torque_cmd -= LIMP_RAMP_NM;
+            else if (s_torque_cmd < -LIMP_RAMP_NM) s_torque_cmd += LIMP_RAMP_NM;
+            else                                   s_torque_cmd = 0.0f;
+            s_diag.limp_steps++;
+        } else
+#endif
+        {
+            float ff = control_feedforward_nm(&k_vehicle, v_ref, a_ref, grade);
+            s_torque_cmd = control_pid_step(&k_pid_gains, &s_pid, v_ref,
+                                            v_meas, ff, t_lim,
+                                            CTRL_PERIOD_MS * 1e-3f, NULL);
+        }
 
         uint32_t dur = (uint32_t) esp_timer_get_time() - t0;
         if (dur > s_diag.ctrl_wcet_us) s_diag.ctrl_wcet_us = dur;
         TIMING_MARK_LOW(TIMING_CH_CTRL);
 
         /* Emit the actuation frame. */
-        float act[3] = {s_torque_cmd, s_regen_blend, s_p_limit_w};
+        float act[4] = {s_torque_cmd, blend, p_lim, derate};
         m = evpil_pack(tx, sizeof tx, EVPIL_ACTUATION, seq,
                        (uint32_t) esp_timer_get_time(),
                        (const uint8_t *) act, sizeof act);
         if (m > 0) link_write(tx, (size_t) m);
 
+        esp_task_wdt_reset();
+
         seq++;
         s_diag.loop_count++;
+
+#if FAULT_INJECT == 2
+        /* Stop feeding the watchdog and stop yielding. Nothing else in the
+           firmware can recover this; the watchdog is the only thing that can,
+           which is the property being demonstrated. */
+        if ((uint32_t) esp_timer_get_time() / 1000000u >= FAULT_WDT_AT_S) {
+            for (;;) { }
+        }
+#endif
         vTaskDelayUntil(&next, pdMS_TO_TICKS(CTRL_PERIOD_MS));
     }
 }
@@ -168,13 +259,27 @@ static void infer_task(void *arg)
 
         /* Dummy load standing in for the forecaster. Phase 2 replaces this. */
         volatile int32_t acc = 0;
-        for (int i = 0; i < 20000; i++) acc += i & 0x7F;
+        int iters = 20000;
+#if FAULT_INJECT == 1
+        /* Sized to overrun the 40 ms budget rather than to be slow: the
+           counter under test is a budget comparison, so the injected load has
+           to cross the budget and not merely rise. The nominal 20,000
+           iterations measure 836 us on this board, so 1.3 M lands near 54 ms
+           -- past the 40 ms budget and still inside the 100 ms period, which
+           keeps this a deadline miss rather than a task that never returns. */
+        if (fault_window((uint32_t) t0, FAULT_INFER_AT_S)) iters = 1300000;
+#endif
+        for (int i = 0; i < iters; i++) acc += i & 0x7F;
 
         uint32_t dur = (uint32_t) esp_timer_get_time() - t0;
         if (dur > s_diag.infer_wcet_us)  s_diag.infer_wcet_us = dur;
-        if (dur > budget_us)             s_diag.infer_deadline_misses++;
+        if (dur > budget_us) {
+            s_diag.infer_deadline_misses++;
+            s_infer_late = true;
+        }
         TIMING_MARK_LOW(TIMING_CH_INFER);
 
+        esp_task_wdt_reset();
         vTaskDelayUntil(&next, pdMS_TO_TICKS(INFER_PERIOD_MS));
     }
 }
@@ -184,11 +289,33 @@ static void ems_task(void *arg)
     (void) arg;
     TickType_t next = xTaskGetTickCount();
     for (;;) {
-        /* Phase 3 replaces this with the SAC policy output plus safety clamps. */
+#if FAULT_INJECT == 1
+        if (fault_window((uint32_t) esp_timer_get_time(), FAULT_EMS_AT_S)) {
+            /* Publish nothing. The setpoint timestamp stops advancing, which
+               is exactly what a hung outer loop looks like to the control
+               task. */
+            vTaskDelayUntil(&next, pdMS_TO_TICKS(EMS_PERIOD_MS));
+            continue;
+        }
+#endif
         xSemaphoreTake(s_state_mux, portMAX_DELAY);
         float soc = s_state.soc_frac;
+        float v   = s_state.v_mps;
         xSemaphoreGive(s_state_mux);
-        s_regen_blend = (soc > 0.95f) ? 0.0f : 0.5f;
+
+        /* Week 8 replaces this branch with the exported SAC actor. Until then
+           both paths produce the rule action, so the fallback counter says how
+           often the policy would have been unavailable rather than how often a
+           policy existed. */
+        bool late = s_infer_late;
+        s_infer_late = false;
+        if (late) s_diag.ems_fallback_steps++;
+
+        ems_action_t a = control_rule_action(soc, v);
+        s_regen_blend = a.regen_blend;
+        s_p_limit_w   = a.p_limit_w;
+        s_aux_derate  = a.aux_derate;
+        s_ems_t_us    = (uint32_t) esp_timer_get_time();
 
         vTaskDelayUntil(&next, pdMS_TO_TICKS(EMS_PERIOD_MS));
     }
@@ -199,7 +326,7 @@ static void diag_task(void *arg)
     (void) arg;
     TickType_t next = xTaskGetTickCount();
     uint8_t tx[128];
-    uint8_t payload[11 * 4 + JITTER_N_BINS * 2];
+    uint8_t payload[16 * 4 + JITTER_N_BINS * 2];
     uint32_t seq = 0;
 
     for (;;) {
@@ -208,12 +335,15 @@ static void diag_task(void *arg)
            interleaved into a binary stream costs the host a resynchronisation
            on every diagnostic line. Framing it also means the host parses one
            format instead of scraping a printf. */
-        uint32_t u32[11] = {
+        uint32_t u32[16] = {
             s_diag.loop_count, s_diag.rx_timeouts, s_diag.rx_bad,
             s_diag.infer_deadline_misses, s_diag.ctrl_wcet_us,
             s_diag.infer_wcet_us, s_diag.rtt_max_us,
             s_diag.period_min_us, s_diag.period_max_us,
             s_diag.stale_steps, s_diag.stale_worst,
+            s_diag.ctrl_late, s_diag.ctrl_fallback_steps,
+            s_diag.limp_steps, s_diag.ems_fallback_steps,
+            s_diag.boot_reason,
         };
         memcpy(payload, u32, sizeof u32);
         memcpy(payload + sizeof u32, s_diag.jitter_hist,
@@ -233,11 +363,38 @@ void tasks_start(void)
     s_state_mux = xSemaphoreCreateMutex();
     configASSERT(s_state_mux);
     memset(&s_diag, 0, sizeof s_diag);
+    memset(&s_pid, 0, sizeof s_pid);
+
+    /* The reset reason survives a reset, which is the only way a watchdog
+       event can be reported at all: the firmware that would have reported it
+       is the firmware that was restarted. It is sent in every DIAG frame so
+       the host sees it whenever it connects, not only if it happened to be
+       listening at the moment of the reset. */
+    s_diag.boot_reason = (uint32_t) esp_reset_reason();
+    printf("EVPIL-BOARD boot_reason=%u\n", (unsigned) s_diag.boot_reason);
+
+    /* The watchdog covers the two tasks whose failure is silent. A control
+       task that stops feeding it stops producing actuation frames, and the
+       host would see that; a control task stuck inside a link read produces
+       nothing and also says nothing, and that is the case this catches. The
+       timeout is far longer than either period on purpose -- this is a
+       liveness guard, not a deadline monitor, and the deadline monitors are
+       the counters above. */
+    esp_task_wdt_config_t wdt = {
+        .timeout_ms = 2000,
+        .idle_core_mask = 0,
+        .trigger_panic = true,
+    };
+    if (esp_task_wdt_init(&wdt) == ESP_ERR_INVALID_STATE)
+        esp_task_wdt_reconfigure(&wdt);
 
     /* Core 0 owns the hard real-time loop; core 1 owns everything else, so
        inference can never delay control. */
-    xTaskCreatePinnedToCore(ctrl_task,  "ctrl",  4096, NULL, 20, NULL, 0);
-    xTaskCreatePinnedToCore(infer_task, "infer", 8192, NULL,  5, NULL, 1);
+    TaskHandle_t h_ctrl = NULL, h_infer = NULL;
+    xTaskCreatePinnedToCore(ctrl_task,  "ctrl",  4096, NULL, 20, &h_ctrl,  0);
+    xTaskCreatePinnedToCore(infer_task, "infer", 8192, NULL,  5, &h_infer, 1);
+    esp_task_wdt_add(h_ctrl);
+    esp_task_wdt_add(h_infer);
     xTaskCreatePinnedToCore(ems_task,   "ems",   4096, NULL,  8, NULL, 1);
     xTaskCreatePinnedToCore(diag_task,  "diag",  4096, NULL,  1, NULL, 1);
 }

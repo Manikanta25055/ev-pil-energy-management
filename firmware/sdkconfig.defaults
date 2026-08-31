@@ -3,7 +3,12 @@ CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
 CONFIG_FREERTOS_HZ=1000
 CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS=y
 CONFIG_FREERTOS_USE_TRACE_FACILITY=y
-CONFIG_ESP_TASK_WDT_EN=n
+# The task watchdog is on from week 7: it is the liveness guard behind the
+# fallback path. It is NOT the deadline monitor -- deadlines are counted in
+# software, at microsecond resolution, by the diag counters.
+CONFIG_ESP_TASK_WDT_EN=y
+CONFIG_ESP_TASK_WDT_INIT=n
+CONFIG_ESP_TASK_WDT_TIMEOUT_S=2
 CONFIG_COMPILER_OPTIMIZATION_PERF=y
 CONFIG_ESP_WIFI_ENABLED=n
 CONFIG_BT_ENABLED=n

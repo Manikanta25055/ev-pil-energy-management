@@ -21,27 +21,28 @@ static void test_parity_with_python(void)
 {
     /* Byte-for-byte identical to tests/test_protocol.py
        ::test_shared_vector_for_c_parity */
-    float vals[3] = {1.0f, 0.5f, 0.25f};
-    uint8_t payload[12];
-    memcpy(payload, vals, 12);
+    float vals[4] = {1.0f, 0.5f, 0.25f, 0.125f};
+    uint8_t payload[16];
+    memcpy(payload, vals, 16);
 
     uint8_t frame[64];
     int n = evpil_pack(frame, sizeof frame, EVPIL_ACTUATION,
-                       0x01020304u, 0x0A0B0C0Du, payload, 12);
-    CHECK(n == 26, "actuation frame is 26 bytes");
+                       0x01020304u, 0x0A0B0C0Du, payload, 16);
+    CHECK(n == 30, "actuation frame is 30 bytes");
 
     static const uint8_t expect[] = {
         0x1C, 0xE7,             /* magic  */
         0x02,                   /* type   */
-        0x0C,                   /* len    */
+        0x10,                   /* len 16 */
         0x04, 0x03, 0x02, 0x01, /* seq    */
         0x0D, 0x0C, 0x0B, 0x0A, /* t_us   */
         0x00, 0x00, 0x80, 0x3F, /* 1.0f   */
         0x00, 0x00, 0x00, 0x3F, /* 0.5f   */
         0x00, 0x00, 0x80, 0x3E, /* 0.25f  */
-        0xE9, 0xBA,             /* crc 0xBAE9 */
+        0x00, 0x00, 0x00, 0x3E, /* 0.125f */
+        0x90, 0x60,             /* crc 0x6090 */
     };
-    CHECK(memcmp(frame, expect, 26) == 0, "frame bytes match Python exactly");
+    CHECK(memcmp(frame, expect, 30) == 0, "frame bytes match Python exactly");
 }
 
 static void test_roundtrip(void)

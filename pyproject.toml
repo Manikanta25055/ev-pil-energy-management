@@ -11,6 +11,11 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=7.4", "pytest-cov>=4.1"]
+# The reinforcement-learning arm. Kept optional so that the plant, the data
+# pipeline and the forecasting stack install and test without it: everything
+# up to week 6 has no use for it, and a hard dependency would drag torch into
+# environments that only need numpy.
+rl = ["stable-baselines3>=2.3", "gymnasium>=0.29"]
 # Build-time only: scripts/build_dem.py reads the USGS 3DEP tile through GDAL.
 # Nothing at runtime imports rasterio; evpil.data.dem reads the cached array
 # with numpy, so the geospatial stack is not needed to use the data.

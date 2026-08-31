@@ -43,10 +43,12 @@ def test_a_diag_frame_round_trips_through_the_wire_format():
 
 
 def test_the_payload_is_the_size_the_firmware_writes():
-    # 9 uint32 counters plus one uint16 per bin. The firmware builds the same
-    # buffer from the same field order; a mismatch here is a silent misparse.
-    assert DIAG_PAYLOAD_SIZE == 11 * 4 + N_JITTER_BINS * 2
-    assert len(DIAG_FIELDS) == 11
+    # Sixteen uint32 counters plus one uint16 per bin. The firmware builds the
+    # same buffer from the same field order; a mismatch here is a silent
+    # misparse, which on a binary link reads as plausible numbers rather than
+    # as an error.
+    assert DIAG_PAYLOAD_SIZE == 16 * 4 + N_JITTER_BINS * 2
+    assert len(DIAG_FIELDS) == 16
 
 
 def test_a_truncated_payload_is_refused_rather_than_misread():

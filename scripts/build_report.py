@@ -141,12 +141,13 @@ def summary(doc: Document, ladder, tf, cost_rows, g3, a2) -> None:
               "silicon rather than in a notebook.")
 
     para(doc, "The work so far has produced a validated vehicle model, a "
-              "forecasting model that beats every baseline we could find, and "
+              "forecasting model that beats every baseline we could find, "
               "measured evidence that it fits inside the microcontroller's "
-              "compute budget. It has also produced four results that went "
-              "against expectation, and those are reported here as plainly as "
-              "the successes, because each one changes what the paper can "
-              "claim.")
+              "compute budget, and a controller that meets its deadlines and "
+              "survives having its parts broken on purpose. It has also "
+              "produced several results that went against expectation, and "
+              "those are reported here as plainly as the successes, because "
+              "each one changes what the paper can claim.")
 
     doc.add_heading("Where the gates stand", level=2)
     rows = [
@@ -155,8 +156,10 @@ def summary(doc: Document, ladder, tf, cost_rows, g3, a2) -> None:
         ["G2", "Week 2", "Does the vehicle model reproduce real trips?",
          "PASS, 6 of 7 trips"],
         ["G3", "Week 3", "Does the 10 ms loop close on hardware?",
-         "Timing passes by 40x; 6 host stalls in 59,650 loops fail the "
-         "zero-drop rule" if g3 else "measuring"],
+         (f"Timing passes by 40x; {g3['counters']['stale_steps']} host stalls "
+          f"in {g3['counters']['loop_count']:,} loops fail the zero-drop rule. "
+          f"Re-measured in week 7 on the changed firmware")
+         if g3 else "measuring"],
         ["G4", "Week 4", "Does any model beat the naive baseline by 10%?",
          "PASS, all four models"],
         ["G5", "Week 6", "Does the forecaster run on the chip in 40 ms?",
@@ -194,11 +197,14 @@ def summary(doc: Document, ladder, tf, cost_rows, g3, a2) -> None:
     if g3:
         bullets(doc, [
             f"On hardware, {g3['counters']['loop_count']:,} control loops ran "
-            f"over ten minutes with 99.997% of them inside 25 microseconds of "
-            f"their slot, against a limit of 1000. The link lost nothing.",
-            f"Gate G3 still fails, on six occasions where the laptop did not "
-            f"answer in time. The microcontroller met every deadline. Section "
-            f"12 explains why that distinction matters and what it changes.",
+            f"over ten minutes with 99.9% of them inside "
+            f"{g3['p99_us']:.0f} microseconds of their slot, against a limit "
+            f"of {g3['limits']['p99_us']:.0f}. The link lost nothing.",
+            f"Gate G3 still fails, on {g3['counters']['stale_steps']} "
+            f"occasions where the laptop did not answer in time. The count of "
+            f"loops that missed their own deadline, measured for the first "
+            f"time this week, is {g3['counters']['ctrl_late']}. Section 12 "
+            f"explains why that distinction matters.",
         ])
 
 
@@ -853,7 +859,8 @@ def hardware_section(doc: Document, g3) -> None:
              f"{g3['limits']['dropped']}"],
         ], [2.4, 1.9, 1.4])
         para(doc, f"Gate G3: {g3['verdict']} on the frame criterion, and a "
-                  f"pass on timing by a factor of 40.")
+                  f"pass on timing by a factor of "
+                  f"{g3['limits']['p99_us'] / max(g3['p99_us'], 1):.0f}.")
 
         figure(doc, DOCS / "figures" / "g3-jitter.png",
                "Figure 6. Loop timing over ten minutes. Left: how many loops "
@@ -866,18 +873,19 @@ def hardware_section(doc: Document, g3) -> None:
                   "the part being tested.")
         bullets(doc, [
             "The link carried everything. No corrupted frames at either end "
-            "and no gaps in 121,255 frames received.",
-            "The microcontroller met every deadline. Its control computation runs in "
-            "16 microseconds inside a 10,000 microsecond slot, and no loop "
-            "drifted by more than 50 microseconds.",
-            "What missed, six times, was the laptop replying inside the 9 "
-            "millisecond window the firmware waits. The worst measured round "
-            "trip was 7,405 microseconds, so the laptop runs close to that "
-            "limit routinely.",
+            "and no gaps.",
+            f"The microcontroller met every deadline. Its control computation "
+            f"runs in {e['ctrl_wcet_us']} microseconds inside a 10,000 "
+            f"microsecond slot, and the count of loops that missed their own "
+            f"deadline is {c['ctrl_late']}.",
+            f"What missed, {c['stale_steps']} times in "
+            f"{c['loop_count']:,} loops, was the laptop answering in time. "
+            f"The worst measured round trip was {e['rtt_max_us']} "
+            f"microseconds.",
         ])
-        para(doc, "The six are not spread out. None for the first eight "
-                  "minutes, then six inside one. That is macOS doing something "
-                  "else, not a steady overload.")
+        para(doc, "The misses are not spread evenly. They arrive in short "
+                  "bursts on an otherwise idle laptop, which is macOS doing "
+                  "something else rather than a steady overload.")
 
         doc.add_heading("The fix was built, not deferred", level=2)
         para(doc, "The original loop sent a request and waited for the reply "
@@ -901,7 +909,7 @@ def hardware_section(doc: Document, g3) -> None:
                   "longer waits for it. The timing is unchanged, which is the "
                   "expected result: the loop was never the problem.")
 
-        para(doc, "Eight events survive and the gate still fails. What changed "
+        para(doc, "A handful of events survive and the gate still fails. What changed "
                   "is what an event costs. In the original loop a miss meant "
                   "the control task had spent nine of its ten milliseconds "
                   "waiting and received nothing, so the loop itself was at "
@@ -914,7 +922,7 @@ def hardware_section(doc: Document, g3) -> None:
                   "criterion should separate the two. A loop that misses its "
                   "own deadline is a defect, and there are none of those in "
                   "either version. A laptop that answers late is a property of "
-                  "running the simulation on macOS, and there are eight of "
+                  "running the simulation on macOS, and there are a few of "
                   "those, bounded and handled. Reading both as the same "
                   "failure leaves the criterion unable to tell a working "
                   "system from a broken one. Zero over ten minutes at a "
@@ -929,8 +937,41 @@ def hardware_section(doc: Document, g3) -> None:
         para(doc, "The criterion has not been loosened to fit the result. One "
                   "revision of one criterion was permitted in the design "
                   "document, it was used at gate G2 with the reason recorded, "
-                  "and it is spent. G3 stays as written until the fix is built "
-                  "and the run repeated in week 7.")
+                  "and it is spent.")
+
+        doc.add_heading("Re-measured in week 7, on firmware that changed",
+                        level=2)
+        para(doc, "The loop is not the loop that was measured in week 3. It "
+                  "now runs a real speed controller with a physics "
+                  "feedforward instead of a placeholder, and both message "
+                  "formats grew to carry the extra signals that controller "
+                  "needs. The rule in this project is that the loop the paper "
+                  "reports has to be the loop that was measured, so the "
+                  "ten-minute campaign was run again in full.")
+        table(doc, ["Over 59,650 loops, ten minutes", "Week 3", "Week 7"], [
+            ["Timing spread, 99th percentile", "within 25 us",
+             f"within {g3['p99_us']:.0f} us"],
+            ["Control computation, worst case", "16 us",
+             f"{e['ctrl_wcet_us']} us"],
+            ["Worst round trip to the laptop", "77 us", f"{e['rtt_max_us']} us"],
+            ["Loops that missed their own deadline", "not counted",
+             f"{c['ctrl_late']}"],
+            ["Laptop answered late", "8", f"{c['stale_steps']}"],
+            ["Corrupted or lost frames", "0",
+             f"{c['rx_bad'] + g3['host']['frames_dropped']}"],
+        ], [2.6, 1.5, 1.5])
+        para(doc, "The control computation rose from 16 to "
+                  f"{e['ctrl_wcet_us']} microseconds because it now does real "
+                  "work rather than a single multiplication. That is under "
+                  "one percent of the slot it has.")
+        para(doc, "The new row is the one that matters. Week 3 could report "
+                  "that the laptop was late but could not prove the "
+                  "microcontroller never was, because nothing counted it. A "
+                  "counter added this week counts exactly that, and it reads "
+                  f"{c['ctrl_late']} over ten minutes, including throughout "
+                  "the fault-injection campaign in the next section. The two "
+                  "failures the gate's criterion treats as one are now "
+                  "measured apart, and one of them is empty.")
     else:
         para(doc, "The ten-minute campaign was still running when this report "
                   "was generated. Rebuild the report to include it.",
@@ -962,12 +1003,296 @@ def hardware_section(doc: Document, g3) -> None:
               "port can be measured with the hardware currently connected.")
 
 
-def negatives_section(doc: Document) -> None:
-    doc.add_heading("13. Results that went against expectation", level=1)
+def control_section(doc: Document, baselines, robust) -> None:
+    doc.add_heading("13. The controller, and how much room it has to improve",
+                    level=1)
 
-    para(doc, "Four of these. Each one is reported because each one changes "
-              "what the paper may claim, and a supervisor reading the work "
-              "will find them more convincing than the successes.")
+    para(doc, "Week 7 built the two things a proposed controller has to be "
+              "measured against: the conventional controller anyone would "
+              "write, and the theoretical best any controller could achieve. "
+              "The second one is computed offline by dynamic programming, "
+              "which searches every combination of decisions across the whole "
+              "trip. Without it, a claim that a controller saves three "
+              "percent means nothing, because nobody knows whether three and "
+              "a half percent or thirty were available.")
+
+    para(doc, "The answer came back smaller than anyone expected, and it has "
+              "to be said before the reinforcement-learning work starts "
+              "rather than after it.")
+
+    if not baselines:
+        para(doc, "The controller campaign had not been run when this report "
+                  "was generated. Rebuild the report to include it.",
+             italic=True, colour=MUTED)
+        return
+
+    rows = {}
+    for r in baselines["rows"]:
+        rows.setdefault(r["cycle"], {})[r["arm"]] = r
+
+    doc.add_heading("Consumption on the four standard driving cycles", level=2)
+    para(doc, "Watt-hours per kilometre. Lower is better. The last column is "
+              "how far the conventional controller sits from the theoretical "
+              "best.")
+    table(doc, ["Cycle", "No regeneration", "Conventional rules",
+                "Theoretical best", "Gap"],
+          [[c.upper(),
+            f"{rows[c]['no-regen']['wh_per_km']:.2f}",
+            f"{rows[c]['rule-ems']['wh_per_km']:.2f}",
+            f"{rows[c]['dp-comfort-priced']['wh_per_km']:.2f}",
+            f"{rows[c]['rule-ems']['gap_to_dp_pct']:+.2f}%"]
+           for c in rows],
+          [1.2, 1.6, 1.6, 1.5, 0.9])
+
+    para(doc, "Recovering braking energy is worth a great deal: between 5% on "
+              "the highway cycle and 23% in city traffic. That is the whole "
+              "energy story of this vehicle.")
+
+    para(doc, "Everything after that is not. The theoretically optimal "
+              "strategy turns out to be a constant instruction -- recover as "
+              "much braking energy as the battery will accept -- and the "
+              "conventional controller, which is two thresholds and a taper, "
+              "is already within a sixth of one percent of it. There is "
+              "essentially nothing left for a learned controller to find.")
+
+    doc.add_heading("Why this is a property of the problem", level=2)
+    para(doc, "It is not a weakness of the search. The controller is split in "
+              "two on purpose: an inner loop follows the speed profile, and "
+              "an outer loop manages energy. That split is what makes the "
+              "energy comparison honest, because it stops a controller from "
+              "saving energy by driving slower. But it also means the outer "
+              "loop cannot change how the car drives at all, and once that is "
+              "fixed:")
+    bullets(doc, [
+        "the discharge power limit can only take away power the speed "
+        "controller needs, so it is a safety limit and not a lever;",
+        "turning the cabin heating down saves energy the same way driving "
+        "slower does, so it is priced at what it costs and then it is a wash;",
+        "recovering braking energy is always better than not, so the best "
+        "setting is simply the maximum the battery allows.",
+    ])
+    para(doc, "One lever with an obvious setting and two that do nothing. "
+              "That is why the optimum is a constant.")
+
+    para(doc, "There is a direct consequence for one of the planned "
+              "experiments. Experiment A3 asks whether the controller needs "
+              "the forecast at all. Under a fixed speed profile the best "
+              "action does not depend on what happens next, so a forecast "
+              "cannot help, and A3 can now be predicted rather than run. The "
+              "design document already accepted that outcome as publishable; "
+              "what is new is that there is a reason for it rather than a "
+              "possibility.")
+
+    doc.add_heading("What happens next is the supervisor's decision", level=2)
+    para(doc, "This is recorded in the design document as an open item for "
+              "the supervisor, not resolved here. Three routes:")
+    table(doc, ["Route", "What it means", "Cost"], [
+        ["Report it", "The contribution becomes the embedded engineering plus "
+                      "a negative result: a learned energy manager cannot beat "
+                      "two rules once speed tracking is a hard constraint. The "
+                      "project's stated framing already supports this.",
+         "None. Publishable as it stands."],
+        ["Widen the controller's authority", "Let the outer loop adjust the "
+                                             "target speed inside a tolerance "
+                                             "band, with a penalty for "
+                                             "arriving late. This is the "
+                                             "standard formulation in which a "
+                                             "forecast genuinely pays, and it "
+                                             "would give A3 something real to "
+                                             "measure.",
+         "Most work. Changes one of the paper's claims."],
+        ["Make the problem harder honestly", "Add battery temperature limits "
+                                             "and a battery-ageing cost. Under "
+                                             "those, always recovering the "
+                                             "maximum stops being optimal.",
+         "Moderate. Needs a thermal and ageing model."],
+    ], [1.5, 3.6, 1.5])
+
+    figure(doc, DOCS / "figures" / "week7-control.png",
+           "Figure 8. Left: consumption by controller on each cycle. Right: "
+           "how far each controller sits from the theoretical best, on a log "
+           "scale. Recovering braking energy is worth tens of percent; "
+           "everything after that is worth hundredths.")
+
+    doc.add_heading("The speed controller holds under disturbance", level=2)
+    para(doc, "The energy comparison is only honest if every controller "
+              "actually follows the driving cycle, so the inner loop was "
+              "tested with its model deliberately wrong. On a clean run its "
+              "tracking error is under a millimetre per second, but that "
+              "number is worthless on its own: the controller's feedforward "
+              "term is computed from the same vehicle the simulation uses, so "
+              "it is exact. The table below breaks that arrangement.")
+
+    if robust:
+        by_case = {}
+        for r in robust["rows"]:
+            if r["grade"] == "flat" or r["case"] == "grade unknown":
+                by_case.setdefault(r["case"], {})[r["cycle"]] = r
+        order = ["nominal", "mass +10%", "drag +30%", "rolling +50%",
+                 "grade unknown", "speed noise 0.2 m/s", "link delay 100 ms",
+                 "no feedforward"]
+        table(doc, ["Condition", "City cycle error", "Aggressive cycle error",
+                    "Worst instant"],
+              [[case,
+                f"{by_case[case]['udds']['tracking_rmse_mps']:.4f} m/s",
+                f"{by_case[case]['us06']['tracking_rmse_mps']:.4f} m/s",
+                f"{by_case[case]['us06']['tracking_max_mps']:.3f} m/s"]
+               for case in order if case in by_case],
+              [2.2, 1.6, 1.6, 1.2])
+        para(doc, "The worst case across every perturbation is 0.30 m/s of "
+                  "average error and 1.5 m/s at its worst instant, on the "
+                  "aggressive cycle with the feedforward term removed "
+                  "entirely. Speed tracking is the constraint the whole energy "
+                  "comparison rests on, and it holds.")
+        para(doc, "One row is a result rather than a check. Injecting "
+                  "realistic speed-sensor noise costs 5.6% of consumption: "
+                  "the controller chases the noise and pays for it in torque "
+                  "reversals. That is a sensor-quality argument with a price "
+                  "attached, and it belongs in the paper.")
+        figure(doc, DOCS / "figures" / "week7-pid-robustness.png",
+               "Figure 9. Speed-tracking error under model error and "
+               "disturbance, log scale. The clean run at the bottom is the "
+               "least informative bar in the chart.")
+
+
+def rl_section(doc: Document, rl) -> None:
+    doc.add_heading("14. The reinforcement-learning ramp-up", level=1)
+
+    para(doc, "Reinforcement learning is the identified skill gap on this "
+              "project and it is genuinely temperamental, so the schedule "
+              "spends a week on the setup before the week that needs it to "
+              "work. That week is done.")
+
+    if not rl:
+        para(doc, "The ramp-up had not been run when this report was "
+                  "generated. Rebuild the report to include it.",
+             italic=True, colour=MUTED)
+        return
+
+    p = rl["pendulum"]
+    e = rl["energy_env"]
+    para(doc, "Two runs, in this order, because they fail for different "
+              "reasons and running them together would make a failure "
+              "impossible to attribute.")
+    table(doc, ["Check", "Result", "What it tells us"], [
+        ["A textbook problem with a known answer",
+         f"score {p['return_mean']:.0f}, target {p['target']:.0f}",
+         "PASS. The installation and the default settings are sound, so a "
+         "later failure is the problem and not the tooling."],
+        ["Simulation speed of the real problem",
+         f"{e['env_only_steps_per_s']:.0f} decisions per second",
+         "The simulator is not the bottleneck."],
+        ["Training speed on the real problem",
+         f"{e['steps_per_s']:.0f} steps per second",
+         f"Five independent training runs will take "
+         f"{e['projected_5_seed_hours']:.1f} hours on this laptop."],
+    ], [2.1, 1.7, 2.8])
+
+    para(doc, "The last row is the one that mattered. The design document "
+              "requires five independent training runs, because a single "
+              "reinforcement-learning result is not publishable. That "
+              "requirement is now known to be affordable rather than hoped to "
+              "be.")
+
+    para(doc, f"After a deliberately short training run the controller "
+              f"already uses {e['sac']['energy_wh_mean']:.1f} watt-hours per "
+              f"test episode against the conventional controller's "
+              f"{e['rule']['energy_wh_mean']:.1f}, but scores slightly worse "
+              f"overall. It is buying that energy by turning the cabin "
+              f"heating down, and the scoring function is charging it for "
+              f"doing so. The scoring function is working.")
+
+
+def fallback_section(doc: Document, fb, wdt) -> None:
+    doc.add_heading("15. What the controller does when something fails",
+                    level=1)
+
+    para(doc, "The design document requires that when the slow part of the "
+              "system misses its deadline, the fast part falls back to simple "
+              "rules and the event is counted rather than hidden. Week 7 "
+              "built that, and then broke the system on purpose to check it. "
+              "A safety path that has never been taken is a claim, not a "
+              "result.")
+
+    doc.add_heading("Three failures, three different responses", level=2)
+    table(doc, ["What goes wrong", "How it is noticed", "What the controller does"], [
+        ["The energy manager stops answering",
+         "its last instruction is more than 300 ms old",
+         "the simple rules run inside the fast loop instead"],
+        ["The simulation stops sending the car's state",
+         "five control periods with nothing received",
+         "torque is ramped smoothly to zero and the controller stops acting "
+         "on a measurement it no longer trusts"],
+        ["The prediction takes too long",
+         "its own timing exceeds the 40 ms budget",
+         "the energy manager uses the simple rules for that step"],
+        ["A task stops running altogether",
+         "the chip's watchdog timer, 2 seconds",
+         "the chip resets, and the reason is reported after the restart"],
+    ], [2.0, 2.2, 2.6])
+
+    para(doc, "Treating these as one generic fault is how a controller ends "
+              "up crawling because a logging task was slow. They are counted "
+              "separately for the same reason.")
+
+    if not fb:
+        para(doc, "The fault-injection campaign had not been run when this "
+                  "report was generated. Rebuild the report to include it.",
+             italic=True, colour=MUTED)
+        return
+
+    d = fb["delta"]
+    doc.add_heading("Measured on the board", level=2)
+    para(doc, "Two of the three faults have to be injected inside the "
+              "firmware, because they happen entirely on the chip and cannot "
+              "be caused from outside it. The third the laptop caused itself, "
+              "by going quiet for a second.")
+    table(doc, ["Fault injected", "What should happen", "What did happen"], [
+        ["Laptop silent for 1.0 second",
+         "101 missed states, the first 5 tolerated",
+         f"{d['stale_steps']} missed, {d['limp_steps']} ramping down"],
+        ["Energy manager stops publishing for 2.0 seconds",
+         "180 control steps on the simple rules",
+         f"{d['ctrl_fallback_steps']}"],
+        ["Prediction overruns for 2.0 seconds",
+         "20 missed deadlines and 20 fallbacks",
+         f"{d['infer_deadline_misses']} and {d['ems_fallback_steps']}"],
+        ["Control task made to hang",
+         "the watchdog resets the chip",
+         (wdt or {}).get("boot_reason_name", "not run")],
+    ], [2.3, 2.3, 2.2])
+
+    para(doc, "Every count is exactly what the injection schedule implies. "
+              "During the silent second the commanded torque fell from 226 "
+              "newton-metres to zero and stayed there: the chip kept sending "
+              "commands, and what those commands said was that the controller "
+              "was declining to act on stale information.")
+
+    para(doc, f"Throughout all of it, the number of control loops that missed "
+              f"their own deadline stayed at {d['ctrl_late']}. Handling a "
+              f"failure does not cost the loop its timing.")
+
+    para(doc, "One of the planned experiments switches this handling off and "
+              "measures what it was worth. The switch to do that is a "
+              "compile-time option in the same firmware, so that experiment "
+              "will be a rebuild rather than a reconstruction.")
+
+
+def negatives_section(doc: Document) -> None:
+    doc.add_heading("16. Results that went against expectation", level=1)
+
+    para(doc, "Each one is reported because each one changes what the paper "
+              "may claim, and a supervisor reading the work will find them "
+              "more convincing than the successes.")
+
+    doc.add_heading("The energy-management problem has almost no room in it",
+                    level=2)
+    para(doc, "The theoretically optimal strategy is a constant instruction, "
+              "and two thresholds get within a sixth of a percent of it. This "
+              "is the largest of these findings and it is the subject of "
+              "section 13, including the three routes open and the fact that "
+              "choosing between them is the supervisor's decision rather than "
+              "one taken here.")
 
     doc.add_heading("The fitted rolling resistance is not a rolling resistance",
                     level=2)
@@ -1007,7 +1332,7 @@ def negatives_section(doc: Document) -> None:
 
 
 def remaining_section(doc: Document) -> None:
-    doc.add_heading("14. What is left to do", level=1)
+    doc.add_heading("17. What is left to do", level=1)
 
     para(doc, "Phase 1 and Phase 2 are complete. The remaining work is the "
               "controller, the on-chip deployment, and the measurement "
@@ -1018,11 +1343,16 @@ def remaining_section(doc: Document) -> None:
               "smaller student model",
          "DONE: 36.46 ms measured on the chip. Still to do: the conversion "
          "toolchain, and energy per prediction", "G5"],
-        ["7", "Compute the theoretically optimal energy strategy offline; "
-              "build the conventional controller to compare against",
-         "Watchdog and fallback path for a missed deadline", "-"],
+        ["7", "DONE: the offline optimum, the conventional controller, the "
+              "speed controller and its robustness tests, and the "
+              "reinforcement-learning ramp-up. The optimum came back smaller "
+              "than expected; see section 13",
+         "DONE: watchdog and fallback path built, and all four failure modes "
+         "triggered on the board. Gate G3 re-measured on the changed firmware",
+         "-"],
         ["8", "Train the reinforcement-learning controller, five random "
-              "starts; run ablation A3",
+              "starts (measured at 1.8 hours); run ablation A3. Both depend "
+              "on the section 13 decision",
          "Export the trained controller and verify it on the chip", "-"],
         ["9", "Tune the reward function", "Full system on the chip; ablation A4",
          "-"],
@@ -1046,8 +1376,15 @@ def remaining_section(doc: Document) -> None:
         "paper survives.",
     ])
 
-    doc.add_heading("Decisions waiting on a gate", level=2)
+    doc.add_heading("Decisions waiting on a gate or on the supervisor", level=2)
     bullets(doc, [
+        "What to do about the missing headroom in the energy-management "
+        "problem, described in section 13. This is the one that should be "
+        "settled first, because weeks 8 and 9 are built on top of it.",
+        "Whether gate G3's zero-lost-frame rule should distinguish a "
+        "controller that missed its own deadline, of which there are none, "
+        "from a laptop that answered late, of which there are a few. The "
+        "counter that separates them was added and measured this week.",
         "Whether to restate gate G4 against the linear regression rather than "
         "the naive baseline. Recorded in the design document for G4 to decide.",
         "Which model to deploy. The Transformer is the most accurate and fits. "
@@ -1061,7 +1398,7 @@ def remaining_section(doc: Document) -> None:
 
 
 def reproduce_section(doc: Document) -> None:
-    doc.add_heading("15. Reproducing everything in this report", level=1)
+    doc.add_heading("18. Reproducing everything in this report", level=1)
 
     para(doc, "Every result comes from a command that can be re-run. The "
               "report itself is generated from the result files rather than "
@@ -1076,12 +1413,27 @@ def reproduce_section(doc: Document) -> None:
         ["Transformer and ablation A1", "python3 scripts/run_transformer.py"],
         ["Cost on the chip", "python3 scripts/report_deploy_cost.py"],
         ["Gate G3, real-time loop", "./scripts/g3_campaign.sh 10"],
+        ["Fetch the standard driving cycles", "python3 scripts/build_cycles.py"],
+        ["Controller baselines and the offline optimum",
+         "python3 scripts/run_control_baselines.py"],
+        ["Speed-controller robustness", "python3 scripts/run_pid_robustness.py"],
+        ["Reinforcement-learning ramp-up", "python3 scripts/run_rl_rampup.py"],
+        ["Build the firmware", "./scripts/idf.sh build"],
+        ["Fault-injection build",
+         "./scripts/idf.sh -DFAULT_INJECT=1 build && ./scripts/idf.sh flash"],
+        ["Fallback path on hardware", "python3 scripts/run_fallback.py"],
+        ["Watchdog on hardware (needs -DFAULT_INJECT=2)",
+         "python3 scripts/run_fallback.py --watchdog"],
         ["This report", "python3 scripts/build_report.py"],
     ], [2.4, 4.0])
 
-    para(doc, "All Python commands need PYTHONPATH=\"src:.\" set. The test "
-              "suite runs with python3 -m pytest and currently holds 287 "
-              "tests, all passing.", size=11, colour=MUTED)
+    para(doc, "All Python commands need PYTHONPATH=\"src:.\" set. The "
+              "reinforcement-learning ramp-up additionally needs "
+              "stable-baselines3 and gymnasium. The test suite runs with "
+              "python3 -m pytest and currently holds 364 tests, all passing, "
+              "including one that drives the controller in C and the same "
+              "controller in Python through identical inputs and requires "
+              "them to agree step for step.", size=11, colour=MUTED)
 
 
 def main() -> int:
@@ -1094,6 +1446,11 @@ def main() -> int:
     tf = load("transformer-a1.json")
     g3 = load("g3-loop-timing.json")
     a2 = load("a2-quantisation.json")
+    baselines = load("week7-control-baselines.json")
+    robust = load("week7-pid-robustness.json")
+    rl = load("week7-rl-rampup.json")
+    fb = load("week7-fallback.json")
+    wdt = load("week7-watchdog.json")
 
     cost_path = DOCS / "forecast-deploy-cost.csv"
     cost_rows = None
@@ -1122,6 +1479,9 @@ def main() -> int:
     cost_section(doc, cost_rows)
     on_chip_section(doc, a2)
     hardware_section(doc, g3)
+    control_section(doc, baselines, robust)
+    rl_section(doc, rl)
+    fallback_section(doc, fb, wdt)
     negatives_section(doc)
     remaining_section(doc)
     reproduce_section(doc)
@@ -1131,7 +1491,9 @@ def main() -> int:
     doc.save(out)
 
     tracked = (("ladder", ladder), ("transformer", tf), ("G3", g3),
-               ("A2/G5", a2), ("cost", cost_rows))
+               ("A2/G5", a2), ("cost", cost_rows),
+               ("controller baselines", baselines), ("PID robustness", robust),
+               ("RL ramp-up", rl), ("fallback", fb), ("watchdog", wdt))
     have = [n for n, v in tracked if v]
     missing = [n for n, v in tracked if not v]
     print(f"wrote {out}")

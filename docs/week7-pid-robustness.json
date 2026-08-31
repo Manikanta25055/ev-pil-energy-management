@@ -1,0 +1,244 @@
+{
+  "rows": [
+    {
+      "cycle": "udds",
+      "grade": "flat",
+      "case": "nominal",
+      "tracking_rmse_mps": 0.0007202987477434256,
+      "tracking_max_mps": 0.00922804819869325,
+      "wh_per_km": 167.92780488959977
+    },
+    {
+      "cycle": "udds",
+      "grade": "flat",
+      "case": "mass +10%",
+      "tracking_rmse_mps": 0.018335188405696496,
+      "tracking_max_mps": 0.0973015307963696,
+      "wh_per_km": 167.92267670931298
+    },
+    {
+      "cycle": "udds",
+      "grade": "flat",
+      "case": "drag +30%",
+      "tracking_rmse_mps": 0.0010963075626703568,
+      "tracking_max_mps": 0.008202363536169308,
+      "wh_per_km": 167.931779565845
+    },
+    {
+      "cycle": "udds",
+      "grade": "flat",
+      "case": "rolling +50%",
+      "tracking_rmse_mps": 0.001960538347937264,
+      "tracking_max_mps": 0.03047317428488694,
+      "wh_per_km": 167.9329830383463
+    },
+    {
+      "cycle": "udds",
+      "grade": "flat",
+      "case": "speed noise 0.2 m/s",
+      "tracking_rmse_mps": 0.021900413909320553,
+      "tracking_max_mps": 0.1020623298731742,
+      "wh_per_km": 179.32021409438906
+    },
+    {
+      "cycle": "udds",
+      "grade": "flat",
+      "case": "link delay 100 ms",
+      "tracking_rmse_mps": 0.06511988525126287,
+      "tracking_max_mps": 0.17164326792821916,
+      "wh_per_km": 168.07061987020253
+    },
+    {
+      "cycle": "udds",
+      "grade": "flat",
+      "case": "no feedforward",
+      "tracking_rmse_mps": 0.16826226224631155,
+      "tracking_max_mps": 0.731441850747065,
+      "wh_per_km": 168.04179831502975
+    },
+    {
+      "cycle": "udds",
+      "grade": "grade +-3% unseen",
+      "case": "nominal",
+      "tracking_rmse_mps": 0.0007294311547981532,
+      "tracking_max_mps": 0.009242470421813372,
+      "wh_per_km": 184.5637126031728
+    },
+    {
+      "cycle": "udds",
+      "grade": "grade +-3% unseen",
+      "case": "mass +10%",
+      "tracking_rmse_mps": 0.018362180944005983,
+      "tracking_max_mps": 0.09819759472417577,
+      "wh_per_km": 184.5580930381576
+    },
+    {
+      "cycle": "udds",
+      "grade": "grade +-3% unseen",
+      "case": "drag +30%",
+      "tracking_rmse_mps": 0.001101769108061342,
+      "tracking_max_mps": 0.008203236431369606,
+      "wh_per_km": 184.56783822017852
+    },
+    {
+      "cycle": "udds",
+      "grade": "grade +-3% unseen",
+      "case": "rolling +50%",
+      "tracking_rmse_mps": 0.0019579187239156777,
+      "tracking_max_mps": 0.030484945210123682,
+      "wh_per_km": 184.56957202821954
+    },
+    {
+      "cycle": "udds",
+      "grade": "grade +-3% unseen",
+      "case": "grade unknown",
+      "tracking_rmse_mps": 0.0037159663997606406,
+      "tracking_max_mps": 0.026537220438263454,
+      "wh_per_km": 184.56961385113868
+    },
+    {
+      "cycle": "udds",
+      "grade": "grade +-3% unseen",
+      "case": "speed noise 0.2 m/s",
+      "tracking_rmse_mps": 0.021920441222597915,
+      "tracking_max_mps": 0.10256193618912768,
+      "wh_per_km": 194.8226792251292
+    },
+    {
+      "cycle": "udds",
+      "grade": "grade +-3% unseen",
+      "case": "link delay 100 ms",
+      "tracking_rmse_mps": 0.06511454215840505,
+      "tracking_max_mps": 0.17154231589826408,
+      "wh_per_km": 184.70847823496476
+    },
+    {
+      "cycle": "udds",
+      "grade": "grade +-3% unseen",
+      "case": "no feedforward",
+      "tracking_rmse_mps": 0.16845311905757815,
+      "tracking_max_mps": 0.7281052997402391,
+      "wh_per_km": 184.6190003774963
+    },
+    {
+      "cycle": "us06",
+      "grade": "flat",
+      "case": "nominal",
+      "tracking_rmse_mps": 0.0013269437291760682,
+      "tracking_max_mps": 0.01697105810168742,
+      "wh_per_km": 190.46729466350823
+    },
+    {
+      "cycle": "us06",
+      "grade": "flat",
+      "case": "mass +10%",
+      "tracking_rmse_mps": 0.030733347182851808,
+      "tracking_max_mps": 0.18989151990648612,
+      "wh_per_km": 190.54639843814672
+    },
+    {
+      "cycle": "us06",
+      "grade": "flat",
+      "case": "drag +30%",
+      "tracking_rmse_mps": 0.002409673670024342,
+      "tracking_max_mps": 0.016997107739104955,
+      "wh_per_km": 190.48484326610557
+    },
+    {
+      "cycle": "us06",
+      "grade": "flat",
+      "case": "rolling +50%",
+      "tracking_rmse_mps": 0.0025086656305478208,
+      "tracking_max_mps": 0.03006940435211794,
+      "wh_per_km": 190.48011937075648
+    },
+    {
+      "cycle": "us06",
+      "grade": "flat",
+      "case": "speed noise 0.2 m/s",
+      "tracking_rmse_mps": 0.023175528227888362,
+      "tracking_max_mps": 0.09984610108785219,
+      "wh_per_km": 200.02226515265477
+    },
+    {
+      "cycle": "us06",
+      "grade": "flat",
+      "case": "link delay 100 ms",
+      "tracking_rmse_mps": 0.1026512072197843,
+      "tracking_max_mps": 0.38295863365777816,
+      "wh_per_km": 191.00634205120087
+    },
+    {
+      "cycle": "us06",
+      "grade": "flat",
+      "case": "no feedforward",
+      "tracking_rmse_mps": 0.2951899987427624,
+      "tracking_max_mps": 1.498965110577113,
+      "wh_per_km": 190.65738477897295
+    },
+    {
+      "cycle": "us06",
+      "grade": "grade +-3% unseen",
+      "case": "nominal",
+      "tracking_rmse_mps": 0.00132731974867358,
+      "tracking_max_mps": 0.017012023224812822,
+      "wh_per_km": 190.73127857657678
+    },
+    {
+      "cycle": "us06",
+      "grade": "grade +-3% unseen",
+      "case": "mass +10%",
+      "tracking_rmse_mps": 0.030693071665763735,
+      "tracking_max_mps": 0.1908319017536666,
+      "wh_per_km": 190.88547348612005
+    },
+    {
+      "cycle": "us06",
+      "grade": "grade +-3% unseen",
+      "case": "drag +30%",
+      "tracking_rmse_mps": 0.0024140138085449866,
+      "tracking_max_mps": 0.0170364391262543,
+      "wh_per_km": 190.75963294812604
+    },
+    {
+      "cycle": "us06",
+      "grade": "grade +-3% unseen",
+      "case": "rolling +50%",
+      "tracking_rmse_mps": 0.002522992710798559,
+      "tracking_max_mps": 0.03014371381075638,
+      "wh_per_km": 190.7533876732547
+    },
+    {
+      "cycle": "us06",
+      "grade": "grade +-3% unseen",
+      "case": "grade unknown",
+      "tracking_rmse_mps": 0.003478599567127823,
+      "tracking_max_mps": 0.028644255470137714,
+      "wh_per_km": 190.75908657554118
+    },
+    {
+      "cycle": "us06",
+      "grade": "grade +-3% unseen",
+      "case": "speed noise 0.2 m/s",
+      "tracking_rmse_mps": 0.02316352547065261,
+      "tracking_max_mps": 0.09860507448893152,
+      "wh_per_km": 201.18351148039298
+    },
+    {
+      "cycle": "us06",
+      "grade": "grade +-3% unseen",
+      "case": "link delay 100 ms",
+      "tracking_rmse_mps": 0.10242284573812296,
+      "tracking_max_mps": 0.38116055678718386,
+      "wh_per_km": 191.52629471583802
+    },
+    {
+      "cycle": "us06",
+      "grade": "grade +-3% unseen",
+      "case": "no feedforward",
+      "tracking_rmse_mps": 0.29466911534287976,
+      "tracking_max_mps": 1.505898096040052,
+      "wh_per_km": 190.70774200862442
+    }
+  ]
+}

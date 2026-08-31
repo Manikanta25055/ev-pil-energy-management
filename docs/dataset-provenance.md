@@ -534,3 +534,34 @@ current simultaneously drops from 140 A to 7 A, a bus dropout, not a
 manoeuvre. The i3 reaches 100 km/h in 7.2 s (3.9 m/s²) and cannot brake much
 past 1 g, so a ±10 m/s² bound is outside anything the vehicle does. It touches
 **2 samples in 1 trip**.
+
+---
+
+## Controller scenarios: standard driving cycles
+
+Added week 7. These are regulatory tables rather than measurements, fetched
+once by `scripts/build_cycles.py` and cached under `data/raw/cycles/`. The
+distance of each one is checked against its published figure on every load
+(`tests/control/test_cycles.py`), which is the check that catches a unit error
+or a truncated file.
+
+| Cycle | Publisher | Source file | Unit | Duration | Distance | v_max |
+|---|---|---|---|---|---|---|
+| UDDS | US EPA, Dynamometer Drive Schedules | `uddscol.txt` | mph | 1369 s | 11.99 km | 91.2 km/h |
+| HWFET | US EPA | `hwycol.txt` | mph | 765 s | 16.51 km | 96.4 km/h |
+| US06 | US EPA | `us06col.txt` | mph | 600 s | 12.89 km | 129.2 km/h |
+| FTP-75 | US EPA | `ftpcol.txt` | mph | 1874 s | 17.77 km | 91.2 km/h |
+| WLTC class 3b | UN GTR No. 15 Annex 1 | `V_class3b.txt` | km/h | 1800 s | 23.27 km | 131.3 km/h |
+
+The EPA files are two-column time/speed tables. The WLTC trace is a bare
+stream of one-second speeds, wrapped across lines; UNECE publishes it inside a
+PDF annex, so it is mirrored here from the JRC's open-source WLTP
+implementation (JRCSTU/wltp, EUPL-1.2), which reproduces the regulatory table.
+The layout of each file is declared per source rather than inferred: a
+heuristic that reads a wrapped stream as columns yields a plausible cycle of
+the wrong length, which is the kind of error that survives into a results
+table.
+
+Controller split, retained from the professor's original plan and recorded in
+`evpil.control.cycles.CONTROL_SPLIT`: train on WLTC 3b and UDDS, tune on
+HWFET, report on US06. FTP-75 is fetched but unused, since it contains UDDS.
