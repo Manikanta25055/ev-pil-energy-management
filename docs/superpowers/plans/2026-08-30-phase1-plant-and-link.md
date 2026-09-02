@@ -95,7 +95,7 @@ Boundaries follow responsibility, not technical layer. Each plant module is a pu
 - Consumes: nothing
 - Produces: an importable `evpil` package; a flashable ESP-IDF project named `evpil_fw`; `docs/hardware-inventory.md` recording the board's PSRAM status, which Task 2 and all later model-sizing work depend on.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # tests/test_smoke.py
@@ -104,12 +104,12 @@ def test_package_imports():
     assert evpil.__version__ == "0.1.0"
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest tests/test_smoke.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'evpil'`
 
-- [ ] **Step 3: Create the Python project**
+- [x] **Step 3: Create the Python project**
 
 ```toml
 # pyproject.toml
@@ -146,12 +146,12 @@ pythonpath = ["src"]
 __version__ = "0.1.0"
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pip install -e ".[dev]" && python -m pytest tests/test_smoke.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Create the ESP-IDF project**
+- [x] **Step 5: Create the ESP-IDF project**
 
 ```cmake
 # firmware/CMakeLists.txt
@@ -209,7 +209,7 @@ void app_main(void)
 }
 ```
 
-- [ ] **Step 6: Flash and record the board identity**
+- [x] **Step 6: Flash and record the board identity**
 
 Run from `firmware/`:
 
@@ -223,7 +223,7 @@ Then read the metal shield marking on the module itself. `ESP32-S3-MINI-1-N8` me
 
 Write `docs/hardware-inventory.md` with the module marking, the three `EVPIL-BOARD` lines verbatim, the ESP-IDF version from `idf.py --version`, and this sentence completed with the real number: "Usable internal SRAM for model weights plus tensor arena: ____ KB."
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add pyproject.toml src/evpil/__init__.py tests/test_smoke.py firmware/ docs/hardware-inventory.md
@@ -247,7 +247,7 @@ git commit -m "feat: project scaffolding and board identification"
 
 This task deliberately measures a plain int8 dot-product loop rather than a full TFLite-Micro graph. The goal is a throughput floor that is easy to interpret and cannot be confounded by framework overhead. Phase 2 measures the real graph; this measures whether the silicon is in the right order of magnitude at all.
 
-- [ ] **Step 1: Write the benchmark**
+- [x] **Step 1: Write the benchmark**
 
 ```c
 // firmware/main/bench_mac.h
@@ -318,7 +318,7 @@ void bench_mac_report(void)
 }
 ```
 
-- [ ] **Step 2: Wire it into main and build**
+- [x] **Step 2: Wire it into main and build**
 
 ```c
 // firmware/main/main.c  -- add after the EVPIL-BOARD prints, before the while loop
@@ -336,12 +336,12 @@ idf_component_register(SRCS "main.c" "bench_mac.c"
 Run from `firmware/`: `idf.py build`
 Expected: build succeeds with no warnings from `bench_mac.c`.
 
-- [ ] **Step 3: Flash and capture the measurement**
+- [x] **Step 3: Flash and capture the measurement**
 
 Run: `idf.py -p /dev/cu.usbmodem* flash monitor`
 Expected: four `EVPIL-G1` lines, one per size. Throughput should rise with `n` as loop overhead amortises, then flatten. Record all four lines verbatim.
 
-- [ ] **Step 4: Evaluate Gate G1**
+- [x] **Step 4: Evaluate Gate G1**
 
 Create `docs/g1-compute-budget.md`. Take `mmac_per_s` from the `n=1024` row as the working figure — large enough to have amortised loop overhead, small enough to stay in cache. Compute:
 
@@ -365,7 +365,7 @@ Record the verdict explicitly, then state which config Phase 2 will target.
 
 Note in the document that this is a scalar C loop, so ESP-NN's vector kernels should improve on it — the measured figure is a **lower bound**, and treating it as such is deliberate conservatism.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add firmware/main/bench_mac.c firmware/main/bench_mac.h firmware/main/main.c firmware/main/CMakeLists.txt docs/g1-compute-budget.md
@@ -411,7 +411,7 @@ STEP_REQ payload is empty.
 
 At 100 Hz the traffic is 46 + 26 bytes per cycle, about 7.2 kB/s — the link is latency-bound, never bandwidth-bound.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # tests/test_protocol.py
@@ -507,12 +507,12 @@ def test_shared_vector_for_c_parity():
     )
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest tests/test_protocol.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'evpil.protocol'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 ```python
 # src/evpil/protocol.py
@@ -614,12 +614,12 @@ def pack_step_req(seq: int, t_us: int) -> bytes:
     return pack_frame(FrameType.STEP_REQ, seq, t_us, b"")
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `python -m pytest tests/test_protocol.py -v`
 Expected: 10 passed
 
-- [ ] **Step 5: Print the shared vector for Task 4**
+- [x] **Step 5: Print the shared vector for Task 4**
 
 Run:
 
@@ -632,7 +632,7 @@ Expected output, already verified: `1ce7020c040302010d0c0b0a0000803f0000003f0000
 If it differs, the Python implementation has a bug. Task 4 asserts these
 exact 26 bytes in C.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/evpil/protocol.py tests/test_protocol.py
@@ -659,7 +659,7 @@ git commit -m "feat: PIL frame protocol, Python side"
 
 Tests compile and run **on the development machine with plain gcc**, not on target. Protocol encoding has no hardware dependency, so testing it on target would be slower and no more informative.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```c
 // firmware/host_test/test_protocol.c
@@ -770,12 +770,12 @@ clean:
 	rm -f test_protocol
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd firmware/host_test && make check`
 Expected: FAIL — compiler error, `protocol.h: No such file or directory`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 ```c
 // firmware/main/protocol.h
@@ -893,14 +893,14 @@ int evpil_unpack(const uint8_t *buf, size_t len, evpil_frame_t *out)
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cd firmware/host_test && make check`
 Expected: every line begins `ok:`, final line `PASSED (0 failures)`
 
 If `frame bytes match Python exactly` fails, the two implementations have diverged — fix before proceeding. Nothing downstream works if host and target disagree on encoding.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add firmware/main/protocol.c firmware/main/protocol.h firmware/host_test/
@@ -930,7 +930,7 @@ Transport is UART1 at 921600 8N1 on GPIO17 (TX) and GPIO18 (RX), via an external
 
 UART is the default because its timing is governed by the ESP32's own peripheral clock, whereas USB-CDC timing is shaped by host USB scheduling. Given that the MCU is the clock master, the more deterministic transport is the better starting point.
 
-- [ ] **Step 1: Write the failing host test**
+- [x] **Step 1: Write the failing host test**
 
 ```python
 # tests/test_link.py
@@ -992,12 +992,12 @@ def test_assembler_counts_sequence_gaps():
     assert asm.frames_dropped == 2
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest tests/test_link.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'evpil.link'`
 
-- [ ] **Step 3: Write the host implementation**
+- [x] **Step 3: Write the host implementation**
 
 ```python
 # src/evpil/link.py
@@ -1124,12 +1124,12 @@ class SerialLink:
         self.close()
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `python -m pytest tests/test_link.py -v`
 Expected: 6 passed
 
-- [ ] **Step 5: Write the firmware transport**
+- [x] **Step 5: Write the firmware transport**
 
 ```c
 // firmware/main/link.h
@@ -1236,7 +1236,7 @@ idf_component_register(SRCS "main.c" "bench_mac.c" "protocol.c" "link.c"
                        INCLUDE_DIRS ".")
 ```
 
-- [ ] **Step 6: Add an echo loop to main and verify the round-trip**
+- [x] **Step 6: Add an echo loop to main and verify the round-trip**
 
 ```c
 // firmware/main/main.c  -- replace the trailing while(1) with this
@@ -1289,7 +1289,7 @@ Expected: ten tuples with `FrameType.ACTUATION` and `seq` counting 0 to 9, then
 
 Substitute the real device path from `ls /dev/cu.*`.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/evpil/link.py tests/test_link.py firmware/main/link.c firmware/main/link.h firmware/main/main.c firmware/main/CMakeLists.txt
@@ -1312,7 +1312,7 @@ git commit -m "feat: PIL serial transport, host and firmware"
 
 A GPIO pin held high for exactly the duration of a task body, captured by an external logic analyser, is far stronger evidence of worst-case execution time than any figure the firmware reports about itself. It costs two register writes.
 
-- [ ] **Step 1: Write the implementation**
+- [x] **Step 1: Write the implementation**
 
 Direct register access is used rather than `gpio_set_level()` because the latter costs enough cycles to distort the very measurement being taken.
 
@@ -1364,7 +1364,7 @@ idf_component_register(SRCS "main.c" "bench_mac.c" "protocol.c" "link.c" "timing
                        INCLUDE_DIRS ".")
 ```
 
-- [ ] **Step 2: Verify the pins toggle**
+- [x] **Step 2: Verify the pins toggle**
 
 Add to `main.c` immediately after `link_init()`, build, flash, and probe GPIO4 with the AD3 or any scope:
 
@@ -1382,7 +1382,7 @@ Expected on the AD3: a 1 kHz square wave on GPIO4 with a 10% duty cycle, high ti
 
 Remove this verification block once confirmed.
 
-- [ ] **Step 3: Document the measurement rig**
+- [x] **Step 3: Document the measurement rig**
 
 Write `docs/measurement-rig.md` covering:
 
@@ -1399,7 +1399,7 @@ State the shunt caveat explicitly: a 1 ohm shunt in the 3V3 rail drops 100 mV at
 
 Also record that WiFi and Bluetooth must be off for every current measurement, per the Global Constraints — radio activity would swamp the inference signal entirely.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add firmware/main/timing.c firmware/main/timing.h firmware/main/CMakeLists.txt docs/measurement-rig.md
@@ -1425,7 +1425,7 @@ git commit -m "feat: GPIO timing instrumentation and measurement rig documentati
 
 The MCU drives the loop: `comm_tx` emits a STEP_REQ, the host advances the plant one step and replies with STATE, `comm_rx` consumes it. Host scheduler jitter therefore appears as measured link latency rather than as unexplained control-loop jitter.
 
-- [ ] **Step 1: Disable the radios explicitly**
+- [x] **Step 1: Disable the radios explicitly**
 
 Append to `firmware/sdkconfig.defaults`:
 
@@ -1436,7 +1436,7 @@ CONFIG_BT_ENABLED=n
 
 Per the Global Constraints, radio activity corrupts both the supply-current and the timing measurements. Setting these explicitly means a later component that pulls in networking cannot silently re-enable them.
 
-- [ ] **Step 2: Write the task set**
+- [x] **Step 2: Write the task set**
 
 ```c
 // firmware/main/tasks.h
@@ -1639,7 +1639,7 @@ void tasks_start(void)
 
 `comm_rx`, `ctrl` and `comm_tx` are fused into `ctrl_task` rather than split into three tasks. The spec's table lists them separately, but they are strictly sequential within one 10 ms period and splitting them would add two context switches per period for no benefit. The GPIO channels still separate communication from control in the captured waveform, so the measurement granularity the spec asks for is preserved.
 
-- [ ] **Step 3: Wire into main, build and flash**
+- [x] **Step 3: Wire into main, build and flash**
 
 ```c
 // firmware/main/main.c  -- replace the echo loop with this
@@ -1663,7 +1663,7 @@ idf_component_register(SRCS "main.c" "bench_mac.c" "protocol.c" "link.c"
 Run: `cd firmware && idf.py build && idf.py -p /dev/cu.usbmodem* flash`
 Expected: build succeeds; `EVPIL-DIAG` lines appear twice per second on the monitor with `loops` climbing by about 500 each line.
 
-- [ ] **Step 4: Write the host-side G3 harness**
+- [x] **Step 4: Write the host-side G3 harness**
 
 ```python
 # scripts/measure_link.py
@@ -1744,14 +1744,14 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-- [ ] **Step 5: Run the G3 measurement**
+- [x] **Step 5: Run the G3 measurement**
 
 Run: `python scripts/measure_link.py --port /dev/cu.usbserial-XXXX --minutes 10`
 Expected: `G3 PASS`, with roughly 60,000 steps at a 10 ms period.
 
 Simultaneously capture GPIO4 and GPIO6 on the AD3 using the settings in `docs/measurement-rig.md`. The externally measured period is the authoritative one; the host-side number can only ever be a lower bound on the true jitter, because the host is itself the source of some of it.
 
-- [ ] **Step 6: Evaluate Gate G3**
+- [x] **Step 6: Evaluate Gate G3**
 
 Write `docs/g3-link-characterisation.md` with the full harness output, the AD3 waveform screenshot, and a stated verdict.
 
@@ -1762,7 +1762,7 @@ Write `docs/g3-link-characterisation.md` with the full harness output, the AD3 w
 3. Close other applications on the Mac. An 8 GB machine under memory pressure will inject scheduler delays that no firmware change can absorb.
 4. If p99 jitter remains above 1 ms, **re-scope the loop to 20 ms** and record that decision here with its measured justification. A 20 ms loop that provably meets its deadline is a far better result than a 10 ms loop that quietly misses.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add firmware/main/tasks.c firmware/main/tasks.h firmware/main/main.c firmware/main/CMakeLists.txt firmware/sdkconfig.defaults scripts/measure_link.py docs/g3-link-characterisation.md
@@ -1796,7 +1796,7 @@ Track B shares no code with Track A until Phase 2. The two may be run in paralle
 
 The real column names in the IEEE DataPort archive are **not known at the time of writing** and must not be guessed. Step 1 inspects the files and records the actual names; the mapping dictionary is data, not code, so discovering it is a documented step rather than an assumption baked into the loader. Tests use a synthetic fixture in canonical form, so they are independent of whatever the archive turns out to call its columns.
 
-- [ ] **Step 1: Acquire the dataset and record its real schema**
+- [x] **Step 1: Acquire the dataset and record its real schema**
 
 Download from IEEE DataPort, DOI `10.21227/6jr9-5235` ("Battery and Heating Data in Real Driving Cycles", Steinstraeter, Buberger, Trifonov, 2020). The Kaggle mirror is `atechnohazard/battery-and-heating-data-in-real-driving-cycles`.
 
@@ -1823,7 +1823,7 @@ Write `docs/dataset-provenance.md` recording: the DOI and full citation, the lic
 
 Confirm the 10 Hz sample rate from the timestamp column rather than assuming it.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 ```python
 # tests/data/test_schema.py
@@ -1967,12 +1967,12 @@ def test_load_all_trips_tags_trip_id(raw_csv):
     assert len(df) == 5
 ```
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run: `python -m pytest tests/data/ -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'evpil.data'`
 
-- [ ] **Step 4: Write the implementation**
+- [x] **Step 4: Write the implementation**
 
 ```python
 # src/evpil/data/__init__.py
@@ -2139,12 +2139,12 @@ def load_all_trips(root: Path, mapping: dict[str, str]) -> pd.DataFrame:
     return pd.concat(frames, ignore_index=True)
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `python -m pytest tests/data/ -v`
 Expected: 13 passed
 
-- [ ] **Step 6: Load the real dataset and record what happened**
+- [x] **Step 6: Load the real dataset and record what happened**
 
 ```bash
 python -c "
@@ -2163,7 +2163,7 @@ Append the output to `docs/dataset-provenance.md`, along with any trips that
 `validate_frame` rejected and why. A rejected trip is a finding, not a nuisance —
 record it rather than silently dropping it.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/evpil/data/ tests/data/ docs/dataset-provenance.md .gitignore
@@ -2193,7 +2193,7 @@ git commit -m "feat: canonical schema and BMW i3 trip loader"
 
 This task implements the three guards from spec section 6.4. They exist because the prior work's headline numbers were produced by row-level splitting (defect D2) and by feeding a target-derived column back in as a feature (defect D5).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # tests/data/test_splits.py
@@ -2341,12 +2341,12 @@ def test_shuffled_label_control_would_detect_leakage():
     assert r2 > 0.99, "an oracle model must score high, or the control is blind"
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `python -m pytest tests/data/test_splits.py tests/data/test_guards.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'evpil.data.splits'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 ```python
 # src/evpil/data/splits.py
@@ -2523,12 +2523,12 @@ def shuffled_label_control(
     return 1.0 - ss_res / ss_tot if ss_tot > 0 else 0.0
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `python -m pytest tests/data/ -v`
 Expected: 25 passed
 
-- [ ] **Step 5: Generate and freeze the real split**
+- [x] **Step 5: Generate and freeze the real split**
 
 ```bash
 python -c "
@@ -2551,7 +2551,7 @@ git add -f data/splits.json
 
 **From this point, the trips listed under `test` are not read again until the end of the project.** Not for hyperparameters, not for quantisation calibration, not for sanity checks.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/evpil/data/splits.py src/evpil/data/guards.py tests/data/test_splits.py tests/data/test_guards.py data/splits.json
@@ -2577,7 +2577,7 @@ git commit -m "feat: trip-level splits and leakage guards"
 
 This module supplies all four force terms. The predecessor work omitted rolling resistance and the inertial term entirely (defect D6), which is why its "physics-based" range figures could not be reproduced.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # tests/plant/test_longitudinal.py
@@ -2644,12 +2644,12 @@ def test_aero_force_opposes_motion_when_reversing():
     assert rev.aero_n == pytest.approx(-165.648000, rel=1e-9)
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest tests/plant/test_longitudinal.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'evpil.plant'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 ```python
 # src/evpil/plant/__init__.py
@@ -2718,12 +2718,12 @@ def mechanical_power_w(load: RoadLoad, v_mps: float) -> float:
     return load.tractive_n * v_mps
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `python -m pytest tests/plant/test_longitudinal.py -v`
 Expected: 8 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/evpil/plant/__init__.py src/evpil/plant/longitudinal.py tests/plant/test_longitudinal.py
@@ -2754,7 +2754,7 @@ First-order Thevenin: one series resistance plus one RC pair. Current sign conve
 
 Temperature-dependent `r0` is deliberately included. It is one of the effects the nominal physics of the predecessor work omitted, and it is precisely the kind of residual a physics-informed model can be shown to learn in Phase 2 — so it must be in the plant for that comparison to mean anything.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # tests/plant/test_battery.py
@@ -2918,12 +2918,12 @@ def test_lower_root_is_chosen_not_the_upper():
     assert i < 350.0 / (2 * 0.05), "must stay on the physical side of peak power"
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest tests/plant/test_battery.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'evpil.plant.battery'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 ```python
 # src/evpil/plant/battery.py
@@ -3050,12 +3050,12 @@ def battery_step(
     return BatteryState(soc_frac=soc, v_rc_v=state.v_rc_v + dv_rc, t_batt_c=state.t_batt_c)
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `python -m pytest tests/plant/test_battery.py -v`
 Expected: 21 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/evpil/plant/battery.py tests/plant/test_battery.py
@@ -3085,7 +3085,7 @@ git commit -m "feat: Thevenin battery model with temperature-dependent resistanc
 
 The efficiency map is 2-D, not a scalar. A constant efficiency is a poor approximation across an EV's operating envelope and is another of the predecessor work's omissions.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # tests/plant/test_motor.py
@@ -3229,12 +3229,12 @@ def test_blend_is_clamped_to_its_declared_range():
     assert d == pytest.approx(-20000.0)
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `python -m pytest tests/plant/test_motor.py tests/plant/test_regen.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'evpil.plant.motor'`
 
-- [ ] **Step 3: Write the implementations**
+- [x] **Step 3: Write the implementations**
 
 ```python
 # src/evpil/plant/motor.py
@@ -3367,12 +3367,12 @@ def split_braking(
     return p_regen, p_brake_w - p_regen
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `python -m pytest tests/plant/test_motor.py tests/plant/test_regen.py -v`
 Expected: 17 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/evpil/plant/motor.py src/evpil/plant/regen.py tests/plant/test_motor.py tests/plant/test_regen.py
@@ -3399,7 +3399,7 @@ This module exists because of the i3 archive's heating-circuit channel. Auxiliar
 
 The model is piecewise-linear in ambient temperature about a cabin setpoint: heating below it, cooling above it, with different coefficients because heat pumps and resistive heaters are not symmetric.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # tests/plant/test_auxiliary.py
@@ -3461,12 +3461,12 @@ def test_fitted_power_is_never_negative():
     assert aux_power_w(got, 50.0) >= 0.0
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest tests/plant/test_auxiliary.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'evpil.plant.auxiliary'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 ```python
 # src/evpil/plant/auxiliary.py
@@ -3536,12 +3536,12 @@ def fit_auxiliary(
     )
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `python -m pytest tests/plant/test_auxiliary.py -v`
 Expected: 7 passed
 
-- [ ] **Step 5: Fit against the real training trips**
+- [x] **Step 5: Fit against the real training trips**
 
 ```bash
 python -c "
@@ -3562,7 +3562,7 @@ print(a)
 
 Fit on **training trips only**. Record the coefficients in `docs/dataset-provenance.md` with the residual RMSE, and note the ambient-temperature range they were fitted over — extrapolating a fit beyond its data is how plausible-looking plants produce wrong answers at the edges.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/evpil/plant/auxiliary.py tests/plant/test_auxiliary.py
@@ -3589,7 +3589,7 @@ git commit -m "feat: auxiliary and HVAC power model fitted from logged data"
 
 Every field of `VehicleParams` has an entry in `citations`. A parameter without a source is a parameter a reviewer can reject, so the dataclass refuses to construct without one.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # tests/plant/test_plant.py
@@ -3750,12 +3750,12 @@ def test_distance_and_energy_accumulate_monotonically():
         prev_d, prev_e = st.distance_m, st.energy_wh
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest tests/plant/test_plant.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'evpil.plant.params'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 ```python
 # src/evpil/plant/params.py
@@ -3945,12 +3945,12 @@ class Plant:
         )
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `python -m pytest tests/plant/ -v`
 Expected: 63 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/evpil/plant/params.py src/evpil/plant/plant.py tests/plant/test_plant.py
@@ -3975,7 +3975,7 @@ Three parameters are identified rather than cited: `c_rr`, `cd` (with frontal ar
 
 Everything else comes from published BMW i3 (60 Ah, 2014) specifications. **Look these up and record the actual source for each**; no figures are asserted here because none have been verified.
 
-- [ ] **Step 1: Write the identification script**
+- [x] **Step 1: Write the identification script**
 
 ```python
 # scripts/identify_params.py
@@ -4244,7 +4244,7 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-- [ ] **Step 2: Review the parameter sources**
+- [x] **Step 2: Review the parameter sources**
 
 The figures above are filled in and cited (references [R1] to [R6] in the
 module). Zero `TODO-VERIFY` markers remain; confirm with:
@@ -4289,18 +4289,18 @@ print('usable   ', vp.battery.capacity_ah * 360 / 1000 * (vp.battery.soc_max - v
 Expected: 0.690, 21.6, 18.8. `VehicleParams` raises on any blank citation, so a
 successful construction is itself part of the check.
 
-- [ ] **Step 3: Run the identification**
+- [x] **Step 3: Run the identification**
 
 Run: `python scripts/identify_params.py`
 Expected: `least_squares` converges, printing decreasing cost; final `c_rr` in roughly 0.008 to 0.015, `cd` near the published figure, `r0` in roughly 0.02 to 0.10 ohm.
 
 If a fitted value pins against a bound, the model is absorbing an error that belongs elsewhere. Do not widen the bound to make it converge — find out what is wrong. A `c_rr` of 0.025 means something else in the chain is missing.
 
-- [ ] **Step 4: Record the outcome**
+- [x] **Step 4: Record the outcome**
 
 Append to `docs/dataset-provenance.md`: the identified values, the training residual RMSE, the trips used for identification, and each published figure with its source. Note any parameter that pinned against a bound and what you concluded.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add scripts/__init__.py scripts/identify_params.py data/i3_params.json docs/dataset-provenance.md
@@ -4323,7 +4323,7 @@ This is the most important gate in Phase 1. If the plant cannot reproduce real t
 
 Validation runs on the **validation** trips, never the test trips.
 
-- [ ] **Step 1: Write the harness**
+- [x] **Step 1: Write the harness**
 
 ```python
 # scripts/validate_plant.py
@@ -4426,12 +4426,12 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-- [ ] **Step 2: Run the validation**
+- [x] **Step 2: Run the validation**
 
 Run: `python -m scripts.validate_plant`
 Expected: one line per validation trip, then the G2 verdict.
 
-- [ ] **Step 3: Evaluate Gate G2 and record it**
+- [x] **Step 3: Evaluate Gate G2 and record it**
 
 Write `docs/g2-plant-validation.md` containing the full output, a scatter plot of simulated against logged battery power for the best and worst trips, a time-series overlay for one representative trip, and the verdict.
 
@@ -4443,7 +4443,7 @@ Write `docs/g2-plant-validation.md` containing the full output, a scatter plot o
 4. Verify the OCV curve. The placeholder in `build_params` is a guess and is the most likely single cause of a systematic SoC error.
 5. If the criterion turns out to be unachievable for a defensible reason, revise it **once**, record the new threshold and the full justification in `docs/g2-plant-validation.md`, and note the change in the spec's section 6.1. Do not silently relax it.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add scripts/validate_plant.py docs/g2-plant-validation.md docs/g2-per-trip.csv
