@@ -5,9 +5,11 @@
 
 The ESP32-S3 is now connected on `/dev/cu.usbmodem1101`, MAC
 `1c:db:d4:46:24:e8`, the same part recorded in `docs/hardware-inventory.md`.
-Item 1 has been run and is kept here as a record of how it closed. Items 2 to 4
-are still outstanding, and none of the three is waiting on the board any more.
-Two are waiting on a decision and one on the item before it.
+
+Items 1 and 4 have been run and are kept here as a record of how they closed.
+Items 2 and 3 are outstanding and neither is waiting on the board. Item 2 is
+waiting on the parked decision about what should ship, and item 3 waits on
+item 2.
 
 Sections still marked outstanding contain no measurements. No number in them
 may be cited until the run that produces it has happened.
@@ -67,11 +69,27 @@ will settle it. Someone has to choose.
 Week 10 onward. The board is here; item 2 is not settled, and this cannot
 start until it is.
 
-## 4. Anything the toolchain change forces to be re-measured
+## 4. Anything the toolchain change forces to be re-measured -- DONE
 
-If the firmware moves from ESP-IDF to the Arduino ESP32 core (see the open
-question in `docs/toolchain-arduino-cli.md`), then G1, G3 and G5 were all
-measured against a build that no longer exists and have to be run again on the
-board before the paper can cite them. That is a re-measurement campaign, not a
-port detail, and it is the main reason the port is not something to start
-without deciding it explicitly.
+**Settled and run on 2026-09-02.** The supervisor chose to port to the Arduino
+ESP32 core. `scripts/arduino_build.sh` builds it, and G1, G3, G5 and the SAC
+actor on chip were all re-measured against that build.
+
+No verdict changed. G1 agrees with the IDF build to four significant figures,
+G5 moves 3.9%, G3 still fails on the same criterion with an identical jitter
+distribution and `ctrl_late` still 0, and the actor is 1.7% slower with the
+same weight checksum. `docs/week10-arduino-port.md`.
+
+Left open by that campaign, and stated so it is not mistaken for finished:
+
+- Supply current was not re-measured. The Arduino core links WiFi and
+  Bluetooth in and cannot be told not to. Nothing starts them, but the design
+  spec's radio constraint covers current draw as well as timing, and only
+  timing was checked.
+- G3's dropped-frame count went from 3 to 9 in 59,650 loops. That is two
+  single samples of a rare event and does not establish a rate. Five or more
+  runs per toolchain would.
+- Ablation A4 and the week 7 fallback campaign were measured on the IDF build
+  the same day and have not been repeated on the Arduino one. The control
+  task's timing is unchanged, so there is no reason to expect movement, but
+  that is a reason to expect, not a measurement.

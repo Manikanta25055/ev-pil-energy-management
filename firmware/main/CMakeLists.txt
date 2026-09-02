@@ -27,7 +27,10 @@ endif()
 #   ./scripts/idf.sh -DFALLBACK_ENABLED=0 build ablation A4, handling off
 #   ./scripts/idf.sh -DCTRL_PIPELINED=0 build   the synchronous loop
 #   ./scripts/idf.sh -DRUN_ACTOR_BENCH=1 build  verify and time the actor
-foreach(opt FAULT_INJECT FALLBACK_ENABLED CTRL_PIPELINED RUN_ACTOR_BENCH)
+#   ./scripts/idf.sh -DRUN_G1_BENCHMARK=1 build gate G1, int8 MAC throughput
+#   ./scripts/idf.sh -DRUN_G5_BENCHMARK=1 build gate G5, encoder latency
+foreach(opt FAULT_INJECT FALLBACK_ENABLED CTRL_PIPELINED RUN_ACTOR_BENCH
+            RUN_G1_BENCHMARK RUN_G5_BENCHMARK)
     if(DEFINED ${opt})
         target_compile_definitions(${COMPONENT_LIB} PRIVATE ${opt}=${${opt}})
         message(STATUS "evpil: ${opt}=${${opt}}")

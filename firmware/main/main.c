@@ -15,14 +15,22 @@
 #include "tasks.h"
 #include "timing.h"
 
-/* Set to 1 for the gate G1 measurement run, then back to 0. */
+/* Set by -DRUN_G1_BENCHMARK=1: the gate G1 measurement run.
+   A build switch rather than an edit, so the firmware that produced a number
+   can be rebuilt from the command that produced it. It has to be one for the
+   Arduino-core build in any case, which has no equivalent of editing a
+   sdkconfig and rebuilding in place. */
+#ifndef RUN_G1_BENCHMARK
 #define RUN_G1_BENCHMARK 0
+#endif
 
-/* Set to 1 to time the deployed encoder shape on silicon (gate G5 latency).
-   G1 measured a raw multiply-accumulate rate; this measures the real graph,
-   including the softmax, normalisation and memory traffic that a MAC count
-   cannot see. */
+/* Set by -DRUN_G5_BENCHMARK=1: time the deployed encoder shape on silicon
+   (gate G5 latency). G1 measured a raw multiply-accumulate rate; this measures
+   the real graph, including the softmax, normalisation and memory traffic that
+   a MAC count cannot see. */
+#ifndef RUN_G5_BENCHMARK
 #define RUN_G5_BENCHMARK 0
+#endif
 
 /* Set by -DRUN_ACTOR_BENCH=1: run the exported SAC actor over a fixed set of
    observations, print each action for the host to check against numpy, and
@@ -50,17 +58,27 @@ void app_main(void)
 #endif
 
 #if RUN_G1_BENCHMARK || RUN_G5_BENCHMARK || RUN_ACTOR_BENCH
-#if RUN_G1_BENCHMARK
-    bench_mac_report();
-#endif
-#if RUN_G5_BENCHMARK
-    bench_encoder_report();
-#endif
+    /* The actor bench prints a fixed set of actions for the host to check
+       against numpy, so it runs once and is not repeated. */
 #if RUN_ACTOR_BENCH
     bench_actor_report();
 #endif
+    /* G1 and G5 repeat instead of printing once at boot.
+       The board's USB CDC device re-enumerates when it resets, so a line
+       printed during boot is a race against the host reopening the port; it
+       used to be won by leaving a serial monitor running and reading the
+       result off the screen. Repeating removes the race and turns a single
+       number into a distribution, which is worth more than the two seconds it
+       costs. Both benchmarks work out of static buffers and carry no state
+       between runs, so each repeat measures the same thing. */
     while (1) {
-        vTaskDelay(pdMS_TO_TICKS(1000));
+#if RUN_G1_BENCHMARK
+        bench_mac_report();
+#endif
+#if RUN_G5_BENCHMARK
+        bench_encoder_report();
+#endif
+        vTaskDelay(pdMS_TO_TICKS(2000));
     }
 #else
     link_init();

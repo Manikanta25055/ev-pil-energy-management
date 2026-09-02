@@ -1,0 +1,68 @@
+{
+  "minutes": 10.0,
+  "port": "/dev/cu.usbmodem1101",
+  "counters": {
+    "loop_count": 59650,
+    "rx_timeouts": 0,
+    "rx_bad": 0,
+    "infer_deadline_misses": 0,
+    "stale_steps": 9,
+    "ctrl_late": 0,
+    "ctrl_fallback_steps": 0,
+    "limp_steps": 1,
+    "ems_fallback_steps": 0,
+    "stale_worst": 288,
+    "boot_reason": 11
+  },
+  "extremes": {
+    "ctrl_wcet_us": 61,
+    "infer_wcet_us": 776,
+    "rtt_max_us": 1637,
+    "period_min_us": 9729,
+    "period_max_us": 10001
+  },
+  "host": {
+    "frames_ok": 121208,
+    "frames_bad": 0,
+    "frames_dropped": 0,
+    "open_attempts": 2
+  },
+  "histogram": [
+    59650,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "bin_edges_us": [
+    25,
+    50,
+    100,
+    150,
+    200,
+    300,
+    500,
+    750,
+    1000,
+    1500,
+    2000,
+    5000
+  ],
+  "p50_us": 25.0,
+  "p99_us": 25.0,
+  "p999_us": 25.0,
+  "dropped_total": 9,
+  "limits": {
+    "p99_us": 1000.0,
+    "dropped": 0
+  },
+  "verdict": "FAIL"
+}

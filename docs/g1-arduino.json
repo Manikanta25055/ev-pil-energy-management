@@ -1,0 +1,95 @@
+{
+  "tag": "G1",
+  "toolchain": "arduino",
+  "port": "/dev/cu.usbmodem1101",
+  "captured_utc": "2026-09-02T14:51:30Z",
+  "note": "Arduino ESP32 core 3.3.7, -O2, USBMode=hwcdc",
+  "lines": [
+    {
+      "n": 4096,
+      "reps": 2000,
+      "us": 274402,
+      "mmac_per_s": 29.85
+    },
+    {
+      "n": 64,
+      "reps": 2000,
+      "us": 4394,
+      "mmac_per_s": 29.13
+    },
+    {
+      "n": 256,
+      "reps": 2000,
+      "us": 17252,
+      "mmac_per_s": 29.68
+    },
+    {
+      "n": 1024,
+      "reps": 2000,
+      "us": 68679,
+      "mmac_per_s": 29.82
+    },
+    {
+      "n": 4096,
+      "reps": 2000,
+      "us": 274402,
+      "mmac_per_s": 29.85
+    },
+    {
+      "n": 64,
+      "reps": 2000,
+      "us": 4394,
+      "mmac_per_s": 29.13
+    },
+    {
+      "n": 256,
+      "reps": 2000,
+      "us": 17252,
+      "mmac_per_s": 29.68
+    },
+    {
+      "n": 1024,
+      "reps": 2000,
+      "us": 68679,
+      "mmac_per_s": 29.82
+    },
+    {
+      "n": 4096,
+      "reps": 2000,
+      "us": 274402,
+      "mmac_per_s": 29.85
+    },
+    {
+      "n": 64,
+      "reps": 2000,
+      "us": 4394,
+      "mmac_per_s": 29.13
+    },
+    {
+      "n": 256,
+      "reps": 2000,
+      "us": 17252,
+      "mmac_per_s": 29.68
+    },
+    {
+      "n": 1024,
+      "reps": 2000,
+      "us": 68679,
+      "mmac_per_s": 29.82
+    }
+  ],
+  "raw": [
+    "EVPIL-G1 n=4096 reps=2000 us=274402 mmac_per_s=29.85",
+    "EVPIL-G1 n=64 reps=2000 us=4394 mmac_per_s=29.13",
+    "EVPIL-G1 n=256 reps=2000 us=17252 mmac_per_s=29.68",
+    "EVPIL-G1 n=1024 reps=2000 us=68679 mmac_per_s=29.82",
+    "EVPIL-G1 n=4096 reps=2000 us=274402 mmac_per_s=29.85",
+    "EVPIL-G1 n=64 reps=2000 us=4394 mmac_per_s=29.13",
+    "EVPIL-G1 n=256 reps=2000 us=17252 mmac_per_s=29.68",
+    "EVPIL-G1 n=1024 reps=2000 us=68679 mmac_per_s=29.82",
+    "EVPIL-G1 n=4096 reps=2000 us=274402 mmac_per_s=29.85",
+    "EVPIL-G1 n=64 reps=2000 us=4394 mmac_per_s=29.13",
+    "EVPIL-G1 n=256 reps=2000 us=17252 mmac_per_s=29.68",
+    "EVPIL-G1 n=1024 reps=2000 us=68679 mmac_per_s=29.82"
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "tag": "G5",
+  "toolchain": "arduino",
+  "port": "/dev/cu.usbmodem1101",
+  "captured_utc": "2026-09-02T14:52:27Z",
+  "note": "Arduino ESP32 core 3.3.7, -O2",
+  "lines": [
+    {
+      "seq": 32,
+      "d_model": 32,
+      "layers": 2,
+      "heads": 4,
+      "horizon": 30
+    },
+    {
+      "forward_us": 35032.5,
+      "reps": 50
+    },
+    {
+      "matmul32x32x64_us": 2332.58,
+      "softmax32x32_us": 918.48,
+      "layernorm32x32_us": 158.56
+    },
+    {
+      "weight_bytes": 17600,
+      "arena_bytes": 11294
+    },
+    {
+      "hidden": 64,
+      "layers": 1,
+      "forward_us": 35002.0,
+      "weight_bytes": 20352
+    },
+    {
+      "seq": 32,
+      "d_model": 32,
+      "layers": 2,
+      "heads": 4,
+      "horizon": 30
+    },
+    {
+      "forward_us": 35032.3,
+      "reps": 50
+    },
+    {
+      "matmul32x32x64_us": 2332.56,
+      "softmax32x32_us": 918.5,
+      "layernorm32x32_us": 158.56
+    },
+    {
+      "weight_bytes": 17600,
+      "arena_bytes": 11294
+    },
+    {
+      "hidden": 64,
+      "layers": 1,
+      "forward_us": 35000.6,
+      "weight_bytes": 20352
+    }
+  ],
+  "raw": [
+    "EVPIL-G5 seq=32 d_model=32 layers=2 heads=4 horizon=30",
+    "EVPIL-G5 forward_us=35032.5 reps=50",
+    "EVPIL-G5 matmul32x32x64_us=2332.58 softmax32x32_us=918.48 layernorm32x32_us=158.56",
+    "EVPIL-G5 weight_bytes=17600 arena_bytes=11294",
+    "EVPIL-G5 lstm hidden=64 layers=1 forward_us=35002.0 weight_bytes=20352",
+    "EVPIL-G5 seq=32 d_model=32 layers=2 heads=4 horizon=30",
+    "EVPIL-G5 forward_us=35032.3 reps=50",
+    "EVPIL-G5 matmul32x32x64_us=2332.56 softmax32x32_us=918.50 layernorm32x32_us=158.56",
+    "EVPIL-G5 weight_bytes=17600 arena_bytes=11294",
+    "EVPIL-G5 lstm hidden=64 layers=1 forward_us=35000.6 weight_bytes=20352"
+  ]
+}
