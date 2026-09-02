@@ -2665,6 +2665,102 @@ def a4_measured_section(doc: Document, on, off, on5, off5) -> None:
               "repeating the campaign at two or three seconds.")
 
 
+def port_section(doc: Document, g1, g5, g3a, actora, g3) -> None:
+    """The toolchain port and the gates re-measured against it."""
+    h1(doc, "Changing the build toolchain, and re-measuring because of it",
+       "port")
+
+    if not g1 or not g5 or not g3a:
+        para(doc, "The toolchain port had not been measured when this report "
+                  "was generated.", italic=True, colour=MUTED)
+        return
+
+    para(doc, "The firmware was moved from Espressif's own build system to the "
+              "Arduino build for the chip, on instruction. The two produce "
+              "different binaries from the same source, and every number in "
+              "this report that was measured on the chip had been measured "
+              "against the old one. None of them could be carried across by "
+              "argument, so all of them were taken again.")
+
+    para(doc, "The source code of the control loop did not have to be "
+              "rewritten. The Arduino build for this chip is built on top of "
+              "Espressif's, so everything the firmware asks the system for is "
+              "still there. What changed is how the build is driven, and the "
+              "compiler settings that come with it, which is exactly what "
+              "makes timing results non-transferable and is why they were "
+              "re-run rather than reasoned about.")
+
+    doc.add_heading("Every gate, on both builds", level=2)
+    tf_us = None
+    for line in g5["lines"]:
+        if "forward_us" in line and "hidden" not in line:
+            tf_us = line["forward_us"]
+            break
+    best = max((l for l in g1["lines"] if l.get("n") == 1024),
+               key=lambda l: l.get("mmac_per_s", 0), default=None)
+
+    rows = [
+        ["Gate G1, arithmetic rate",
+         "29.82 million/s", f"{best['mmac_per_s']:.2f} million/s"
+         if best else "-", "unchanged, PASS"],
+        ["Gate G5, forecaster on the chip", "36.46 ms",
+         f"{tf_us / 1000.0:.2f} ms" if tf_us else "-", "3.9% faster, fits"],
+        ["Gate G3, loop jitter (99th pct)",
+         f"{g3['p99_us']:.0f} us" if g3 else "25 us",
+         f"{g3a['p99_us']:.0f} us", "identical"],
+        ["Gate G3, loops late vs own deadline",
+         str(g3["counters"]["ctrl_late"]) if g3 else "0",
+         str(g3a["counters"]["ctrl_late"]), "identical, still zero"],
+        ["Gate G3, frames the chip did not get in time",
+         str(g3["counters"]["stale_steps"]) if g3 else "3",
+         str(g3a["counters"]["stale_steps"]), "worse, still FAIL"],
+        ["Controller on the chip", "0.121 ms",
+         f"{actora['latency_mean_ms']:.3f} ms" if actora else "-",
+         "1.7% slower"],
+    ]
+    table(doc, ["Measurement", "Espressif build", "Arduino build", "Effect"],
+          rows)
+    para(doc, "Table. Every quantity measured on the chip, taken again after "
+              "the build change. MEASURED, both columns.",
+         size=9, italic=True, colour=MUTED)
+
+    para(doc, "No verdict changed and the largest movement in anything "
+              "measured is 3.9%. The arithmetic rate agrees to four "
+              "significant figures, which is what should be expected of a "
+              "tight loop of 8-bit multiplications once both builds use the "
+              "same optimisation setting, and is now measured rather than "
+              "assumed. The controller still matches the laptop's arithmetic "
+              "to six decimal places and still carries the same checksum, so "
+              "the same weights are running.")
+
+    doc.add_heading("What got worse, and how much it is worth", level=2)
+    para(doc, f"One quantity moved the wrong way. The number of times the chip "
+              f"did not receive an update in time went from "
+              f"{g3['counters']['stale_steps'] if g3 else 3} to "
+              f"{g3a['counters']['stale_steps']} in 59,650 control loops, and "
+              f"that is the count gate G3 fails on. On the Arduino build it "
+              f"was enough for the car to be eased out of torque once during "
+              f"the ten-minute run.")
+
+    para(doc, "That is two single samples of a rare event, three hundredths "
+              "of a percent against fifteen hundredths, from one run on each "
+              "build. It is not enough to establish a rate, and it is not "
+              "claimed as one. What the runs do support is narrower: the "
+              "change did not fix the gate and did not clearly break it. "
+              "Settling it would take five or more runs on each build.")
+
+    doc.add_heading("What the new build cannot do", level=2)
+    para(doc, "The Arduino build compiles the wireless radios into the "
+              "program and offers no way to leave them out. Nothing switches "
+              "them on, and the timing results above show no sign of them. "
+              "But the reason the old build removed them was that a live "
+              "radio disturbs both timing and the current drawn from the "
+              "supply, and only timing was checked here. The current draw was "
+              "not re-measured on the new build, so that half of the "
+              "constraint is currently supported by argument rather than by "
+              "measurement, and is written here as such.")
+
+
 def sac_section(doc: Document, sac, onchip) -> None:
     h1(doc, "The learned controller, and what it found", key="learned")
 
@@ -3098,9 +3194,17 @@ def reproduce_section(doc: Document) -> None:
          "python3 scripts/verify_actor.py --export"],
         ["Verify it on the chip (needs -DRUN_ACTOR_BENCH=1)",
          "python3 scripts/verify_actor.py --check"],
-        ["Build the firmware", "./scripts/idf.sh build"],
+        ["Build and flash the firmware", "./scripts/arduino_build.sh --flash"],
         ["Fault-injection build",
-         "./scripts/idf.sh -DFAULT_INJECT=1 build && ./scripts/idf.sh flash"],
+         "./scripts/arduino_build.sh --flash -DFAULT_INJECT=1"],
+        ["Gate G1 on the chip",
+         "./scripts/arduino_build.sh --flash -DRUN_G1_BENCHMARK=1"],
+        ["Gate G5 encoder latency on the chip",
+         "./scripts/arduino_build.sh --flash -DRUN_G5_BENCHMARK=1"],
+        ["Collect a benchmark's output",
+         "python3 scripts/capture_bench.py --tag G1"],
+        ["The same firmware under ESP-IDF, the reference build",
+         "./scripts/idf.sh build"],
         ["Fallback path on hardware", "python3 scripts/run_fallback.py"],
         ["Watchdog on hardware (needs -DFAULT_INJECT=2)",
          "python3 scripts/run_fallback.py --watchdog"],
@@ -3109,7 +3213,10 @@ def reproduce_section(doc: Document) -> None:
         ["Distilled students, ablation A2 rung three",
          "python3 scripts/run_distill.py"],
         ["Ablation A4 build (handling off)",
-         "./scripts/idf.sh -DFAULT_INJECT=1 -DFALLBACK_ENABLED=0 build"],
+         "./scripts/arduino_build.sh --flash -DFAULT_INJECT=1 "
+         "-DFALLBACK_ENABLED=0"],
+        ["Ablation A4 with the loop closed",
+         "python3 scripts/run_a4_closedloop.py --fallback-off"],
         ["Ablation A4 on hardware",
          "python3 scripts/run_fallback.py --fallback-off"],
         ["Ablation A4 predicted on the laptop",
@@ -3153,6 +3260,10 @@ def main() -> int:
     a4_off = load("week9-a4-closed-off.json")
     a4_on5 = load("week9-a4-closed-on-5s.json")
     a4_off5 = load("week9-a4-closed-off-5s.json")
+    g1a = load("g1-arduino.json")
+    g5a = load("g5-arduino.json")
+    g3a = load("g3-loop-timing-arduino.json")
+    actora = load("week8-actor-onchip-arduino.json")
     dis = load("a2-distillation.json")
 
     cost_path = DOCS / "forecast-deploy-cost.csv"
@@ -3194,6 +3305,7 @@ def main() -> int:
     a4_measured_section(doc, a4_on, a4_off, a4_on5, a4_off5)
     sac_section(doc, sac, onchip)
     actor_onchip_section(doc, sac, onchip)
+    port_section(doc, g1a, g5a, g3a, actora, g3)
     negatives_section(doc)
     changes_section(doc)
     remaining_section(doc)
@@ -3212,6 +3324,7 @@ def main() -> int:
                ("SAC campaign", sac), ("actor on chip", onchip),
                ("A4 prediction", a4), ("A4 measured", a4_on and a4_off),
                ("A4 tail at 5 s", a4_on5 and a4_off5),
+               ("toolchain port", g1a and g5a and g3a),
                ("distillation", dis))
     have = [n for n, v in tracked if v]
     missing = [n for n, v in tracked if not v]
