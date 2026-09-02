@@ -38,3 +38,6 @@ firmware/sdkconfig.old
 # redistribution terms are not ours to assume, and the /data/* rule above does
 # not reach the repo root.
 /Measurement Data/
+
+# Word lock files, created while a report is open
+~$*
