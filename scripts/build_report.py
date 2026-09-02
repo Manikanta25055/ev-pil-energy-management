@@ -230,7 +230,8 @@ def cover(doc: Document, date: str) -> None:
 
 
 def summary(doc: Document, ladder, tf, cost_rows, g3, a2, sac, onchip,
-            a4=None, a4_on=None, a4_off=None) -> None:
+            a4=None, a4_on=None, a4_off=None, a4_on5=None,
+            a4_off5=None) -> None:
     h1(doc, "Summary")
 
     para(doc, "The project builds an energy-management controller for an "
@@ -354,6 +355,19 @@ def summary(doc: Document, ladder, tf, cost_rows, g3, a2, sac, onchip,
                 + ref("a4meas") + " rather than folded back into the "
                 "prediction.",
             ])
+            if a4_on5 and a4_off5:
+                bullets(doc, [
+                    f"At a five-second outage the handling earns its keep, "
+                    f"which is the case it exists for and the one the "
+                    f"prediction called best: the worst of eight outages "
+                    f"costs {a4_on5['err_peak_mps']['worst']:.2f} metres per "
+                    f"second with the handling in against "
+                    f"{a4_off5['err_peak_mps']['worst']:.2f} with it removed, "
+                    f"predicted 6.88 against 8.02. The handling is not there "
+                    f"because it tracks well; it is there because it fails "
+                    f"small where holding on to a stale command fails large. "
+                    f"Section " + ref("a4meas") + ".",
+                ])
         elif e1:
             bullets(doc, [
                 f"The remaining experiment of week 9, which switches the "
@@ -2424,7 +2438,7 @@ def a4_section(doc: Document, a4) -> None:
     bullets(doc, items)
 
 
-def a4_measured_section(doc: Document, on, off) -> None:
+def a4_measured_section(doc: Document, on, off, on5, off5) -> None:
     """Ablation A4 as measured on the board, scored against the prediction.
 
     Placed immediately after the prediction so a reader meets the two in the
@@ -2565,15 +2579,90 @@ def a4_measured_section(doc: Document, on, off) -> None:
               "of the failure. The hardware figures above are confined to the "
               "recovery window on purpose.")
 
-    doc.add_heading("What is still not measured", level=2)
+    doc.add_heading("The longer outage, where the handling earns its keep",
+                    level=2)
+    if not on5 or not off5:
+        para(doc, "The five-second outage campaign had not been run when this "
+                  "report was generated.", italic=True, colour=MUTED)
+        return
+
     para(doc, "The reason the handling is in the firmware at all is the worst "
-              "case, not the typical one: the prediction has the two versions "
-              "crossing over at a five-second outage, where holding a stale "
-              "command becomes far worse than ramping the torque away. This "
-              "campaign injected one-second outages, so it cannot speak to "
-              "that. Until a longer outage is run on the board, the argument "
-              "that the handling earns its cost back in the tail remains a "
-              "prediction and is written here as one.")
+              "case, not the typical one. The prediction has the two versions "
+              "crossing over at a five-second outage, where holding on to a "
+              "stale command becomes far worse than ramping the torque away. "
+              "The same eight outages were repeated at five seconds to test "
+              "exactly that.")
+
+    rows5 = []
+    for a, b in zip(on5["blackouts"], off5["blackouts"]):
+        rows5.append([
+            f"{a['onset_s']:.0f}",
+            f"{a['v_ref_at_onset_mps']:.1f}",
+            f"{a['err_peak_mps']:.3f}",
+            f"{b['err_peak_mps']:.3f}",
+            f"{a['i_peak_recovery_a']:.0f}",
+            f"{b['i_peak_recovery_a']:.0f}",
+        ])
+    rows5.append(["median", "", f"{on5['err_peak_mps']['median']:.3f}",
+                  f"{off5['err_peak_mps']['median']:.3f}",
+                  f"{on5['i_peak_recovery_a']['median']:.0f}",
+                  f"{off5['i_peak_recovery_a']['median']:.0f}"])
+    rows5.append(["worst", "", f"{on5['err_peak_mps']['worst']:.3f}",
+                  f"{off5['err_peak_mps']['worst']:.3f}",
+                  f"{on5['i_peak_recovery_a']['worst']:.0f}",
+                  f"{off5['i_peak_recovery_a']['worst']:.0f}"])
+    table(doc,
+          ["Outage at, s", "Speed, m/s", "Worst error on, m/s",
+           "Worst error off, m/s", "Peak current on, A",
+           "Peak current off, A"],
+          rows5)
+    para(doc, "Table. The same eight outages, lengthened to five seconds. "
+              "MEASURED on the board.",
+         size=9, italic=True, colour=MUTED)
+
+    figure(doc, DOCS / "figures" / "week9-a4-measured-5s.png",
+           "Ablation A4 at a five-second outage. The worst case now favours "
+           "the shipped firmware, which is what the handling is for.")
+
+    para(doc, f"The crossover is real, and it is close to where it was "
+              f"predicted. The worst outage of the eight costs "
+              f"{on5['err_peak_mps']['worst']:.2f} metres per second with the "
+              f"handling in and {off5['err_peak_mps']['worst']:.2f} with it "
+              f"removed; the prediction said 6.88 against 8.02. Both the "
+              f"direction and the size come out close, and this is the "
+              f"prediction's best showing anywhere in the experiment.")
+
+    para(doc, "The mechanism shows up in a single row. At the outage placed "
+              "592 seconds in, the drive cycle is winding down to a stop and "
+              "the target speed is falling through 2.75 metres per second. "
+              "Holding on to the last command there means driving five "
+              "seconds of torque into a car that should be braking, and the "
+              "version without the handling overshoots by 7.95 metres per "
+              "second against 2.11 with it. That row is the safety argument "
+              "in full: the handling is not there because limping tracks "
+              "well, but because limping fails small where holding on fails "
+              "large.")
+
+    para(doc, f"Two things changed against the prediction. The typical case "
+              f"is already a tie at five seconds, "
+              f"{on5['err_peak_mps']['median']:.2f} against "
+              f"{off5['err_peak_mps']['median']:.2f} metres per second, where "
+              f"the prediction still had a wide gap in favour of removing the "
+              f"handling. So the ordinary-case cost measured at one second is "
+              f"paid back sooner than expected. And the current drawn while "
+              f"recovering moves sharply the other way: with the handling in "
+              f"it reaches {on5['i_peak_recovery_a']['median']:.0f} amps at "
+              f"the typical outage against "
+              f"{off5['i_peak_recovery_a']['median']:.0f}, saturating on half "
+              f"the outages tried. Ramping the torque away for five seconds "
+              f"and then catching up is expensive.")
+
+    doc.add_heading("What is still not measured", level=2)
+    para(doc, "Two outage lengths are enough to show that the crossover "
+              "exists and not enough to say where it is. It lies somewhere "
+              "between one and five seconds, and no number between those two "
+              "should be quoted from this work. Bracketing it is a matter of "
+              "repeating the campaign at two or three seconds.")
 
 
 def sac_section(doc: Document, sac, onchip) -> None:
@@ -3062,6 +3151,8 @@ def main() -> int:
     a4 = load("week9-a4-prediction.json")
     a4_on = load("week9-a4-closed-on.json")
     a4_off = load("week9-a4-closed-off.json")
+    a4_on5 = load("week9-a4-closed-on-5s.json")
+    a4_off5 = load("week9-a4-closed-off-5s.json")
     dis = load("a2-distillation.json")
 
     cost_path = DOCS / "forecast-deploy-cost.csv"
@@ -3081,7 +3172,7 @@ def main() -> int:
     reset_counters()
     cover(doc, args.date)
     summary(doc, ladder, tf, cost_rows, g3, a2, sac, onchip, a4,
-            a4_on, a4_off)
+            a4_on, a4_off, a4_on5, a4_off5)
     background(doc)
     glossary_section(doc)
     charts_section(doc)
@@ -3100,7 +3191,7 @@ def main() -> int:
     rl_section(doc, rl)
     fallback_section(doc, fb, wdt)
     a4_section(doc, a4)
-    a4_measured_section(doc, a4_on, a4_off)
+    a4_measured_section(doc, a4_on, a4_off, a4_on5, a4_off5)
     sac_section(doc, sac, onchip)
     actor_onchip_section(doc, sac, onchip)
     negatives_section(doc)
@@ -3120,6 +3211,7 @@ def main() -> int:
                ("RL ramp-up", rl), ("fallback", fb), ("watchdog", wdt),
                ("SAC campaign", sac), ("actor on chip", onchip),
                ("A4 prediction", a4), ("A4 measured", a4_on and a4_off),
+               ("A4 tail at 5 s", a4_on5 and a4_off5),
                ("distillation", dis))
     have = [n for n, v in tracked if v]
     missing = [n for n, v in tracked if not v]

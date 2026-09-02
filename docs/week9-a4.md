@@ -5,7 +5,8 @@
 **Scripts:** `scripts/run_fallback.py` (counters),
 `scripts/run_a4_closedloop.py` (control quality)
 **Data:** `docs/week9-a4.json`, `docs/week9-a4-baseline.json`,
-`docs/week9-a4-closed-on.json`, `docs/week9-a4-closed-off.json`
+`docs/week9-a4-closed-on.json`, `docs/week9-a4-closed-off.json`,
+`docs/week9-a4-closed-on-5s.json`, `docs/week9-a4-closed-off-5s.json`
 **Prediction it is scored against:** `docs/week9-a4-prediction.md`
 
 The board arrived. Ablation A4 has now been run, and so has its baseline.
@@ -17,12 +18,18 @@ cannot say what the handling costs in control quality, because the harness it
 inherits from G3 never closes the loop. Section 4 is that finding. Section 5 is
 the closed-loop campaign written to replace it, and the answer.
 
-Headline: the prediction called the direction correctly and the size badly.
-Switching the handling off tracks better at a 1.0 s outage, 0.125 m/s against
+Headline, at a 1.0 s outage: the prediction called the direction correctly and
+the size badly. Switching the handling off tracks better, 0.125 m/s against
 0.292 m/s at the median, a factor of 2.3 where a factor of twelve was
 predicted. The prediction's claim that the two modes cannot be separated on
 battery current is refuted, and section 6 shows the defect in its own code that
 produced it.
+
+Headline, at a 5 s outage: the crossover the handling exists for is real and
+lands close to where the prediction put it. The worst case goes to the
+handling, 7.386 m/s against 7.949 m/s, predicted 6.881 against 8.024. Section 7.
+A4 is therefore not null, and it is not a verdict against the limp path
+either.
 
 ---
 
@@ -215,34 +222,82 @@ The measured lead-in peaks bear this out: 155.5 A with the handling on against
 155.7 A with it off, a 0.2 A gap on the segment where the two modes are doing
 the same thing, which is the gap the prediction reported for the whole run.
 
-So the handling costs tracking in the ordinary case, and it costs recovery
-current too. Both are the price of bounding the tail, and the tail is not
-reachable here: the crossover the prediction puts at a 5 s outage needs a
-5 s blackout to test, and this campaign injects 1.0 s.
+So at a 1.0 s outage the handling costs tracking, and it costs recovery current
+too. Both are supposed to be the price of bounding the tail. Section 7 goes and
+tests the tail.
 
-## 7. Where A4 stands
+## 7. The tail, at a 5 s outage
+
+The reason the handling is in the firmware is the worst case, and the
+prediction puts the crossover at a 5 s outage. Same campaign, same eight
+onsets, `--blackout-s 5.0`.
+
+**Data:** `docs/week9-a4-closed-on-5s.json`,
+`docs/week9-a4-closed-off-5s.json`. Worst pre-blackout error 0.283 m/s.
+
+| Onset, s | v_ref, m/s | On, peak err | Off, peak err | On, I recovery | Off, I recovery |
+|---|---|---|---|---|---|
+| 16.0 | 14.44 | 5.247 | **4.158** | 332.4 | **206.5** |
+| 98.3 | 30.27 | 1.461 | **0.442** | 127.0 | **95.2** |
+| 180.6 | 25.01 | **0.411** | 1.480 | 264.8 | **102.1** |
+| 262.9 | 27.85 | 1.602 | **0.210** | 332.2 | **76.9** |
+| 345.2 | 30.14 | **1.220** | 1.714 | 332.0 | 332.0 |
+| 427.4 | 30.83 | 1.109 | **0.149** | 332.2 | **64.5** |
+| 509.7 | 11.34 | 7.386 | **4.473** | 126.8 | **110.0** |
+| 592.0 | 2.75 | **2.105** | 7.949 | **22.0** | 126.6 |
+| **median** | | **1.532** | 1.597 | 298.4 | **106.0** |
+| **worst** | | **7.386** | 7.949 | 332.4 | 332.0 |
+
+![Ablation A4 measured at 5 s](figures/week9-a4-measured-5s.png)
+
+**The crossover is real and it lands where the prediction put it.** At 5 s the
+worst case goes to the handling, 7.386 m/s against 7.949 m/s. Predicted, that
+row read 6.881 against 8.024. Both the direction and the size come out close,
+which is the prediction's strongest showing anywhere in this ablation.
+
+The mechanism is legible in one row. At onset 592.0 the cycle is winding down
+to a stop, v_ref 2.75 m/s and falling. Holding a stale command there means
+driving 5 s of torque into a vehicle that should be braking, and the ablation
+records a 7.949 m/s excursion against the handling's 2.105. That single row is
+the whole safety argument: not that limping tracks well, but that it fails
+small when holding fails large.
+
+**The median advantage has already gone by 5 s, earlier than predicted.**
+Measured, the two modes are a near tie at the median, 1.532 on against 1.597
+off, a 4% gap. Predicted, the median at 5 s was still a wide win for the
+ablation, 1.764 against 0.636. So the ordinary-case cost of the handling, real
+and reproducible at 1.0 s, has been paid back by 5 s rather than persisting to
+10 s as the prediction has it. Per onset the ablation still wins five of eight;
+what changed is that the three it loses, it loses badly.
+
+Recovery current goes the other way and goes there hard. At the median the
+handling draws 298.4 A against 106.0 A, and it saturates at 332 A on four of
+the eight onsets. Ramping torque to zero for five seconds and then catching up
+is expensive, and at this duration that cost is the handling's largest.
+
+## 8. Where A4 stands
 
 | Question | Status |
 |---|---|
 | Do the guarded branches leave the image? | **Measured.** 144 bytes, both counters zero |
 | Does the limp ramp run on the board? | **Measured.** 226 Nm to 0.00 Nm across the window |
-| Does either build miss its own deadline? | **Measured.** `ctrl_late` 0 in all four campaigns |
-| What does the handling cost in tracking? | **Measured.** 0.292 against 0.125 m/s median, 1.0 s outage |
-| What does it cost in recovery current? | **Measured.** 101.2 against 71.6 A median |
-| Does the handling buy the tail back? | **Not measured.** Predicted to cross over at a 5 s outage |
+| Does either build miss its own deadline? | **Measured.** `ctrl_late` 0 in all six campaigns |
+| Tracking cost at a 1.0 s outage | **Measured.** 0.292 on against 0.125 off, median |
+| Recovery current at a 1.0 s outage | **Measured.** 101.2 on against 71.6 off, median |
+| Does the handling buy the tail back? | **Measured.** Yes at 5 s, worst case 7.386 on against 7.949 off |
+| Where exactly the crossover sits | **Not measured.** Somewhere between 1 and 5 s; only two durations were run |
 
-Claim C5 is now carried by measurement in both halves at a 1.0 s outage: a
-miss is detected, handled and counted rather than silently absorbed, and the
-degradation is quantified. The tail argument, which is the reason the handling
-is in the firmware at all, is still a prediction.
+Claim C5 is carried by measurement in both halves. A miss is detected, handled
+and counted rather than silently absorbed, and the degradation is quantified at
+two outage durations, including the one where the handling stops being a cost
+and starts being the reason it exists.
 
-## 8. What is left
+## 9. What is left
 
-A duration sweep. `run_a4_closedloop.py` takes `--blackout-s`, so the 5 s
-crossover the prediction puts at the centre of its case is one flag and two
-flashes away. It was not run here because a 5 s blackout on US06 needs the
-onsets re-chosen to keep the outage and its recovery inside the cycle, and
-because the 1.0 s row is the one the prediction was staked on.
+Two durations is enough to show the crossover exists and not enough to locate
+it. `--blackout-s` takes any value, so bracketing it is a matter of running 2 s
+and 3 s, at about three minutes a build. Nobody should quote a crossover
+duration from these two points.
 
-Until that runs, the tail claim may be cited as a prediction. It may not be
-cited as a result.
+The prediction's 10 s row is also untested, and its 0.2 s and 0.5 s rows are
+below anything measured here.
