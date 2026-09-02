@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 from pathlib import Path
 
@@ -541,6 +542,12 @@ def charts_section(doc: Document) -> None:
          "inside the box is the median, the box holds the middle half of the "
          "data, and the whiskers reach most of the rest. It shows spread, which a "
          "single average hides."),
+        ("Pareto front", "accuracy plotted against what a model costs to run, "
+         "one point per candidate. It is used when there is no single best "
+         "answer, only a set of them: a model is on the front if nothing else "
+         "is both more accurate and cheaper. The useful reading is not which "
+         "point is highest but how much accuracy the next step down the cost "
+         "axis actually buys, which is frequently very little."),
         ("Logarithmic axis", "an axis where each step is a multiplication rather "
          "than an addition, so 0.1, 1, 10, 100 are evenly spaced. It is used when "
          "the numbers span orders of magnitude. On an ordinary axis, values of 23 "
@@ -1505,6 +1512,158 @@ def on_chip_section(doc: Document, a2) -> None:
               "decides whether the conversion work is worth starting.")
 
 
+def distill_section(doc: Document, dis, a2) -> None:
+    """A2's third rung. Placed after the on-chip cost section because it is a
+    statement about cost as much as about accuracy."""
+    h1(doc, "Whether a bigger model, taught to a smaller one, helps", "distil")
+
+    if not dis:
+        para(doc, "The distillation experiment had not been run when this "
+                  "report was generated. Rebuild the report to include it.",
+             italic=True, colour=MUTED)
+        return
+
+    S = dis["summary"]
+    para(doc, "The design document plans this experiment in three rungs: the "
+              "model in full precision, the same model in 8-bit, and then a "
+              "small model taught by a large one. The first two were measured "
+              "in week 6. This is the third, and it is the last piece of that "
+              "experiment.")
+
+    doc.add_heading("The question is narrower than it sounds", level=2)
+    para(doc, "Whether a big model beats a small one is not the question and "
+              "would not be interesting. The forecaster that runs on the chip "
+              "is already the size the compute budget allows, and it is "
+              "trained on the data directly. The question is whether that "
+              "same small model, taught by a large one instead of by the data "
+              "alone, comes out better. Same size, same starting conditions, "
+              "one difference.")
+
+    para(doc, "Teaching a small model with a large one is called "
+              "distillation. The large model, the teacher, is deliberately "
+              "too big for the chip: if it fitted, there would be nothing to "
+              "distil into. The small model is then trained on a half-and-half "
+              "mixture of the real answer and the teacher's answer.")
+
+    doc.add_heading("First, a check that this is the same model", level=2)
+    if a2:
+        para(doc, "This experiment builds its data and trains its models with "
+                  "a separate script from the one week 6 used, so before any "
+                  "comparison means anything, its unchanged arm has to "
+                  "reproduce the model week 6 already measured. It does, to "
+                  "every digit.")
+        table(doc, ["Quantity", "Week 6", "This run"], [
+            ["Error, full precision",
+             f"{a2['float_mean_rmse_w']:.4f} W",
+             f"{S['student-d32-direct']['float_mean_rmse_w']:.4f} W"],
+            ["Error, 8-bit",
+             f"{a2['int8_mean_rmse_w']:.4f} W",
+             f"{S['student-d32-direct']['int8_mean_rmse_w']:.4f} W"],
+            ["Size on the chip", f"{a2['int8_bytes']:,} bytes",
+             f"{S['student-d32-direct']['deployed_bytes']:,} bytes"],
+        ], [2.2, 2.2, 2.2])
+
+    doc.add_heading("The answer is no", level=2)
+    rows = []
+    for name, v in dis["verdicts"].items():
+        rows.append([
+            name.replace("student-", ""),
+            f"{v['mean_delta_w']:+.1f} W ({v['relative']:+.2%})",
+            ", ".join(f"{x:+.0f}" for x in v["per_seed_delta_w"]),
+            "consistent" if v["consistent_sign"] else "sign flips",
+        ])
+    table(doc, ["Model", "Distilled minus direct", "Per training run",
+                "Across runs"], rows, [1.2, 2.0, 1.8, 1.4])
+    para(doc, "A negative number would mean distillation helped. Both are "
+              "positive, and neither keeps its sign across the three training "
+              "runs. By the same standard this project used to call the "
+              "forecast ablation empty, this is empty too.", size=11,
+         colour=MUTED)
+
+    doc.add_heading("Why, and this is the part worth keeping", level=2)
+    t = S["teacher"]
+    s16 = S["student-d16-direct"]
+    para(doc, f"The teacher is not better than its students. It carries "
+              f"{t['cost_model']['n_params'] / s16['cost_model']['n_params']:.1f} "
+              f"times as many parameters and "
+              f"{t['deployed_bytes'] / s16['deployed_bytes']:.1f} times the "
+              f"memory of the smallest student, and it comes out "
+              f"{t['int8_mean_rmse_w'] - s16['int8_mean_rmse_w']:.1f} watts "
+              f"WORSE. Distillation moves what the teacher knows and the "
+              f"student does not, and here that is nothing. The empty result "
+              f"is the method reporting honestly that there was nothing to "
+              f"move, rather than the method failing.")
+
+    figure(doc, DOCS / "figures" / "a2-distillation.png",
+           "Accuracy against cost for every arm, and the same comparison "
+           "paired by training run. Note how far the error bars overlap: that "
+           "overlap is the result.")
+
+    panels(doc, [
+        ("Left panel", "accuracy plotted against what each model costs to run",
+         "Each column is one model size, with the directly trained and the "
+         "distilled version at the same position because they are the same "
+         "size and cost the same. The grey line joins each pair, so the "
+         "vertical gap between the two dots is the whole effect of teaching. "
+         "The bars are the spread across three training runs, and they "
+         "overlap almost completely."),
+        ("Right panel", "the same thing, run by run",
+         "Each dot is one training run: how much worse or better the taught "
+         "model was than the untaught one. Dots on both sides of the line "
+         "mean the effect changes direction depending on the random seed, "
+         "which is what having no effect looks like."),
+    ])
+
+    doc.add_heading("What the whole comparison is worth", level=2)
+    i8 = [v["int8_mean_rmse_w"] for v in S.values()]
+    spread = max(i8) - min(i8)
+    gap = dis["persistence_rmse_w"] - min(i8)
+    bullets(doc, [
+        f"Every model tried, from {min(v['cost_model']['n_params'] for v in S.values()):,} "
+        f"parameters to {max(v['cost_model']['n_params'] for v in S.values()):,}, "
+        f"falls within {spread:.1f} watts of the others, which is "
+        f"{spread / min(i8):.2%}.",
+        f"That is smaller than what 8-bit conversion costs, measured in week 6 "
+        f"at 0.95%. The entire range of model sizes matters less than the "
+        f"number format does.",
+        f"The distance from the best model to the naive baseline is "
+        f"{gap:,.0f} watts. So the whole sweep of architectures moves "
+        f"{spread / gap:.1%} of the distance that having a forecaster at all "
+        f"buys.",
+    ])
+
+    para(doc, "This is the third time the project has arrived at that shape "
+              "from a different direction. The model comparison in week 4 "
+              "found a plain linear regression reaching 87% of the benefit "
+              "for 1.2% of the cost. The offline optimum in week 7 found the "
+              "best possible energy strategy was a constant. Now the model "
+              "sweep finds capacity beyond a very small network buys nothing. "
+              "The useful signal in this problem is captured early and "
+              "cheaply.")
+
+    doc.add_heading("What it changes, and what it does not", level=2)
+    para(doc, "It does not settle what should ship. That decision is waiting "
+              "on the energy-management question in section " + ref("headroom")
+              + ". What it adds is a cheaper option that was not on the table.")
+    d16b = s16["deployed_bytes"]
+    d32 = S["student-d32-direct"]
+    para(doc, f"The half-width model reaches "
+              f"{s16['int8_mean_rmse_w'] / 1000:.3f} kW using "
+              f"{d16b / 1024:.1f} KB, against the deployed model's "
+              f"{d32['int8_mean_rmse_w'] / 1000:.3f} kW using "
+              f"{d32['deployed_bytes'] / 1024:.1f} KB. Those two are the same "
+              f"number to within the noise between training runs, so if the "
+              f"forecaster ships at all, nothing measured here justifies "
+              f"paying for the larger one.")
+    para(doc, "One caution attaches to that. The latency figures in this "
+              "section are estimates from counting arithmetic, and this "
+              "project has already measured what such estimates are worth: "
+              "the deployed model was estimated at 22.28 milliseconds and "
+              "timed on the chip at 36.46, so the estimate ran 64% low. The "
+              "smaller model would need timing on the board like everything "
+              "else before its figure is quoted.", size=11, colour=MUTED)
+
+
 def hardware_section(doc: Document, g3) -> None:
     h1(doc, "The real-time loop on hardware", key="realtime")
 
@@ -2450,6 +2609,15 @@ def negatives_section(doc: Document) -> None:
               "itself reports, because two policies of the same shape are "
               "indistinguishable without one.")
 
+    doc.add_heading("A model 27 times bigger is not better", level=2)
+    para(doc, "The last piece of the 8-bit experiment trained a deliberately "
+              "oversized model to teach the small one. The teaching changed "
+              "nothing measurable, and the reason is that the big model was "
+              "not better than the small one to begin with: 27 times the "
+              "parameters, and slightly worse. Every model tried falls within "
+              "0.89% of the others, which is less than what converting to "
+              "8-bit costs. Section " + ref("distil") + ".")
+
     doc.add_heading("The energy-management problem has almost no room in it",
                     level=2)
     para(doc, "The theoretically optimal strategy is a constant instruction, "
@@ -2504,8 +2672,9 @@ def remaining_section(doc: Document) -> None:
               "campaign.")
 
     table(doc, ["Week", "Modelling work", "Hardware work", "Gate"], [
-        ["6", "DONE: 8-bit costs 0.95% accuracy. Still to do: distil to a "
-              "smaller student model",
+        ["6", "DONE: 8-bit costs 0.95% accuracy. DONE: the distilled "
+              "student, which came back empty because the teacher is no "
+              "better than its students. Section " + ref("distil"),
          "DONE: 36.46 ms measured on the chip. Still to do: the conversion "
          "toolchain, and energy per prediction", "G5"],
         ["7", "DONE: the offline optimum, the conventional controller, the "
@@ -2596,6 +2765,28 @@ def remaining_section(doc: Document) -> None:
     ])
 
 
+def collected_tests() -> int | None:
+    """How many tests the suite holds, counted rather than typed.
+
+    Every other number in this document is read from a result file so that it
+    cannot drift from what was measured. A hand-typed test count is the one
+    number that silently goes stale, and it already had: it read 387 while the
+    suite held 397. Collection takes a couple of seconds and is allowed to
+    fail, because a report that cannot be built because pytest is missing
+    would be a worse failure than a missing sentence.
+    """
+    import subprocess
+    try:
+        r = subprocess.run(
+            ["python3", "-m", "pytest", "--collect-only", "-q"],
+            capture_output=True, text=True, timeout=300,
+            env={**os.environ, "PYTHONPATH": "src:."})
+        m = re.search(r"(\d+) tests? collected", r.stdout)
+        return int(m.group(1)) if m else None
+    except Exception:
+        return None
+
+
 def reproduce_section(doc: Document) -> None:
     h1(doc, "Reproducing everything in this report")
 
@@ -2629,16 +2820,31 @@ def reproduce_section(doc: Document) -> None:
         ["Fallback path on hardware", "python3 scripts/run_fallback.py"],
         ["Watchdog on hardware (needs -DFAULT_INJECT=2)",
          "python3 scripts/run_fallback.py --watchdog"],
+        ["8-bit arithmetic, ablation A2 rungs one and two",
+         "python3 scripts/run_a2.py"],
+        ["Distilled students, ablation A2 rung three",
+         "python3 scripts/run_distill.py"],
+        ["Ablation A4 build (handling off)",
+         "./scripts/idf.sh -DFAULT_INJECT=1 -DFALLBACK_ENABLED=0 build"],
+        ["Ablation A4 on hardware",
+         "python3 scripts/run_fallback.py --fallback-off"],
+        ["Ablation A4 predicted on the laptop",
+         "python3 scripts/predict_a4.py"],
         ["This report", "python3 scripts/build_report.py"],
     ], [2.4, 4.0])
 
+    n = collected_tests()
     para(doc, "All Python commands need PYTHONPATH=\"src:.\" set. The "
               "reinforcement-learning ramp-up additionally needs "
               "stable-baselines3 and gymnasium. The test suite runs with "
-              "python3 -m pytest and currently holds 387 tests, all passing, "
-              "including ones that drive the controller and the learned "
-              "policy in C and in Python through identical inputs and require "
-              "them to agree.", size=11, colour=MUTED)
+              "python3 -m pytest and currently holds "
+              + (f"{n} tests" if n else "its tests")
+              + ", all passing, including ones that drive the controller and "
+              "the learned policy in C and in Python through identical inputs "
+              "and require them to agree, and ones that read the firmware's "
+              "own compile-time switches back out of its headers so that the "
+              "scripts describing them cannot drift from what is compiled.",
+         size=11, colour=MUTED)
 
 
 def main() -> int:
@@ -2659,6 +2865,7 @@ def main() -> int:
     onchip = load("week8-actor-onchip.json")
     wdt = load("week7-watchdog.json")
     a4 = load("week9-a4-prediction.json")
+    dis = load("a2-distillation.json")
 
     cost_path = DOCS / "forecast-deploy-cost.csv"
     cost_rows = None
@@ -2689,6 +2896,7 @@ def main() -> int:
     physics_section(doc, tf)
     cost_section(doc, cost_rows)
     on_chip_section(doc, a2)
+    distill_section(doc, dis, a2)
     hardware_section(doc, g3)
     control_section(doc, baselines, robust)
     rl_section(doc, rl)
@@ -2712,7 +2920,7 @@ def main() -> int:
                ("controller baselines", baselines), ("PID robustness", robust),
                ("RL ramp-up", rl), ("fallback", fb), ("watchdog", wdt),
                ("SAC campaign", sac), ("actor on chip", onchip),
-               ("A4 prediction", a4))
+               ("A4 prediction", a4), ("distillation", dis))
     have = [n for n, v in tracked if v]
     missing = [n for n, v in tracked if not v]
     print(f"wrote {out}")

@@ -1,0 +1,334 @@
+{
+  "spec": {
+    "seq_len": 32,
+    "horizon": 30,
+    "stride": 5,
+    "epochs": 12,
+    "seeds": 3,
+    "alpha": 0.5
+  },
+  "teacher_config": {
+    "d_model": 64,
+    "layers": 4
+  },
+  "student_configs": {
+    "student-d32": {
+      "d_model": 32,
+      "layers": 2
+    },
+    "student-d16": {
+      "d_model": 16,
+      "layers": 2
+    }
+  },
+  "persistence_rmse_w": 13218.809269454832,
+  "budget_bytes": 307200,
+  "summary": {
+    "teacher": {
+      "d_model": 64,
+      "layers": 4,
+      "n_seeds": 3,
+      "float_mean_rmse_w": 11099.627969069114,
+      "float_sd_rmse_w": 56.104170944795854,
+      "int8_mean_rmse_w": 11212.354664498047,
+      "int8_sd_rmse_w": 74.27851054738274,
+      "deployed_bytes": 145144,
+      "float32_bytes": 545656,
+      "cost_model": {
+        "macs": 4736896,
+        "int8_bytes": 145144,
+        "latency_ms": 158.84963112005366,
+        "n_params": 136414,
+        "fits_footprint": true,
+        "fits_latency": false,
+        "deployable": false
+      }
+    },
+    "student-d16-direct": {
+      "d_model": 16,
+      "layers": 2,
+      "n_seeds": 3,
+      "float_mean_rmse_w": 11061.53659457385,
+      "float_sd_rmse_w": 43.19617381842679,
+      "int8_mean_rmse_w": 11148.044529001238,
+      "int8_sd_rmse_w": 79.99196429951778,
+      "deployed_bytes": 6296,
+      "float32_bytes": 20408,
+      "cost_model": {
+        "macs": 201184,
+        "int8_bytes": 6296,
+        "latency_ms": 6.7466130114017435,
+        "n_params": 5102,
+        "fits_footprint": true,
+        "fits_latency": true,
+        "deployable": true
+      }
+    },
+    "student-d16-distilled": {
+      "d_model": 16,
+      "layers": 2,
+      "n_seeds": 3,
+      "float_mean_rmse_w": 11144.406060241812,
+      "float_sd_rmse_w": 94.54964541088613,
+      "int8_mean_rmse_w": 11247.229267158555,
+      "int8_sd_rmse_w": 165.39083647772455,
+      "deployed_bytes": 6296,
+      "float32_bytes": 20408,
+      "cost_model": {
+        "macs": 201184,
+        "int8_bytes": 6296,
+        "latency_ms": 6.7466130114017435,
+        "n_params": 5102,
+        "fits_footprint": true,
+        "fits_latency": true,
+        "deployable": true
+      }
+    },
+    "student-d32-direct": {
+      "d_model": 32,
+      "layers": 2,
+      "n_seeds": 3,
+      "float_mean_rmse_w": 11051.066655184704,
+      "float_sd_rmse_w": 43.47092109662764,
+      "int8_mean_rmse_w": 11155.723982268457,
+      "int8_sd_rmse_w": 76.11945014847828,
+      "deployed_bytes": 20664,
+      "float32_bytes": 73464,
+      "cost_model": {
+        "macs": 664512,
+        "int8_bytes": 20664,
+        "latency_ms": 22.2841046277666,
+        "n_params": 18366,
+        "fits_footprint": true,
+        "fits_latency": true,
+        "deployable": true
+      }
+    },
+    "student-d32-distilled": {
+      "d_model": 32,
+      "layers": 2,
+      "n_seeds": 3,
+      "float_mean_rmse_w": 11035.937899854893,
+      "float_sd_rmse_w": 57.97314372902519,
+      "int8_mean_rmse_w": 11177.653280866412,
+      "int8_sd_rmse_w": 87.57165190980406,
+      "deployed_bytes": 20664,
+      "float32_bytes": 73464,
+      "cost_model": {
+        "macs": 664512,
+        "int8_bytes": 20664,
+        "latency_ms": 22.2841046277666,
+        "n_params": 18366,
+        "fits_footprint": true,
+        "fits_latency": true,
+        "deployable": true
+      }
+    }
+  },
+  "verdicts": {
+    "student-d32": {
+      "per_seed_delta_w": [
+        -13.336897636701906,
+        63.93210904953048,
+        15.192684381041545
+      ],
+      "mean_delta_w": 21.929298597956706,
+      "relative": 0.001965744099873068,
+      "consistent_sign": false,
+      "helps": false
+    },
+    "student-d16": {
+      "per_seed_delta_w": [
+        133.50135245629826,
+        165.84150819949718,
+        -1.788646183844321
+      ],
+      "mean_delta_w": 99.18473815731704,
+      "relative": 0.008897052563729137,
+      "consistent_sign": false,
+      "helps": false
+    }
+  },
+  "runs": [
+    {
+      "arm": "teacher",
+      "seed": 0,
+      "d_model": 64,
+      "layers": 4,
+      "float_rmse_w": 11114.71764904796,
+      "int8_rmse_w": 11238.755096195744,
+      "deployed_bytes": 145144,
+      "float32_bytes": 545656,
+      "torch_params": 136414,
+      "train_s": 162.87169098854065
+    },
+    {
+      "arm": "student-d32-direct",
+      "seed": 0,
+      "d_model": 32,
+      "layers": 2,
+      "float_rmse_w": 11077.141735152914,
+      "int8_rmse_w": 11206.431741024553,
+      "deployed_bytes": 20664,
+      "float32_bytes": 73464,
+      "torch_params": 18366,
+      "train_s": 77.98758292198181
+    },
+    {
+      "arm": "student-d32-distilled",
+      "seed": 0,
+      "d_model": 32,
+      "layers": 2,
+      "float_rmse_w": 11032.366867746021,
+      "int8_rmse_w": 11193.094843387851,
+      "deployed_bytes": 20664,
+      "float32_bytes": 73464,
+      "torch_params": 18366,
+      "train_s": 99.67149424552917
+    },
+    {
+      "arm": "student-d16-direct",
+      "seed": 0,
+      "d_model": 16,
+      "layers": 2,
+      "float_rmse_w": 11080.637761664433,
+      "int8_rmse_w": 11141.641700595532,
+      "deployed_bytes": 6296,
+      "float32_bytes": 20408,
+      "torch_params": 5102,
+      "train_s": 86.60851693153381
+    },
+    {
+      "arm": "student-d16-distilled",
+      "seed": 0,
+      "d_model": 16,
+      "layers": 2,
+      "float_rmse_w": 11179.52304841816,
+      "int8_rmse_w": 11275.14305305183,
+      "deployed_bytes": 6296,
+      "float32_bytes": 20408,
+      "torch_params": 5102,
+      "train_s": 73.86875796318054
+    },
+    {
+      "arm": "teacher",
+      "seed": 1,
+      "d_model": 64,
+      "layers": 4,
+      "float_rmse_w": 11146.644142321793,
+      "int8_rmse_w": 11269.826649929257,
+      "deployed_bytes": 145144,
+      "float32_bytes": 545656,
+      "torch_params": 136414,
+      "train_s": 129.26972699165344
+    },
+    {
+      "arm": "student-d32-direct",
+      "seed": 1,
+      "d_model": 32,
+      "layers": 2,
+      "float_rmse_w": 11075.174621449376,
+      "int8_rmse_w": 11192.544961895932,
+      "deployed_bytes": 20664,
+      "float32_bytes": 73464,
+      "torch_params": 18366,
+      "train_s": 67.39904618263245
+    },
+    {
+      "arm": "student-d32-distilled",
+      "seed": 1,
+      "d_model": 32,
+      "layers": 2,
+      "float_rmse_w": 11095.614012650805,
+      "int8_rmse_w": 11256.477070945462,
+      "deployed_bytes": 20664,
+      "float32_bytes": 73464,
+      "torch_params": 18366,
+      "train_s": 58.05985116958618
+    },
+    {
+      "arm": "student-d16-direct",
+      "seed": 1,
+      "d_model": 16,
+      "layers": 2,
+      "float_rmse_w": 11091.889250175089,
+      "int8_rmse_w": 11231.045487023594,
+      "deployed_bytes": 6296,
+      "float32_bytes": 20408,
+      "torch_params": 5102,
+      "train_s": 55.76492714881897
+    },
+    {
+      "arm": "student-d16-distilled",
+      "seed": 1,
+      "d_model": 16,
+      "layers": 2,
+      "float_rmse_w": 11216.372609037688,
+      "int8_rmse_w": 11396.88699522309,
+      "deployed_bytes": 6296,
+      "float32_bytes": 20408,
+      "torch_params": 5102,
+      "train_s": 60.77196288108826
+    },
+    {
+      "arm": "teacher",
+      "seed": 2,
+      "d_model": 64,
+      "layers": 4,
+      "float_rmse_w": 11037.522115837588,
+      "int8_rmse_w": 11128.48224736914,
+      "deployed_bytes": 145144,
+      "float32_bytes": 545656,
+      "torch_params": 136414,
+      "train_s": 306.950336933136
+    },
+    {
+      "arm": "student-d32-direct",
+      "seed": 2,
+      "d_model": 32,
+      "layers": 2,
+      "float_rmse_w": 11000.883608951824,
+      "int8_rmse_w": 11068.195243884884,
+      "deployed_bytes": 20664,
+      "float32_bytes": 73464,
+      "torch_params": 18366,
+      "train_s": 51.816319942474365
+    },
+    {
+      "arm": "student-d32-distilled",
+      "seed": 2,
+      "d_model": 32,
+      "layers": 2,
+      "float_rmse_w": 10979.832819167852,
+      "int8_rmse_w": 11083.387928265925,
+      "deployed_bytes": 20664,
+      "float32_bytes": 73464,
+      "torch_params": 18366,
+      "train_s": 52.565452098846436
+    },
+    {
+      "arm": "student-d16-direct",
+      "seed": 2,
+      "d_model": 16,
+      "layers": 2,
+      "float_rmse_w": 11012.082771882033,
+      "int8_rmse_w": 11071.44639938459,
+      "deployed_bytes": 6296,
+      "float32_bytes": 20408,
+      "torch_params": 5102,
+      "train_s": 66.66322088241577
+    },
+    {
+      "arm": "student-d16-distilled",
+      "seed": 2,
+      "d_model": 16,
+      "layers": 2,
+      "float_rmse_w": 11037.322523269588,
+      "int8_rmse_w": 11069.657753200745,
+      "deployed_bytes": 6296,
+      "float32_bytes": 20408,
+      "torch_params": 5102,
+      "train_s": 47.264158964157104
+    }
+  ]
+}
