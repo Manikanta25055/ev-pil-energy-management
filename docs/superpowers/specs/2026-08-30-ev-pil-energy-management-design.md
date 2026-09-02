@@ -593,7 +593,11 @@ None of these block the implementation plan; each has a scheduled owner and week
 
 ## 10. Version control note
 
-This directory is not currently a git repository. The brainstorming workflow
-expects design documents to be committed. Recommend running `git init` and
-committing this spec before implementation begins, so that design revisions are
-traceable alongside code.
+**RESOLVED.** The directory is a git repository and this spec is tracked in it,
+so revisions to the design are traceable alongside the code they justify. 20
+commits on `master` as of 2026-09-02, one per week of work plus the fixes
+inside each.
+
+The original note read: "This directory is not currently a git repository.
+Recommend running `git init` and committing this spec before implementation
+begins." That was done.
