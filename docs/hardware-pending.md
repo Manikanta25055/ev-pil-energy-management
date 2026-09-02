@@ -1,97 +1,67 @@
 # Work that is waiting on the board
 
-**Raised:** 2026-09-02. **Status:** deferred, not attempted.
+**Raised:** 2026-09-02, when no board was attached.
+**Updated:** 2026-09-02, when one was.
 
-No ESP32-S3 is attached. `arduino-cli board list` shows only Bluetooth
-serial ports, and there is no `/dev/cu.usbmodem*`. Everything below needs the
-board plugged in and is left undone rather than estimated or simulated.
+The ESP32-S3 is now connected on `/dev/cu.usbmodem1101`, MAC
+`1c:db:d4:46:24:e8`, the same part recorded in `docs/hardware-inventory.md`.
+Item 1 has been run and is kept here as a record of how it closed. Items 2 to 4
+are still outstanding, and none of the three is waiting on the board any more.
+Two are waiting on a decision and one on the item before it.
 
-Nothing in this file has been measured. No number here may be cited until the
-run that produces it has happened.
+Sections still marked outstanding contain no measurements. No number in them
+may be cited until the run that produces it has happened.
 
 ---
 
-## 1. Ablation A4, deadline-miss handling on vs off
+## 1. Ablation A4, deadline-miss handling on vs off -- DONE
 
-Scheduled for week 9 by the spec's schedule table; backs claim C5, whose
-wording is "control-quality cost of a miss".
+**Run on 2026-09-02.** Results in `docs/week9-a4.md`. Nothing in this section
+is outstanding any more; it is kept because the way it closed is worth the
+record.
 
-The handling-**on** half is already measured, on hardware, in week 7:
-`docs/week7-fallback.md` and `docs/week7-fallback.json`. Every counter moved by
-exactly the amount its injection schedule implied, and `ctrl_late` stayed at 0
-throughout.
+Two campaigns were needed, not one.
 
-The handling-**off** half has not been run. What it needs:
+The campaign this file described ran and passed. Every counter expectation
+written in advance held: the two guarded counters read exactly zero in the
+ablation and moved in the baseline, `ctrl_late` stayed at 0 in both builds, and
+the torque command held flat at 226 Nm through the outage instead of ramping to
+zero. Data in `docs/week9-a4.json` and `docs/week9-a4-baseline.json`. The
+baseline was re-run rather than compared against week 7, because week 7 predates
+the recovery window and never recorded it.
 
-```bash
-./scripts/idf.sh -DFAULT_INJECT=1 -DFALLBACK_ENABLED=0 build
-./scripts/idf.sh -p /dev/cu.usbmodem1101 flash
-PYTHONPATH="src:." python3 scripts/run_fallback.py --out-json docs/week9-a4.json
-```
+That campaign could not settle the prediction. `run_fallback.py` inherits
+`run_g3.py:plant_state` for its state frames, a closed-form function of the
+step index, so the torque the board commands never reaches the plant that
+answers it. With the loop open no tracking error can accumulate, and peak speed
+error, which is the quantity the prediction is staked on, is not observable at
+all.
 
-**The build half is done and passes.** `-DFALLBACK_ENABLED=0` compiled clean on
-2026-09-02 (exit 0, `evpil_fw.bin` 0x32d50 bytes, 80% of the app partition
-free), which is what the week 7 note meant by keeping the ablation a rebuild of
-the measured firmware rather than a later reconstruction of it. Only the
-measurement is outstanding.
+`scripts/run_a4_closedloop.py` was written to close it: the validated plant,
+stepped with the torque the board just sent, against a drive-cycle reference,
+eight onsets swept across US06. Result at a 1.0 s outage, median peak error
+0.292 m/s with the handling on against 0.125 m/s with it off. The prediction's
+direction holds and its factor of twelve comes out as a factor of 2.3. Its
+claim that battery current cannot separate the two modes is refuted, by a
+scoping defect in `predict_a4.py` that section 6 of the results note sets out.
 
-**The harness is now written and scores this build correctly**, added
-2026-09-02 as `--fallback-off`. Without that flag the script would mark the
-ablation as a failure of the firmware, because its normal-build expectations
-require two counters to move that the ablation compiles out.
-
-The expectations are fixed now, before the run, which is this project's
-convention and matters more than usual here: under A4 a counter reading zero is
-the ablation working, and a harness whose expectations were adjusted after
-seeing the run could not tell that apart from the firmware breaking.
-
-| Counter | Inside `#if FALLBACK_ENABLED`? | Expected under A4 |
-|---|---|---|
-| `ctrl_fallback_steps` | yes | **exactly 0**, the branch is compiled out |
-| `limp_steps` | yes | **exactly 0**, the branch is compiled out |
-| `ems_fallback_steps` | no | unchanged, >= 5 |
-| `infer_deadline_misses` | no | unchanged, >= 5. A4 removes the handling of a missed deadline, not its detection |
-| `stale_steps` | no | unchanged, >= 50. Tracked outside the guard on purpose, so the ablation does not compare a mode that can limp against one that cannot tell it should |
-| `ctrl_late` | no | **exactly 0 in both modes.** The fallback path is not allowed to cost the loop its own deadline. If A4 moves this, that is the finding |
-
-Which two counters are guarded is not restated in Python by hand:
-`tests/firmware/test_a4_expectations.py` parses the `#if` nesting out of
-`tasks.c` and fails if the firmware ever guards a different set. Seven tests,
-all passing, none needing the board.
-
-The quantity the ablation exists to produce is the control-quality cost, and
-the harness now captures it. Week 7 measured torque going 226.18 Nm to
-**0.00 Nm** during the silent window and staying there -- the limp ramp doing
-its job. With the ramp compiled out the PID spends that window integrating
-against a speed measurement it cannot refresh, so the cost should appear as
-windup during the window and a transient when the host answers again. The
-script now records torque for `RECOVERY_WINDOW_S` = 2.0 s **after** the window
-closes as well as during it, because that is where the recovery transient
-lands, and writes both traces to `docs/week9-a4.json`.
-
-**The outcome is predicted, in writing, before the run.**
-`docs/week9-a4-prediction.md` sweeps 480 paired blackouts across four cycles
-and six outage durations on the host. Its headline: A4 is predicted not to be
-null, and to point the opposite way from the obvious reading -- switching the
-handling off should *improve* median tracking at every duration tried, because
-holding the last command through a short outage is a better guess than ramping
-torque to zero. The handling only earns its cost back in the tail, at a 5 s
-outage. The hardware campaign injects 1.0 s, where the prediction is
-0.031 m/s with handling off against 0.363 m/s with it on -- a factor of twelve,
-and the specific number the run will confirm or refute.
-
-What is still missing is only the run.
+Still not measured, and now the only part of C5 that is not: the tail. The
+prediction puts the crossover at a 5 s outage, where the handling is supposed
+to earn its cost back. `run_a4_closedloop.py --blackout-s 5.0` is the run, with
+onsets re-chosen so the outage and its recovery fit inside the cycle.
 
 ## 2. The full stack on the device
 
-Also week 9. Blocked twice over: on the board, and on the parked decision about
-what should ship at all. The measured costs that decision turns on are already
-in hand -- actor 19.3 KB and 0.121 ms, quantised forecaster 20.2 KB and
-36.46 ms -- so this is waiting on the choice, not on more measurement.
+Also week 9. The board is no longer one of the two blockers, so this is now
+waiting on one thing: the parked decision about what should ship at all. The
+measured costs that decision turns on are already in hand, actor 19.3 KB and
+0.121 ms, quantised forecaster 20.2 KB and 36.46 ms, so no further measurement
+will settle it. Someone has to choose.
 
 ## 3. The PIL campaign
 
-Week 10 onward. Needs the board and needs item 2 settled first.
+Week 10 onward. The board is here; item 2 is not settled, and this cannot
+start until it is.
 
 ## 4. Anything the toolchain change forces to be re-measured
 

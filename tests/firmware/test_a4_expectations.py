@@ -136,3 +136,42 @@ def test_prediction_uses_the_firmware_limp_ramp():
 def test_prediction_uses_the_firmware_control_period():
     from scripts.predict_a4 import CTRL_PERIOD_S
     assert CTRL_PERIOD_S == header_define("CTRL_PERIOD_MS") / 1000.0
+
+
+# The closed-loop harness mirrors the same header constants and has to be
+# pinned the same way. It also reports the measurement the prediction is
+# scored against, so a drift here would move a result rather than a comment.
+
+def test_closed_loop_uses_the_firmware_control_period():
+    from scripts.run_a4_closedloop import CTRL_PERIOD_S
+    assert CTRL_PERIOD_S == header_define("CTRL_PERIOD_MS") / 1000.0
+
+
+def test_closed_loop_matches_the_prediction_windows():
+    """The measurement has to land on the axes the prediction was made on.
+
+    A hardware run with a different blackout or recovery length would not be
+    comparable with docs/week9-a4-prediction.md, and the mismatch would be
+    invisible in the output.
+    """
+    from scripts import predict_a4, run_a4_closedloop
+    assert run_a4_closedloop.RECOVERY_S == predict_a4.RECOVERY_S
+    assert run_a4_closedloop.BLACKOUT_S == predict_a4.BLACKOUT_S
+    assert run_a4_closedloop.LEAD_IN_S == predict_a4.LEAD_IN_S
+
+
+def test_closed_loop_scores_only_counters_it_drives():
+    """FAULT_INJECT=0, so the injected counters cannot move.
+
+    Scoring them would fail the run for a fault nobody asked to be injected.
+    `ctrl_fallback_steps` belongs to the injected outer-loop stall too, not to
+    the host blackout, which is why it is not scored either.
+    """
+    from scripts.run_a4_closedloop import SCORED
+    from scripts.run_fallback import COUNTERS
+    assert set(SCORED) <= set(COUNTERS)
+    assert "limp_steps" in SCORED, "the counter the ablation removes"
+    assert "ctrl_late" in SCORED, "the loop must meet its own deadline"
+    for injected in ("ems_fallback_steps", "infer_deadline_misses",
+                     "ctrl_fallback_steps"):
+        assert injected not in SCORED

@@ -230,7 +230,7 @@ def cover(doc: Document, date: str) -> None:
 
 
 def summary(doc: Document, ladder, tf, cost_rows, g3, a2, sac, onchip,
-            a4=None) -> None:
+            a4=None, a4_on=None, a4_off=None) -> None:
     h1(doc, "Summary")
 
     para(doc, "The project builds an energy-management controller for an "
@@ -333,7 +333,28 @@ def summary(doc: Document, ladder, tf, cost_rows, g3, a2, sac, onchip,
         ])
     if a4:
         e1 = a4["by_duration"].get("1.0")
-        if e1:
+        if e1 and a4_on and a4_off:
+            m_on = a4_on["err_peak_mps"]["median"]
+            m_off = a4_off["err_peak_mps"]["median"]
+            bullets(doc, [
+                f"The last experiment of week 9, which switches the failure "
+                f"handling off to measure what it is worth, has been run on "
+                f"the board. It was predicted beforehand to point the "
+                f"opposite way from the obvious reading, and it does: "
+                f"switching the handling off makes typical tracking better, "
+                f"{m_off:.3f} against {m_on:.3f} metres per second at a "
+                f"one-second outage. The handling is a safety mechanism, and "
+                f"it is not there to improve tracking. Sections "
+                + ref("a4") + " and " + ref("a4meas") + ".",
+                f"The same prediction was wrong about how large that gap "
+                f"would be, expecting a factor of twelve where the board "
+                f"shows a factor of {m_on / m_off:.1f}, and wrong that the "
+                f"two versions could not be told apart by the current drawn "
+                f"from the battery. Both corrections are recorded in section "
+                + ref("a4meas") + " rather than folded back into the "
+                "prediction.",
+            ])
+        elif e1:
             bullets(doc, [
                 f"The remaining experiment of week 9, which switches the "
                 f"failure handling off to measure what it is worth, is "
@@ -348,13 +369,15 @@ def summary(doc: Document, ladder, tf, cost_rows, g3, a2, sac, onchip,
             ])
 
     doc.add_heading("The state of the hardware for this report", level=2)
-    para(doc, "No development board was attached when this report was "
-              "generated. Everything described as measured in it was measured "
-              "on the board in earlier weeks and is unchanged. Nothing new "
-              "was measured. The one section built from a simulation instead "
-              "of from the board, section " + ref("a4") + ", says so in its "
-              "heading, its opening paragraph, its figure caption and its "
-              "table.")
+    para(doc, "The development board was attached when this report was "
+              "generated, and the last outstanding experiment of week 9 was "
+              "run on it. Section " + ref("a4meas") + " is that measurement. "
+              "Section " + ref("a4") + " is the prediction that was written "
+              "before it and is kept unchanged, so the two can be read "
+              "against each other; it says on its heading, its opening "
+              "paragraph, its figure caption and its table that it is a "
+              "prediction. Everything else described as measured was measured "
+              "on the board in earlier weeks and is unchanged.")
 
 
 def background(doc: Document) -> None:
@@ -2200,8 +2223,8 @@ def fallback_section(doc: Document, fb, wdt) -> None:
               "compile-time option in the same firmware, so that experiment "
               "is a rebuild rather than a reconstruction, and the rebuild has "
               "been confirmed to compile. What it is expected to show is "
-              "worked out in section " + ref("a4") + ", and the measurement "
-              "itself is waiting on the board being attached.")
+              "worked out in section " + ref("a4") + ", and what it actually "
+              "showed, on the board, is section " + ref("a4meas") + ".")
 
 
 
@@ -2221,12 +2244,13 @@ def a4_section(doc: Document, a4) -> None:
              italic=True, colour=MUTED)
         return
 
-    para(doc, "Nothing in this section was measured. No development board was "
-              "attached when this report was generated, so the experiment "
-              "described here was run as a simulation on the laptop. It is "
-              "written down now, before the hardware run, so that the "
-              "hardware result can be checked against a prediction that "
-              "already existed rather than explained after the fact.",
+    para(doc, "Nothing in this section was measured. It was written as a "
+              "simulation on the laptop before any board was attached, and it "
+              "is reproduced here unchanged, so that the hardware result in "
+              "section " + ref("a4meas") + " can be read against a prediction "
+              "that already existed rather than one explained after the fact. "
+              "Where the two disagree, the measurement is the result and this "
+              "section is the record of what was expected.",
          italic=True)
 
     para(doc, "That order is deliberate and the project has already been paid "
@@ -2398,6 +2422,158 @@ def a4_section(doc: Document, a4) -> None:
         "simulation is missing something rather than that the hardware is "
         "unusually good.")
     bullets(doc, items)
+
+
+def a4_measured_section(doc: Document, on, off) -> None:
+    """Ablation A4 as measured on the board, scored against the prediction.
+
+    Placed immediately after the prediction so a reader meets the two in the
+    order they happened. Its job is to report where they agree and where they
+    do not, and it does not soften the second.
+    """
+    h1(doc, "What the failure handling is worth, measured", "a4meas")
+
+    if not on or not off:
+        para(doc, "The A4 hardware campaign had not been run when this report "
+                  "was generated. Rebuild the report to include it.",
+             italic=True, colour=MUTED)
+        return
+
+    para(doc, "This section was measured on the board. The chip ran the "
+              "control task, the laptop ran the car, and the laptop stopped "
+              "answering for one second at a time on purpose.")
+
+    doc.add_heading("Why the first attempt did not answer the question",
+                    level=2)
+    para(doc, "The experiment was run twice, because the first run could not "
+              "settle what it was for. The harness used to trigger the "
+              "failure was inherited from the timing work, and it feeds the "
+              "chip a made-up description of the car computed from a formula "
+              "rather than from a simulation. The torque the chip asks for "
+              "never reaches the car that answers it. That was the right "
+              "choice for measuring timing, because a formula costs the same "
+              "on every step and so cannot be mistaken for jitter. It is the "
+              "wrong choice here: if the car does not respond to the chip, "
+              "then switching the torque off for a second does not slow it "
+              "down, no error builds up, and the very quantity this "
+              "experiment exists to measure cannot appear.")
+
+    para(doc, "The first run is still worth having. It confirms on silicon "
+              "that the two behaviours really are removed from the build, "
+              "that the torque is ramped out to zero when the handling is in "
+              "and held flat when it is not, and that neither version misses "
+              "its own deadline. What it cannot do is put a number on the "
+              "cost, so a second harness was written that closes the loop: "
+              "the validated car model, driven by the torque the chip "
+              "actually commanded, following a real drive cycle.")
+
+    doc.add_heading("What was measured", level=2)
+    para(doc, f"Eight one-second outages were injected at eight different "
+              f"points of the {on['cycle'].upper()} drive cycle, first "
+              f"against the firmware with the handling in and then against "
+              f"the firmware with it compiled out, so every outage is a "
+              f"matched pair. The position of the outage is varied rather "
+              f"than fixed because a single choice can flatter either "
+              f"version: an outage while cruising costs almost nothing, and "
+              f"one during hard acceleration costs a great deal. Before each "
+              f"outage the loop was allowed "
+              f"{on['lead_in_s']:.0f} seconds to settle, and the worst error "
+              f"anywhere before any outage was "
+              f"{max(on['worst_pre_blackout_err_mps'], off['worst_pre_blackout_err_mps']):.3f} "
+              f"metres per second, so the loop was steady each time.")
+
+    rows = []
+    for a, b in zip(on["blackouts"], off["blackouts"]):
+        rows.append([
+            f"{a['onset_s']:.0f}",
+            f"{a['v_ref_at_onset_mps']:.1f}",
+            f"{a['err_peak_mps']:.3f}",
+            f"{b['err_peak_mps']:.3f}",
+            f"{a['i_peak_recovery_a']:.0f}",
+            f"{b['i_peak_recovery_a']:.0f}",
+        ])
+    rows.append(["median", "", f"{on['err_peak_mps']['median']:.3f}",
+                 f"{off['err_peak_mps']['median']:.3f}",
+                 f"{on['i_peak_recovery_a']['median']:.0f}",
+                 f"{off['i_peak_recovery_a']['median']:.0f}"])
+    rows.append(["worst", "", f"{on['err_peak_mps']['worst']:.3f}",
+                 f"{off['err_peak_mps']['worst']:.3f}",
+                 f"{on['i_peak_recovery_a']['worst']:.0f}",
+                 f"{off['i_peak_recovery_a']['worst']:.0f}"])
+    table(doc,
+          ["Outage at, s", "Speed, m/s", "Worst error on, m/s",
+           "Worst error off, m/s", "Peak current on, A",
+           "Peak current off, A"],
+          rows)
+    para(doc, "Table. Each row is one outage, run against both versions of "
+              "the firmware. Lower is better in every column. MEASURED on the "
+              "board.",
+         size=9, italic=True, colour=MUTED)
+
+    figure(doc, DOCS / "figures" / "week9-a4-measured.png",
+           "Ablation A4, measured. Left: tracking error, where switching the "
+           "handling off is better at six of the eight outage positions. "
+           "Right: peak current while recovering, where switching it off is "
+           "better at six as well. Blue is the shipped firmware, orange is "
+           "the firmware with the handling removed.")
+
+    doc.add_heading("The prediction was right about the direction", level=2)
+    m_on = on["err_peak_mps"]["median"]
+    m_off = off["err_peak_mps"]["median"]
+    para(doc, f"The prediction in section " + ref("a4") + f" said that "
+              f"switching the handling off would make typical tracking "
+              f"better, not worse, and that reporting this as the handling "
+              f"being useless would misread a mechanism that was never there "
+              f"to improve tracking. That is what the board shows. Typical "
+              f"worst error is {m_off:.3f} metres per second with the "
+              f"handling off against {m_on:.3f} with it on. Holding the last "
+              f"command through a short outage is simply a better guess than "
+              f"ramping the torque away, because over one second the target "
+              f"has not moved far.")
+
+    doc.add_heading("And wrong about the size", level=2)
+    para(doc, f"The predicted gap was a factor of twelve. The measured gap is "
+              f"a factor of {m_on / m_off:.1f}. Almost all of the error is on "
+              f"one side: the prediction for the shipped firmware was close, "
+              f"but it expected the version with the handling removed to hold "
+              f"its speed about four times better than it did. A simulated "
+              f"car is smooth and noiseless, which flatters a strategy whose "
+              f"whole approach is to freeze and wait, and costs nothing to a "
+              f"strategy that ramps to a fixed value. The prediction itself "
+              f"warned that the real spread would be wider than the simulated "
+              f"one, and it is.")
+
+    doc.add_heading("And wrong about the current, for a reason in its own "
+                    "working", level=2)
+    para(doc, f"The prediction stated that the electrical stress on the "
+              f"battery could not tell the two versions apart, putting them "
+              f"within a third of an amp of each other, and advised against "
+              f"using that argument. On the board they are clearly apart: "
+              f"while recovering from the outage the shipped firmware draws "
+              f"{on['i_peak_recovery_a']['median']:.0f} amps at the typical "
+              f"outage against {off['i_peak_recovery_a']['median']:.0f} amps "
+              f"with the handling removed.")
+
+    para(doc, "This is not the simulation disagreeing with the hardware. It "
+              "is an error in how the prediction measured itself, and it can "
+              "be seen by reading its code. It took the largest current over "
+              "the whole simulated run, including the fifteen seconds of "
+              "ordinary driving before the outage. Those fifteen seconds are "
+              "identical in both versions by construction, and on a demanding "
+              "cycle they contain the largest currents of the run, so the "
+              "number it reported was a property of the warm-up rather than "
+              "of the failure. The hardware figures above are confined to the "
+              "recovery window on purpose.")
+
+    doc.add_heading("What is still not measured", level=2)
+    para(doc, "The reason the handling is in the firmware at all is the worst "
+              "case, not the typical one: the prediction has the two versions "
+              "crossing over at a five-second outage, where holding a stale "
+              "command becomes far worse than ramping the torque away. This "
+              "campaign injected one-second outages, so it cannot speak to "
+              "that. Until a longer outage is run on the board, the argument "
+              "that the handling earns its cost back in the tail remains a "
+              "prediction and is written here as one.")
 
 
 def sac_section(doc: Document, sac, onchip) -> None:
@@ -2884,6 +3060,8 @@ def main() -> int:
     onchip = load("week8-actor-onchip.json")
     wdt = load("week7-watchdog.json")
     a4 = load("week9-a4-prediction.json")
+    a4_on = load("week9-a4-closed-on.json")
+    a4_off = load("week9-a4-closed-off.json")
     dis = load("a2-distillation.json")
 
     cost_path = DOCS / "forecast-deploy-cost.csv"
@@ -2902,7 +3080,8 @@ def main() -> int:
 
     reset_counters()
     cover(doc, args.date)
-    summary(doc, ladder, tf, cost_rows, g3, a2, sac, onchip, a4)
+    summary(doc, ladder, tf, cost_rows, g3, a2, sac, onchip, a4,
+            a4_on, a4_off)
     background(doc)
     glossary_section(doc)
     charts_section(doc)
@@ -2921,6 +3100,7 @@ def main() -> int:
     rl_section(doc, rl)
     fallback_section(doc, fb, wdt)
     a4_section(doc, a4)
+    a4_measured_section(doc, a4_on, a4_off)
     sac_section(doc, sac, onchip)
     actor_onchip_section(doc, sac, onchip)
     negatives_section(doc)
@@ -2939,7 +3119,8 @@ def main() -> int:
                ("controller baselines", baselines), ("PID robustness", robust),
                ("RL ramp-up", rl), ("fallback", fb), ("watchdog", wdt),
                ("SAC campaign", sac), ("actor on chip", onchip),
-               ("A4 prediction", a4), ("distillation", dis))
+               ("A4 prediction", a4), ("A4 measured", a4_on and a4_off),
+               ("distillation", dis))
     have = [n for n, v in tracked if v]
     missing = [n for n, v in tracked if not v]
     print(f"wrote {out}")
