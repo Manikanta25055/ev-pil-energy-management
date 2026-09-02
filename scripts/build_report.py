@@ -228,7 +228,8 @@ def cover(doc: Document, date: str) -> None:
     doc.add_page_break()
 
 
-def summary(doc: Document, ladder, tf, cost_rows, g3, a2, sac, onchip) -> None:
+def summary(doc: Document, ladder, tf, cost_rows, g3, a2, sac, onchip,
+            a4=None) -> None:
     h1(doc, "Summary")
 
     para(doc, "The project builds an energy-management controller for an "
@@ -327,6 +328,30 @@ def summary(doc: Document, ladder, tf, cost_rows, g3, a2, sac, onchip) -> None:
             f"time this week, is {g3['counters']['ctrl_late']}. Section "
             f"{ref('realtime')} explains why that distinction matters.",
         ])
+    if a4:
+        e1 = a4["by_duration"].get("1.0")
+        if e1:
+            bullets(doc, [
+                f"The remaining experiment of week 9, which switches the "
+                f"failure handling off to measure what it is worth, is "
+                f"predicted before it is run, and predicted to point the "
+                f"opposite way from the obvious reading: switching the "
+                f"handling off should make typical tracking better, "
+                f"{e1['off_median_peak_err_mps']:.3f} against "
+                f"{e1['on_median_peak_err_mps']:.3f} metres per second at the "
+                f"one-second outage the campaign uses. The handling is a "
+                f"safety mechanism, and it only repays its cost in the worst "
+                f"case. Section " + ref("a4") + ".",
+            ])
+
+    doc.add_heading("The state of the hardware for this report", level=2)
+    para(doc, "No development board was attached when this report was "
+              "generated. Everything described as measured in it was measured "
+              "on the board in earlier weeks and is unchanged. Nothing new "
+              "was measured. The one section built from a simulation instead "
+              "of from the board, section " + ref("a4") + ", says so in its "
+              "heading, its opening paragraph, its figure caption and its "
+              "table.")
 
 
 def background(doc: Document) -> None:
@@ -1995,8 +2020,206 @@ def fallback_section(doc: Document, fb, wdt) -> None:
     para(doc, "One of the planned experiments switches this handling off and "
               "measures what it was worth. The switch to do that is a "
               "compile-time option in the same firmware, so that experiment "
-              "will be a rebuild rather than a reconstruction.")
+              "is a rebuild rather than a reconstruction, and the rebuild has "
+              "been confirmed to compile. What it is expected to show is "
+              "worked out in section " + ref("a4") + ", and the measurement "
+              "itself is waiting on the board being attached.")
 
+
+
+def a4_section(doc: Document, a4) -> None:
+    """Ablation A4, predicted on the host because the board is not attached.
+
+    Kept separate from the measured sections, and labelled on every surface
+    that a reader might land on first -- heading, opening paragraph, figure
+    caption and table -- because it sits between two sections that are
+    measurements and would otherwise be read as one.
+    """
+    h1(doc, "What the failure handling is worth, predicted", "a4")
+
+    if not a4:
+        para(doc, "The A4 prediction had not been run when this report was "
+                  "generated. Rebuild the report to include it.",
+             italic=True, colour=MUTED)
+        return
+
+    para(doc, "Nothing in this section was measured. No development board was "
+              "attached when this report was generated, so the experiment "
+              "described here was run as a simulation on the laptop. It is "
+              "written down now, before the hardware run, so that the "
+              "hardware result can be checked against a prediction that "
+              "already existed rather than explained after the fact.",
+         italic=True)
+
+    para(doc, "That order is deliberate and the project has already been paid "
+              "for using it. The offline optimum predicted, with a reason, "
+              "that the forecast would make no difference to control before "
+              "any learning run was started, and five training runs then "
+              "agreed. A prediction produced after a result is worth nothing.")
+
+    doc.add_heading("The question", level=2)
+    para(doc, "The previous section built the handling for a missed deadline "
+              "and triggered it on the board. The obvious follow-up question "
+              "is what that handling is actually worth, and the way to answer "
+              "it is to switch it off and measure how much worse things get. "
+              "That experiment is called A4 and it is the one remaining piece "
+              "of week 9 that does not depend on any pending decision.")
+
+    para(doc, "The firmware already has the switch. Turning it off removes "
+              "exactly two behaviours: the simple rules no longer take over "
+              "when the energy manager goes quiet, and the torque is no "
+              "longer ramped down when the car's state stops arriving. "
+              "Everything else, including noticing and counting the failure, "
+              "is untouched. That is what makes it a controlled comparison "
+              "rather than two different experiments.")
+
+    doc.add_heading("What was simulated", level=2)
+    c = a4["constants"]
+    para(doc, f"The laptop model reproduces the chip's control task step for "
+              f"step, at the same {c['ctrl_period_s'] * 1000:.0f} millisecond "
+              f"period, tolerating the same "
+              f"{c['stale_limit_steps']} missed updates before it reacts and "
+              f"ramping torque down at the same "
+              f"{c['limp_ramp_nm']:.0f} newton-metres per step.")
+
+    para(doc, "One detail decides whether the model is honest. When the "
+              "laptop stops answering, the chip keeps the whole of the last "
+              "message it received, so it loses not only its speed reading "
+              "but also the speed it was being asked to reach and the slope "
+              "of the road. Modelling only the lost speed reading would leave "
+              "the controller secretly knowing where it was supposed to be "
+              "going, and would make the failure look milder than it is.")
+
+    n = a4["n_paired_blackouts"]
+    para(doc, f"{n} paired outages were simulated: four standard driving "
+              f"cycles, {len(a4['durations_s'])} outage lengths from "
+              f"{min(a4['durations_s']):g} to {max(a4['durations_s']):g} "
+              f"seconds, and 20 different starting moments spread across each "
+              f"cycle. The starting moment is varied because a single one can "
+              f"be chosen to flatter either answer: an outage during steady "
+              f"cruising costs almost nothing, and one during hard "
+              f"acceleration costs a great deal.")
+
+    para(doc, f"Each outage is simulated from a "
+              f"{a4['lead_in_s']:.0f} second run-up rather than from the "
+              f"start of the cycle, which is what makes {n} runs affordable. "
+              f"The run-up is checked rather than assumed: the worst tracking "
+              f"error anywhere before any outage begins is "
+              f"{a4['worst_pre_blackout_err_mps']:.3f} metres per second, so "
+              f"the controller is settled when the failure starts.")
+
+    figure(doc, DOCS / "figures" / "week9-a4-prediction.png",
+           "Ablation A4 as predicted on the laptop, not measured. Peak speed "
+           "error against the outage length, with the shipped handling on and "
+           "with it switched off. Both axes are logarithmic because the error "
+           "spans four orders of magnitude across the range of outages tried.")
+
+    panels(doc, [
+        ("Left panel", "the ordinary case, and it is the surprising one",
+         "Across the middle of the distribution, switching the handling OFF "
+         "tracks the target speed better at every outage length tried. This "
+         "is not a fault in the handling. Over a second or two the target "
+         "speed has barely moved, so simply holding the last command is a "
+         "better guess than ramping the torque away to nothing."),
+        ("Right panel", "the bad case, where the handling earns its keep",
+         "Taking the worst outage out of every set instead of the middle one, "
+         "the two lines cross. Beyond a five-second outage, holding a stale "
+         "command produces a larger excursion than ramping down does, because "
+         "by then the command being held has no relationship to what the car "
+         "should be doing."),
+    ])
+
+    doc.add_heading("The predicted numbers", level=2)
+    rows = []
+    for d in a4["durations_s"]:
+        e = a4["by_duration"].get(str(d))
+        if not e:
+            continue
+        rows.append([
+            f"{d:g} s",
+            f"{e['on_median_peak_err_mps']:.3f}",
+            f"{e['off_median_peak_err_mps']:.3f}",
+            f"{e['on_worst_peak_err_mps']:.3f}",
+            f"{e['off_worst_peak_err_mps']:.3f}",
+        ])
+    table(doc, ["Outage", "Handling on, typical", "Handling off, typical",
+                "Handling on, worst", "Handling off, worst"], rows,
+          [0.9, 1.5, 1.5, 1.3, 1.3])
+    para(doc, "Peak error between the car's speed and the speed it was asked "
+              "for, in metres per second. Lower is better. Typical is the "
+              "middle of the 20 starting moments; worst is the worst of "
+              "them.", size=9, italic=True, colour=MUTED)
+
+    doc.add_heading("What this means, if it holds", level=2)
+    para(doc, "The typical case and the worst case disagree, and that "
+              "disagreement is the finding rather than a wrinkle in it. This "
+              "is what a safety mechanism is supposed to look like: it gives "
+              "up something in ordinary conditions in order to put a limit on "
+              "how bad the rare case can get.")
+
+    cw = a4.get("crossover_worst_s")
+    para(doc, "So the prediction is that A4 will NOT come back empty, and "
+              "that it will point the opposite way from the obvious reading. "
+              "Switching the safety handling off should make the typical "
+              "tracking better, not worse"
+              + (f", and the handling only repays its cost in the worst case "
+                 f"once an outage lasts about {cw:g} seconds." if cw else "."))
+
+    para(doc, "Reporting that as the failure handling having turned out "
+              "to be useless would be a misreading, and it is worth stating "
+              "plainly in advance because it is the misreading the headline "
+              "number invites. The handling was never there to improve "
+              "tracking. It is there so that a controller which has lost "
+              "contact with the car stops acting confidently on information "
+              "it knows is stale.")
+
+    doc.add_heading("Two things the prediction rules out", level=2)
+    by = a4["by_duration"]
+    on_i = max(v["on_worst_peak_current_a"] for v in by.values())
+    off_i = max(v["off_worst_peak_current_a"] for v in by.values())
+    bullets(doc, [
+        f"Electrical stress does not distinguish the two. The largest battery "
+        f"current is {on_i:.1f} amps with the handling on and {off_i:.1f} "
+        f"amps with it off, across every outage length. Any argument that the "
+        f"handling protects the battery should not be made from these "
+        f"numbers.",
+        "The absolute error figures are optimistic and should not be quoted "
+        "on their own. The laptop model computes its feed-forward command "
+        "from the same vehicle it then simulates, so the model is perfect in "
+        "a way no real vehicle is, and the feedback term has less work to do "
+        "than it would on the road. The comparison between the two columns "
+        "carries over to the hardware; the size of the numbers is a floor.",
+    ])
+
+    doc.add_heading("What would prove this prediction wrong", level=2)
+    e1 = by.get("1.0")
+    para(doc, "Stated now so that the hardware run settles the question "
+              "instead of being interpreted against it afterwards.")
+    items = []
+    if e1:
+        ratio = (e1["on_median_peak_err_mps"] /
+                 e1["off_median_peak_err_mps"]
+                 if e1["off_median_peak_err_mps"] > 0 else float("inf"))
+        items.append(
+            f"The hardware campaign interrupts the laptop for exactly one "
+            f"second, which is the row this turns on. The prediction for that "
+            f"row is {e1['off_median_peak_err_mps']:.3f} metres per second "
+            f"with the handling off against "
+            f"{e1['on_median_peak_err_mps']:.3f} with it on, a factor of "
+            f"{ratio:.0f}. If the measured error with the handling off comes "
+            f"back larger rather than smaller, the prediction is wrong.")
+    items.append(
+        "If the count of control loops that miss their own deadline moves "
+        "away from zero in either build, then the loop is failing to keep its "
+        "own timing and every comparison above is measuring something else.")
+    items.append(
+        "The simulated car is noiseless and its timing is exact. The real "
+        "loop has measured timing jitter and a real serial link, so the "
+        "measured spread should come out wider than the simulated spread, "
+        "not narrower. A narrower spread on hardware would mean the "
+        "simulation is missing something rather than that the hardware is "
+        "unusually good.")
+    bullets(doc, items)
 
 
 def sac_section(doc: Document, sac, onchip) -> None:
@@ -2297,7 +2520,14 @@ def remaining_section(doc: Document) -> None:
               "forecast makes no measurable difference. Sections 16 and 17",
          "DONE: the controller runs on the chip, matches Python, and takes "
          "0.121 ms of the 40 allowed", "-"],
-        ["9", "Tune the reward function", "Full system on the chip; ablation A4",
+        ["9", "Tune the reward function. Held back deliberately: tuning the "
+              "reward of a controller that is chasing a constant has no "
+              "destination until the question in section " + ref("headroom") +
+              " is settled",
+         "PARTLY DONE: ablation A4's firmware builds, its measurement script "
+         "is written with its expectations fixed in advance, and its outcome "
+         "is predicted in section " + ref("a4") + ". The run itself, and the "
+         "full system on the chip, need the board",
          "-"],
         ["10", "-", "Measurement campaign: six scenarios, several controllers, "
                     "several random starts", "-"],
@@ -2337,6 +2567,32 @@ def remaining_section(doc: Document) -> None:
         "conditions for the reinforcement learner. The cross-vehicle test says "
         "the spread that matters is between vehicles and depends on "
         "temperature, which is wider than originally planned for.",
+        "Whether the firmware should be built with arduino-cli instead of the "
+        "Espressif toolchain. This was asked for and has not been done, "
+        "because it is not a change of build command: the firmware is a "
+        "native Espressif project, arduino-cli reads none of its build files "
+        "or its configuration, and it has no equivalent of the compile-time "
+        "switches that every ablation depends on. That configuration is also "
+        "what disables the radios, which the timing and current measurements "
+        "require. A port would mean re-measuring gates G1, G3 and G5 on the "
+        "board, since all three were taken under a setup a port replaces. "
+        "Flashing with arduino-cli while still building with the Espressif "
+        "tools costs nothing and is assumed until decided otherwise.",
+    ])
+
+    doc.add_heading("Waiting only on the board being attached", level=2)
+    para(doc, "No development board was connected when this report was "
+              "generated, so the following are ready rather than done. None "
+              "of them is blocked on a decision.")
+    bullets(doc, [
+        "Ablation A4's measurement run. The firmware builds, the measurement "
+        "script is written, its expectations are fixed in advance, and the "
+        "result is predicted in section " + ref("a4") + ". One command once "
+        "the board is plugged in.",
+        "The full system running on the chip together, rather than the "
+        "controller and the forecaster measured one at a time.",
+        "The measurement campaign in week 10, which needs the board and needs "
+        "the deployment question settled first.",
     ])
 
 
@@ -2388,7 +2644,7 @@ def reproduce_section(doc: Document) -> None:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="reports/EV-PIL-status-report.docx")
-    ap.add_argument("--date", default="31 August 2026")
+    ap.add_argument("--date", default="2 September 2026")
     args = ap.parse_args()
 
     ladder = load("forecast-ladder.json")
@@ -2402,6 +2658,7 @@ def main() -> int:
     sac = load("week8-sac.json")
     onchip = load("week8-actor-onchip.json")
     wdt = load("week7-watchdog.json")
+    a4 = load("week9-a4-prediction.json")
 
     cost_path = DOCS / "forecast-deploy-cost.csv"
     cost_rows = None
@@ -2419,7 +2676,7 @@ def main() -> int:
 
     reset_counters()
     cover(doc, args.date)
-    summary(doc, ladder, tf, cost_rows, g3, a2, sac, onchip)
+    summary(doc, ladder, tf, cost_rows, g3, a2, sac, onchip, a4)
     background(doc)
     glossary_section(doc)
     charts_section(doc)
@@ -2436,6 +2693,7 @@ def main() -> int:
     control_section(doc, baselines, robust)
     rl_section(doc, rl)
     fallback_section(doc, fb, wdt)
+    a4_section(doc, a4)
     sac_section(doc, sac, onchip)
     actor_onchip_section(doc, sac, onchip)
     negatives_section(doc)
@@ -2453,7 +2711,8 @@ def main() -> int:
                ("A2/G5", a2), ("cost", cost_rows),
                ("controller baselines", baselines), ("PID robustness", robust),
                ("RL ramp-up", rl), ("fallback", fb), ("watchdog", wdt),
-               ("SAC campaign", sac), ("actor on chip", onchip))
+               ("SAC campaign", sac), ("actor on chip", onchip),
+               ("A4 prediction", a4))
     have = [n for n, v in tracked if v]
     missing = [n for n, v in tracked if not v]
     print(f"wrote {out}")
