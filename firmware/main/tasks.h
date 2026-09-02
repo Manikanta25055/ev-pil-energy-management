@@ -90,16 +90,23 @@
 typedef struct {
     float    v_mps, a_mps2, soc_frac, i_batt_a;
     float    v_batt_v, t_ambient_c, grade_rad, p_aux_w;
-    float    v_ref_mps, a_ref_mps2;
+    float    v_ref_mps, a_ref_mps2, t_batt_c;
     uint32_t seq;
     uint32_t host_t_us;
     uint32_t rx_t_us;
 } plant_state_t;
 
-/* Bytes of STATE payload: ten floats. The reference speed and its derivative
-   are sent by the host because the plant owns the road and the driver; the
-   controller owns only how it follows them. */
-#define STATE_PAYLOAD_BYTES  40
+/* Bytes of STATE payload: eleven floats. The reference speed and its
+   derivative are sent by the host because the plant owns the road and the
+   driver; the controller owns only how it follows them.
+
+   `t_batt_c` joined the frame in week 10, when the SAC actor was deployed.
+   The policy observes pack temperature and nothing on this chip can derive
+   it, so without it the actor would have to be fed a substitute for one of
+   the eight inputs it was trained on. Keep this in step with
+   evpil.protocol.STATE_FIELDS; tests/firmware/test_state_frame_parity.py
+   fails if they diverge. */
+#define STATE_PAYLOAD_BYTES  44
 #define ACT_PAYLOAD_BYTES    16
 
 /* Absolute deviation of the realised control period from CTRL_PERIOD_MS, in
@@ -126,6 +133,8 @@ typedef struct {
     uint32_t limp_steps;           /* loops that ramped torque down on a stale state */
     uint32_t ems_fallback_steps;   /* outer steps that used the rule action after an inference overrun */
     uint32_t boot_reason;          /* esp_reset_reason() at startup; watchdog resets show up here */
+    uint32_t actor_steps;          /* outer steps the deployed SAC actor answered */
+    uint32_t actor_wcet_us;        /* worst single actor inference on silicon */
     uint16_t jitter_hist[JITTER_N_BINS];
 } diag_stats_t;
 

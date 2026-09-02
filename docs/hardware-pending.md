@@ -6,13 +6,11 @@
 The ESP32-S3 is now connected on `/dev/cu.usbmodem1101`, MAC
 `1c:db:d4:46:24:e8`, the same part recorded in `docs/hardware-inventory.md`.
 
-Items 1 and 4 have been run and are kept here as a record of how they closed.
-Items 2 and 3 are outstanding and neither is waiting on the board. Item 2 is
-waiting on the parked decision about what should ship, and item 3 waits on
-item 2.
+Items 1, 2 and 4 have been run and are kept here as a record of how they
+closed. Nothing in this file is waiting on hardware or on a decision any more.
 
-Sections still marked outstanding contain no measurements. No number in them
-may be cited until the run that produces it has happened.
+What is left is item 3, the PIL campaign itself, which is work rather than a
+blocker.
 
 ---
 
@@ -56,18 +54,38 @@ What is not measured is where between 1 s and 5 s the crossover sits. Only
 those two durations were run, so no crossover duration may be quoted. Running
 2 s and 3 s would bracket it, at about three minutes a build.
 
-## 2. The full stack on the device
+## 2. The full stack on the device -- DONE
 
-Also week 9. The board is no longer one of the two blockers, so this is now
-waiting on one thing: the parked decision about what should ship at all. The
-measured costs that decision turns on are already in hand, actor 19.3 KB and
-0.121 ms, quantised forecaster 20.2 KB and 36.46 ms, so no further measurement
-will settle it. Someone has to choose.
+**Decided and run on 2026-09-02.** The supervisor chose to ship the SAC actor
+without the forecaster. Results in `docs/week10-deployment.md`, data in
+`docs/week10-fullstack.json`.
+
+The firmware had never actually run either model: `ems_task` produced the rule
+action on both of its branches and `infer_task` ran a dummy load. Making the
+decision real needed the state frame extended with `t_batt_c` (the policy
+observes pack temperature and nothing on the chip can derive it), the action
+decode bounds exported with the weights, two new diagnostic counters, and the
+actor wired into `ems_task` with the rules behind it.
+
+Measured over 10 minutes: the actor answered 5,965 of 5,965 outer steps, the
+rules never took over, `ctrl_late` stayed at 0, and the jitter distribution did
+not move. Worst inference 825 us, which is a cold start rather than contention:
+the figure was identical after one minute and after ten, over 565 inferences
+and then 5,965. Steady-state cost is the bench's 0.123 ms.
+
+Open, and stated so it is not mistaken for finished: `infer_task` still runs
+its dummy load, which stands in for a forecaster that is no longer being
+deployed. Core 1 is carrying a phantom and the deployed stack has more headroom
+than these numbers show. It was left in place because that load is also the
+vehicle for `-DFAULT_INJECT=1`, which is how week 7's overrun path and ablation
+A4 were measured; removing it changes the conditions those results were taken
+under.
 
 ## 3. The PIL campaign
 
-Week 10 onward. The board is here; item 2 is not settled, and this cannot
-start until it is.
+Week 10 onward. **No longer blocked.** The board is attached, the toolchain is
+settled, and item 2 is done, so this is the next piece of work rather than a
+waiting one.
 
 ## 4. Anything the toolchain change forces to be re-measured -- DONE
 

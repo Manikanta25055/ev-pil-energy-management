@@ -83,9 +83,14 @@ def unpack_frame(buf: bytes) -> tuple[FrameType, int, int, bytes]:
 # only how it follows them. Mirrored by STATE_PAYLOAD_BYTES in
 # firmware/main/tasks.h, and the firmware rejects any other length outright
 # rather than reading a short frame as a long one.
+# Week 10: `t_batt_c` joins the state frame, because the deployed SAC actor
+# observes pack temperature and the frame did not carry it. Nothing on the
+# microcontroller can derive it -- it is a plant state the host owns -- so
+# without it the policy would have to be fed a substitute, which is how a
+# controller ends up running on an input nobody trained it on.
 STATE_FIELDS: tuple[str, ...] = (
     "v_mps", "a_mps2", "soc_frac", "i_batt_a", "v_batt_v", "t_ambient_c",
-    "grade_rad", "p_aux_w", "v_ref_mps", "a_ref_mps2",
+    "grade_rad", "p_aux_w", "v_ref_mps", "a_ref_mps2", "t_batt_c",
 )
 # Also week 7: the auxiliary derate joins the actuation frame, so that the
 # third dimension of the energy-management action reaches the plant instead of
@@ -164,6 +169,13 @@ DIAG_FIELDS: tuple[str, ...] = (
     # esp_reset_reason() at startup. A watchdog reset can only be reported
     # after the reset, by the firmware that replaced the one that hung.
     "boot_reason",
+    # Week 10, when the SAC actor was actually deployed. `actor_steps` counts
+    # the outer steps the policy answered, against `ems_fallback_steps` for the
+    # ones the rules had to cover, so the PIL campaign can say how much of a
+    # run the learned controller was actually driving. `actor_wcet_us` is its
+    # worst inference on silicon, which is the deployment cost that has to ship
+    # next to any energy number it produces.
+    "actor_steps", "actor_wcet_us",
 )
 
 _DIAG = struct.Struct(f"<{len(DIAG_FIELDS)}I{N_JITTER_BINS}H")

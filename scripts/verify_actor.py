@@ -92,6 +92,7 @@ def read_board(port: str, seconds: float = 6.0) -> list[str]:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--actor", default="data/actors/sac-with-forecast-seed0.npz")
+    ap.add_argument("--params", default="data/i3_params.json")
     ap.add_argument("--export", action="store_true",
                     help="write the C header from the saved actor")
     ap.add_argument("--check", action="store_true",
@@ -113,8 +114,15 @@ def main() -> int:
 
     if args.export:
         from evpil.control.actor import write_c_header
-        write_c_header(actor, HEADER)
-        print(f"  wrote {HEADER} ({HEADER.stat().st_size / 1024:.0f} KB)")
+        from scripts.identify_params import params_from_json
+        # The decode bounds go into the header with the weights. Two of the
+        # three are properties of the action space; the third is the vehicle's
+        # maximum motor power, so the params file is read here rather than the
+        # number being written down twice.
+        vp = params_from_json(args.params)
+        write_c_header(actor, HEADER, p_limit_hi_w=vp.motor.power_max_w)
+        print(f"  wrote {HEADER} ({HEADER.stat().st_size / 1024:.0f} KB), "
+              f"decode p_limit up to {vp.motor.power_max_w:,.0f} W")
 
     if not args.check:
         return 0

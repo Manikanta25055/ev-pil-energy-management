@@ -58,6 +58,20 @@ OBS_CLIP = 10.0
 # 3 s at the 10 ms inner period, matching the forecaster's horizon in spec 4.2.
 FORECAST_STEPS = 300
 
+# The affine map from the policy's [-1, 1] outputs to a physical action.
+#
+# Module-level rather than instance attributes because the firmware has to
+# apply the identical map: an exported actor whose action is decoded with
+# different bounds is a different controller, and the discrepancy would show up
+# as a plausible-looking energy number rather than as an error.
+# `evpil.control.actor.write_c_header` emits these into the generated header,
+# and tests/control/test_c_parity.py drives both sides.
+#
+# The upper power limit is not here because it is a property of the vehicle,
+# not of the action space: it is params.motor.power_max_w.
+P_LIMIT_LO_W = 40000.0
+DERATE_MAX = 0.30
+
 
 def forecast_summary(
     cycle: Cycle, a_ref: np.ndarray, k: int, mass_kg: float,
@@ -137,9 +151,9 @@ class EnergyManagementEnv(gym.Env):
         self.observation_space = spaces.Box(
             -OBS_CLIP, OBS_CLIP, shape=(len(OBS_NAMES),), dtype=np.float32)
 
-        self._p_limit_lo = 40000.0
+        self._p_limit_lo = P_LIMIT_LO_W
         self._p_limit_hi = params.motor.power_max_w
-        self._derate_max = 0.30
+        self._derate_max = DERATE_MAX
 
     # -- action mapping ----------------------------------------------------
 

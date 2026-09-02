@@ -64,6 +64,11 @@ def plant_state(step: int) -> list[float]:
         # cause.
         15.5 + 5.0 * math.sin(t * 0.2),      # v_ref_mps
         1.0 * math.cos(t * 0.2),             # a_ref_mps2
+        # Pack temperature, added to the frame in week 10 for the deployed
+        # actor. Constant here for the same reason the rest of this state is
+        # closed-form: G3 measures the link, and a per-step cost that varies
+        # would show up in the timing as jitter the loop did not cause.
+        20.0,                                # t_batt_c
     ]
 
 
@@ -156,9 +161,13 @@ def main() -> int:
     counters = {k: s1[k] - s0[k] for k in
                 ("loop_count", "rx_timeouts", "rx_bad", "infer_deadline_misses",
                  "stale_steps", "ctrl_late", "ctrl_fallback_steps",
-                 "limp_steps", "ems_fallback_steps")}
+                 "limp_steps", "ems_fallback_steps",
+                 # Week 10: how many outer steps the deployed policy answered.
+                 # A difference, like the other event counts.
+                 "actor_steps")}
     counters["stale_worst"] = s1["stale_worst"]      # a running maximum
     counters["boot_reason"] = s1["boot_reason"]
+    counters["actor_wcet_us"] = s1["actor_wcet_us"]  # also a running maximum
     # Running maxima on the MCU, so a difference is meaningless and these are
     # taken as-is. That means they include the startup transient before the
     # settle point: the first loop after boot has no predecessor and the link
@@ -197,6 +206,8 @@ def main() -> int:
     print(f"  MCU limp steps                  {counters['limp_steps']}")
     print(f"  MCU inference-late outer steps  "
           f"{counters['ems_fallback_steps']}")
+    print(f"  MCU actor steps                 {counters['actor_steps']}"
+          f"  (worst inference {counters['actor_wcet_us']} us)")
     print(f"  MCU boot reason                 "
           f"{RESET_REASONS.get(counters['boot_reason'], counters['boot_reason'])}")
     print(f"\n  MCU rx timeouts     {counters['rx_timeouts']}")

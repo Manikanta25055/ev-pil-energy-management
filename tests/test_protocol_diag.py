@@ -43,12 +43,20 @@ def test_a_diag_frame_round_trips_through_the_wire_format():
 
 
 def test_the_payload_is_the_size_the_firmware_writes():
-    # Sixteen uint32 counters plus one uint16 per bin. The firmware builds the
+    # One uint32 per counter plus one uint16 per bin. The firmware builds the
     # same buffer from the same field order; a mismatch here is a silent
     # misparse, which on a binary link reads as plausible numbers rather than
-    # as an error.
-    assert DIAG_PAYLOAD_SIZE == 16 * 4 + N_JITTER_BINS * 2
-    assert len(DIAG_FIELDS) == 16
+    # as an error. Derived from DIAG_FIELDS rather than written down, so that
+    # adding a counter is a one-line change on each side and not a puzzle here.
+    # tests/firmware/test_state_frame_parity.py checks the firmware's width.
+    assert DIAG_PAYLOAD_SIZE == 4 * len(DIAG_FIELDS) + N_JITTER_BINS * 2
+    # The counters the firmware is known to publish, named rather than counted.
+    # A count pins the width, which the line above already does from the same
+    # source; naming them catches a rename or a drop, which a count cannot.
+    for counter in ("loop_count", "ctrl_late", "stale_steps", "limp_steps",
+                    "ems_fallback_steps", "boot_reason",
+                    "actor_steps", "actor_wcet_us"):
+        assert counter in DIAG_FIELDS
 
 
 def test_a_truncated_payload_is_refused_rather_than_misread():

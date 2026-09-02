@@ -22,10 +22,16 @@ ACTOR_INC ?= ../main
 test_actor: test_actor.c ../main/actor.c
 	$(CC) -I$(ACTOR_INC) $(CFLAGS) -o $@ $^ -lm
 
+# The action decode, checked against EnergyManagementEnv.decode_action by
+# tests/control/test_decode_c_parity.py. Needs the same weights header as
+# test_actor, because the decode bounds are exported with the weights.
+test_decode: test_decode.c ../main/actor.c
+	$(CC) -I$(ACTOR_INC) $(CFLAGS) -o $@ $^ -lm
+
 .PHONY: check clean
 check: test_protocol test_control
 	./test_protocol
 	./test_control > /dev/null && echo "ok:   control dump builds and runs"
 
 clean:
-	rm -f test_protocol test_control test_actor
+	rm -f test_protocol test_control test_actor test_decode

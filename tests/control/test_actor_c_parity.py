@@ -28,6 +28,10 @@ HOST_TEST = Path("firmware/host_test")
 # products, then squashed by tanh, which contracts rather than amplifies.
 TOL = 2e-5
 
+# Any value: this harness checks the forward pass, not the decode. It has to
+# be supplied because a header without decode bounds will not compile.
+P_LIMIT_HI_W = 125000.0
+
 
 @pytest.fixture(scope="module")
 def harness(tmp_path_factory):
@@ -38,7 +42,8 @@ def harness(tmp_path_factory):
 
     actor = two_hidden(64)
     inc = tmp_path_factory.mktemp("actor_inc")
-    write_c_header(actor, inc / "sac_actor_weights.h")
+    write_c_header(actor, inc / "sac_actor_weights.h",
+                   p_limit_hi_w=P_LIMIT_HI_W)
 
     build = subprocess.run(
         ["make", "test_actor", f"ACTOR_INC={inc}", "-B"],

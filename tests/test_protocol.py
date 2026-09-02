@@ -1,9 +1,14 @@
 import struct
 import pytest
 from evpil.protocol import (
+    STATE_FIELDS,
     BadFrame, FrameType, crc16_ccitt, pack_actuation, pack_frame,
     pack_state, unpack_frame,
 )
+
+# Derived, not written down: adding a state field must not break tests
+# that are about framing rather than about the field list.
+N_STATE = len(STATE_FIELDS)
 
 
 def test_crc16_known_vector():
@@ -26,16 +31,18 @@ def test_pack_frame_layout():
 
 
 def test_roundtrip_state():
-    values = [12.5, 0.75, 0.62, -18.0, 352.25, 21.0, 0.035, 480.0, 13.0, 0.5]
+    values = [12.5, 0.75, 0.62, -18.0, 352.25, 21.0, 0.035, 480.0,
+              13.0, 0.5, 24.5][:N_STATE]
+    assert len(values) == N_STATE, "extend the vector for the new field"
     frame = pack_state(seq=99, t_us=1_000_000, values=values)
-    assert len(frame) == 54
+    assert len(frame) == 14 + 4 * N_STATE
 
     ftype, seq, t_us, payload = unpack_frame(frame)
     assert ftype is FrameType.STATE
     assert seq == 99
     assert t_us == 1_000_000
 
-    got = list(struct.unpack("<10f", payload))
+    got = list(struct.unpack(f"<{N_STATE}f", payload))
     assert got == pytest.approx(values, rel=1e-6)
 
 
@@ -50,28 +57,28 @@ def test_roundtrip_actuation():
 
 
 def test_corrupt_payload_rejected():
-    frame = bytearray(pack_state(1, 1, [0.0] * 10))
+    frame = bytearray(pack_state(1, 1, [0.0] * N_STATE))
     frame[20] ^= 0xFF
     with pytest.raises(BadFrame, match="crc"):
         unpack_frame(bytes(frame))
 
 
 def test_bad_magic_rejected():
-    frame = bytearray(pack_state(1, 1, [0.0] * 10))
+    frame = bytearray(pack_state(1, 1, [0.0] * N_STATE))
     frame[0] ^= 0xFF
     with pytest.raises(BadFrame, match="magic"):
         unpack_frame(bytes(frame))
 
 
 def test_truncated_frame_rejected():
-    frame = pack_state(1, 1, [0.0] * 10)
+    frame = pack_state(1, 1, [0.0] * N_STATE)
     with pytest.raises(BadFrame, match="short"):
         unpack_frame(frame[:10])
 
 
 def test_wrong_state_payload_length():
-    with pytest.raises(ValueError, match="10 values"):
-        pack_state(1, 1, [0.0] * 9)
+    with pytest.raises(ValueError, match=f"{N_STATE} values"):
+        pack_state(1, 1, [0.0] * (N_STATE - 1))
 
 
 def test_shared_vector_for_c_parity():

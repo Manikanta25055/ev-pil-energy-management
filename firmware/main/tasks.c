@@ -9,6 +9,10 @@
 #include "esp_timer.h"
 #include "esp_system.h"
 #include "esp_task_wdt.h"
+#if HAVE_SAC_ACTOR
+#include "actor.h"
+#include <sac_actor_weights.h>
+#endif
 #include "esp_heap_caps.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -135,7 +139,7 @@ static void ctrl_task(void *arg)
                 uint32_t rtt  = t_rx - t_req;
                 if (rtt > s_diag.rtt_max_us) s_diag.rtt_max_us = rtt;
 
-                float v[10];
+                float v[STATE_PAYLOAD_BYTES / 4];
                 memcpy(v, f.payload, sizeof v);
 
                 xSemaphoreTake(s_state_mux, portMAX_DELAY);
@@ -144,6 +148,7 @@ static void ctrl_task(void *arg)
                 s_state.v_batt_v    = v[4];  s_state.t_ambient_c = v[5];
                 s_state.grade_rad   = v[6];  s_state.p_aux_w     = v[7];
                 s_state.v_ref_mps   = v[8];  s_state.a_ref_mps2  = v[9];
+                s_state.t_batt_c    = v[10];
                 s_state.seq         = f.seq;
                 s_state.host_t_us   = f.t_us;
                 s_state.rx_t_us     = t_rx;
@@ -299,19 +304,50 @@ static void ems_task(void *arg)
         }
 #endif
         xSemaphoreTake(s_state_mux, portMAX_DELAY);
-        float soc = s_state.soc_frac;
-        float v   = s_state.v_mps;
+        float soc     = s_state.soc_frac;
+        float v       = s_state.v_mps;
+        float a_meas  = s_state.a_mps2;
+        float t_batt  = s_state.t_batt_c;
+        float grade   = s_state.grade_rad;
+        float v_ref   = s_state.v_ref_mps;
         xSemaphoreGive(s_state_mux);
 
-        /* Week 8 replaces this branch with the exported SAC actor. Until then
-           both paths produce the rule action, so the fallback counter says how
-           often the policy would have been unavailable rather than how often a
-           policy existed. */
         bool late = s_infer_late;
         s_infer_late = false;
         if (late) s_diag.ems_fallback_steps++;
 
-        ems_action_t a = control_rule_action(soc, v);
+        ems_action_t a;
+#if HAVE_SAC_ACTOR
+        if (late) {
+            /* The policy did not answer in time, so the rules take over. This
+               is the branch ems_fallback_steps has always counted; until the
+               actor was deployed both branches produced the same action and
+               the counter recorded an opportunity rather than an event. */
+            a = control_rule_action(soc, v);
+        } else {
+            /* The eight observations the policy was trained on, in the order
+               evpil.control.env.OBS_NAMES declares them. The last two are the
+               forecast channels and are held at zero on purpose: the deployed
+               policy is the without-forecast arm of ablation A3, trained with
+               these at zero, and no forecaster runs on this device. Feeding a
+               with-forecast policy two dead channels would be a different
+               controller that still looked like it was working. */
+            float raw[SAC_ACTOR_N_IN] = {
+                soc, v, a_meas, t_batt, grade, v_ref - v, 0.0f, 0.0f,
+            };
+            float scaled[SAC_ACTOR_N_IN];
+            float act[SAC_ACTOR_N_OUT];
+            actor_scale_observation(raw, scaled, SAC_ACTOR_N_IN);
+            uint32_t us = actor_forward(scaled, act);
+            if (us > s_diag.actor_wcet_us) s_diag.actor_wcet_us = us;
+            s_diag.actor_steps++;
+            actor_decode_action_raw(act, &a.regen_blend,
+                                    &a.p_limit_w, &a.aux_derate);
+        }
+#else
+        (void) a_meas; (void) t_batt; (void) grade; (void) v_ref;
+        a = control_rule_action(soc, v);
+#endif
         s_regen_blend = a.regen_blend;
         s_p_limit_w   = a.p_limit_w;
         s_aux_derate  = a.aux_derate;
@@ -326,7 +362,7 @@ static void diag_task(void *arg)
     (void) arg;
     TickType_t next = xTaskGetTickCount();
     uint8_t tx[128];
-    uint8_t payload[16 * 4 + JITTER_N_BINS * 2];
+    uint8_t payload[18 * 4 + JITTER_N_BINS * 2];
     uint32_t seq = 0;
 
     for (;;) {
@@ -335,7 +371,8 @@ static void diag_task(void *arg)
            interleaved into a binary stream costs the host a resynchronisation
            on every diagnostic line. Framing it also means the host parses one
            format instead of scraping a printf. */
-        uint32_t u32[16] = {
+        /* Order must match evpil.protocol.DIAG_FIELDS. */
+        uint32_t u32[18] = {
             s_diag.loop_count, s_diag.rx_timeouts, s_diag.rx_bad,
             s_diag.infer_deadline_misses, s_diag.ctrl_wcet_us,
             s_diag.infer_wcet_us, s_diag.rtt_max_us,
@@ -344,6 +381,7 @@ static void diag_task(void *arg)
             s_diag.ctrl_late, s_diag.ctrl_fallback_steps,
             s_diag.limp_steps, s_diag.ems_fallback_steps,
             s_diag.boot_reason,
+            s_diag.actor_steps, s_diag.actor_wcet_us,
         };
         memcpy(payload, u32, sizeof u32);
         memcpy(payload + sizeof u32, s_diag.jitter_hist,

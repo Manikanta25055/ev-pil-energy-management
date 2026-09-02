@@ -151,6 +151,7 @@ def run_blackout(link, *, cycle_arrays, plant, k_onset, lead_in_k, black_k,
                 last["i_batt_a"], last["v_batt_v"], T_AMBIENT_C,
                 float(grade_all[k]), last["p_aux_w"],
                 float(v_ref_all[k]), float(a_ref_all[k]),
+                state.battery.t_batt_c,
             ]))
 
         elif ftype is FrameType.ACTUATION:

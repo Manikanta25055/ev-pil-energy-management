@@ -2665,6 +2665,121 @@ def a4_measured_section(doc: Document, on, off, on5, off5) -> None:
               "repeating the campaign at two or three seconds.")
 
 
+def deployment_section(doc: Document, fs, sac) -> None:
+    """What was chosen to run on the chip, and what it did there."""
+    h1(doc, "What runs on the chip, and what it does there", "deploy")
+
+    if not fs:
+        para(doc, "The on-chip deployment had not been measured when this "
+                  "report was generated.", italic=True, colour=MUTED)
+        return
+
+    c = fs["counters"]
+    para(doc, "A decision was taken on what to put on the chip: the learned "
+              "controller, and no forecaster. The forecast was found to make "
+              "no measurable difference to the controller, and the forecaster "
+              "costs 35 of the 40 milliseconds the outer loop is allowed. It "
+              "cost nearly the whole budget and bought nothing that was being "
+              "used, so it does not ship.")
+
+    para(doc, "The version of the controller that ships is the one trained "
+              "without the forecast, not the one trained with it. That "
+              "distinction matters more than it looks. Both versions read the "
+              "same eight inputs; the forecast is two of those inputs rather "
+              "than extra machinery. Deploying the version trained with the "
+              "forecast, while providing no forecaster, would feed it two "
+              "permanently blank inputs it had never seen blank while "
+              "learning. It would run, and it would return sensible-looking "
+              "commands, and it would be a controller nobody trained.")
+
+    doc.add_heading("The chip had never actually run either model", level=2)
+    para(doc, "This was not a configuration change. Until now the energy "
+              "manager computed the simple rule-based action on both of its "
+              "branches, and the slot where the forecaster would go ran a "
+              "stand-in workload. So no measurement before this one had a "
+              "learned policy inside the loop.")
+
+    para(doc, "Four things had to be built. The message the laptop sends was "
+              "missing one of the eight things the policy looks at, the "
+              "battery's temperature, which the chip cannot work out for "
+              "itself. The arithmetic that turns the policy's three outputs "
+              "into physical commands had to be shipped alongside the "
+              "policy's weights rather than written into the firmware, "
+              "because a policy decoded against the wrong limits still "
+              "produces numbers that look reasonable. Two counters were added "
+              "so the chip can report how many decisions the policy actually "
+              "made and how long its slowest one took. And the policy itself "
+              "had to be wired in, with the old rules kept behind it for when "
+              "it does not answer in time.")
+
+    doc.add_heading("Ten minutes with the policy in the loop", level=2)
+    rows = [
+        ["Control loops", f"{c['loop_count']:,}"],
+        ["Decisions the policy made", f"{c['actor_steps']:,}"],
+        ["Decisions the old rules had to cover", str(c["ems_fallback_steps"])],
+        ["Loops late against their own deadline", str(c["ctrl_late"])],
+        ["Policy's slowest single decision",
+         f"{c['actor_wcet_us']} us  ({100.0 * c['actor_wcet_us'] / 100000.0:.1f}% "
+         f"of the time it is allowed)"],
+        ["Timing jitter, 99th percentile", f"{fs['p99_us']:.0f} us"],
+        ["Messages that did not arrive in time", str(c["stale_steps"])],
+    ]
+    table(doc, ["Measurement", "Value"], rows)
+    para(doc, "Table. The full stack on the chip. MEASURED.",
+         size=9, italic=True, colour=MUTED)
+
+    para(doc, f"The policy answered every one of the "
+              f"{c['actor_steps']:,} decisions asked of it and the old rules "
+              f"never had to step in. Putting a neural network inside the "
+              f"loop moved neither the timing jitter nor the count of loops "
+              f"that missed their own deadline, which stayed at zero.")
+
+    doc.add_heading("The slowest decision is the first one", level=2)
+    para(doc, "The policy's slowest single decision took about six times its "
+              "typical one, and the obvious explanation is that something "
+              "else on the chip interrupted it. That is not what happened. "
+              "The figure was identical after one minute and after ten, "
+              "across roughly six hundred decisions and then six thousand. "
+              "Being interrupted would almost certainly have produced a worse "
+              "case somewhere in ten times as many attempts; a first-time "
+              "cost cannot, because it only happens once, when the code and "
+              "the weights are read out of storage for the first time after a "
+              "restart.")
+
+    para(doc, "So the cost of running the policy has two honest numbers. The "
+              "first decision after a restart takes about 0.8 milliseconds. "
+              "Every one after that takes about 0.12. Both are small against "
+              "the 100 milliseconds the decision is allowed.")
+
+    doc.add_heading("What this does not claim", level=2)
+    if sac:
+        w = sac["summary"]["without-forecast"]
+        b = sac["baseline"]["equivalent_wh_per_km"]
+        para(doc, f"The learned controller uses more energy than the simple "
+                  f"rules it sits in front of: {w['mean']:.2f} watt-hours per "
+                  f"kilometre against {b:.2f}, a gap of "
+                  f"{w['gap_to_rule_pct_mean']:.2f}%, and the uncertainty "
+                  f"around that figure sits entirely on the worse side. "
+                  f"Putting it on the chip does not make the car more "
+                  f"efficient, and nothing here says it does.")
+    para(doc, "What the deployment shows is a different thing, and it is the "
+              "one this project set out to show: a learned controller of this "
+              "size runs inside a real control loop on real hardware, keeps "
+              "its deadlines, and costs what was measured rather than what "
+              "was estimated. The energy comparison remains the negative "
+              "result described in section " + ref("headroom") + ".")
+
+    para(doc, f"One caveat belongs on the record. The slot where the "
+              f"forecaster would have run still executes a stand-in workload, "
+              f"{fs['extremes']['infer_wcet_us']} microseconds in this "
+              f"campaign. The forecaster is no longer being deployed, so that "
+              f"work stands in for nothing and the real system has more room "
+              f"than these figures show. It was left alone deliberately: the "
+              f"same stand-in is how the deadline-miss experiments were "
+              f"triggered, and removing it would change the conditions those "
+              f"earlier results were measured under.")
+
+
 def port_section(doc: Document, g1, g5, g3a, actora, g3) -> None:
     """The toolchain port and the gates re-measured against it."""
     h1(doc, "Changing the build toolchain, and re-measuring because of it",
@@ -3264,6 +3379,7 @@ def main() -> int:
     g5a = load("g5-arduino.json")
     g3a = load("g3-loop-timing-arduino.json")
     actora = load("week8-actor-onchip-arduino.json")
+    fullstack = load("week10-fullstack.json")
     dis = load("a2-distillation.json")
 
     cost_path = DOCS / "forecast-deploy-cost.csv"
@@ -3305,6 +3421,7 @@ def main() -> int:
     a4_measured_section(doc, a4_on, a4_off, a4_on5, a4_off5)
     sac_section(doc, sac, onchip)
     actor_onchip_section(doc, sac, onchip)
+    deployment_section(doc, fullstack, sac)
     port_section(doc, g1a, g5a, g3a, actora, g3)
     negatives_section(doc)
     changes_section(doc)
@@ -3325,6 +3442,7 @@ def main() -> int:
                ("A4 prediction", a4), ("A4 measured", a4_on and a4_off),
                ("A4 tail at 5 s", a4_on5 and a4_off5),
                ("toolchain port", g1a and g5a and g3a),
+               ("on-chip deployment", fullstack),
                ("distillation", dis))
     have = [n for n, v in tracked if v]
     missing = [n for n, v in tracked if not v]

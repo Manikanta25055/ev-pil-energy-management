@@ -84,7 +84,7 @@ def test_the_library_default_width_would_not_fit_beside_the_forecaster():
 def test_the_generated_header_declares_the_geometry_it_contains(tmp_path):
     a = tiny_actor(n_in=8, hidden=16, n_out=3)
     path = tmp_path / "w.h"
-    write_c_header(a, path)
+    write_c_header(a, path, p_limit_hi_w=125000.0)
     text = path.read_text()
 
     assert "#define SAC_ACTOR_N_LAYERS 2" in text
@@ -111,7 +111,7 @@ def test_the_header_is_row_major_in_the_order_the_c_code_reads(tmp_path):
     else."""
     a = tiny_actor(n_in=3, hidden=2, n_out=2)
     path = tmp_path / "w.h"
-    write_c_header(a, path)
+    write_c_header(a, path, p_limit_hi_w=125000.0)
     text = path.read_text()
     block = text.split("sac_actor_w0[6] = {")[1].split("};")[0]
     got = [float(v.strip().rstrip("f")) for v in block.replace("\n", "")

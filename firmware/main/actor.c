@@ -113,3 +113,22 @@ int actor_n_params(void)
     }
     return n;
 }
+
+
+void actor_decode_action_raw(const float *action, float *regen_blend,
+                             float *p_limit_w, float *aux_derate)
+{
+    /* Clip first. The policy's tanh cannot leave [-1, 1], but the contract
+       this mirrors clips before mapping, and a decode that agrees with the
+       host only for well-behaved inputs is not a parity anyone can rely on. */
+    float a0 = action[0], a1 = action[1], a2 = action[2];
+    if (a0 < -1.0f) a0 = -1.0f; else if (a0 > 1.0f) a0 = 1.0f;
+    if (a1 < -1.0f) a1 = -1.0f; else if (a1 > 1.0f) a1 = 1.0f;
+    if (a2 < -1.0f) a2 = -1.0f; else if (a2 > 1.0f) a2 = 1.0f;
+
+    *regen_blend = 0.5f * (a0 + 1.0f);
+    *p_limit_w   = sac_actor_p_limit_lo_w
+                 + 0.5f * (a1 + 1.0f)
+                   * (sac_actor_p_limit_hi_w - sac_actor_p_limit_lo_w);
+    *aux_derate  = 0.5f * (a2 + 1.0f) * sac_actor_derate_max;
+}
