@@ -69,6 +69,17 @@ script now records torque for `RECOVERY_WINDOW_S` = 2.0 s **after** the window
 closes as well as during it, because that is where the recovery transient
 lands, and writes both traces to `docs/week9-a4.json`.
 
+**The outcome is predicted, in writing, before the run.**
+`docs/week9-a4-prediction.md` sweeps 480 paired blackouts across four cycles
+and six outage durations on the host. Its headline: A4 is predicted not to be
+null, and to point the opposite way from the obvious reading -- switching the
+handling off should *improve* median tracking at every duration tried, because
+holding the last command through a short outage is a better guess than ramping
+torque to zero. The handling only earns its cost back in the tail, at a 5 s
+outage. The hardware campaign injects 1.0 s, where the prediction is
+0.031 m/s with handling off against 0.363 m/s with it on -- a factor of twelve,
+and the specific number the run will confirm or refute.
+
 What is still missing is only the run.
 
 ## 2. The full stack on the device

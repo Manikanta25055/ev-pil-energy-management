@@ -104,3 +104,35 @@ def test_ctrl_late_must_stay_zero_in_both_modes():
 @pytest.mark.parametrize("mode", [True, False])
 def test_every_expectation_names_a_real_counter(mode):
     assert set(expectations(fallback_off=mode)) <= set(COUNTERS)
+
+
+# --- The A4 prediction's copies of the firmware constants -------------------
+#
+# scripts/predict_a4.py mirrors the firmware control task, which means it
+# restates three constants that tasks.h owns. Duplicated constants are how two
+# implementations drift while both of their tests keep passing, so these are
+# read back out of the header rather than trusted.
+
+TASKS_H = Path(__file__).resolve().parents[2] / "firmware" / "main" / "tasks.h"
+
+
+def header_define(name: str) -> float:
+    m = re.search(rf"^#define\s+{name}\s+([-\d.]+)f?\s*$",
+                  TASKS_H.read_text(), re.MULTILINE)
+    assert m, f"{name} not found in {TASKS_H.name}"
+    return float(m.group(1))
+
+
+def test_prediction_uses_the_firmware_stale_limit():
+    from scripts.predict_a4 import STALE_LIMIT_STEPS
+    assert STALE_LIMIT_STEPS == header_define("STALE_LIMIT_STEPS")
+
+
+def test_prediction_uses_the_firmware_limp_ramp():
+    from scripts.predict_a4 import LIMP_RAMP_NM
+    assert LIMP_RAMP_NM == header_define("LIMP_RAMP_NM")
+
+
+def test_prediction_uses_the_firmware_control_period():
+    from scripts.predict_a4 import CTRL_PERIOD_S
+    assert CTRL_PERIOD_S == header_define("CTRL_PERIOD_MS") / 1000.0
