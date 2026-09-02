@@ -65,6 +65,13 @@ the 2 s after it.
 | 5.0 s | 1.764 | **0.636** | **6.881** | 8.024 |
 | 10.0 s | 3.392 | **1.437** | **13.265** | 19.705 |
 
+![Ablation A4 predicted](figures/week9-a4-prediction.png)
+
+*Left: the median case, where handling off tracks better at every duration.
+Right: the worst case, where the two cross at 5 s. Log axes, because the
+error spans four orders of magnitude across the durations swept. Drawn by
+`scripts/plot_a4.py`.*
+
 **The median and the worst case disagree, and that disagreement is the
 finding.** By the median, switching the handling off tracks better at every
 duration tried: holding the last command through a short outage is simply a
