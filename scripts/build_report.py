@@ -254,7 +254,9 @@ def summary(doc: Document, ladder, tf, cost_rows, g3, a2, sac, onchip,
         ["G1", "Week 1", "Is the chip fast enough for a Transformer?",
          "PASS, 6.1x margin"],
         ["G2", "Week 2", "Does the vehicle model reproduce real trips?",
-         "PASS, 6 of 7 trips"],
+         "FAILS on 1 of 7. Parts A and B pass on every trip; one trip misses "
+         "the state-of-charge bound by 0.45 of a point. Phase 2 proceeded "
+         "with the miss recorded, not with the bound relaxed"],
         ["G3", "Week 3", "Does the 10 ms loop close on hardware?",
          (f"Timing passes by 40x; {g3['counters']['stale_steps']} host stalls "
           f"in {g3['counters']['loop_count']:,} loops fail the zero-drop rule. "
@@ -841,8 +843,25 @@ def plant_section(doc: Document) -> None:
               "and that miss is reported rather than rounded away.", size=11)
 
     para(doc, "The one failure misses by 0.45 of a percentage point and is "
-              "traceable to road-load differences between trips rather than to "
-              "the physics. Gate G2 passes with that recorded.")
+              "traceable to road-load differences between trips rather than "
+              "to the physics. It is worth being exact about what that means "
+              "for the gate, because the temptation is to call six out of "
+              "seven a pass. The criterion says every validation trip, both "
+              "thresholds were deliberately carried over unchanged when the "
+              "criterion was split, and one trip is outside one of them. So "
+              "the gate's own verdict is a fail, and it is recorded as a fail "
+              "in the measurement file.")
+
+    para(doc, "What followed was a decision rather than a re-reading. Phase 2 "
+              "was allowed to begin with the miss recorded and a condition "
+              "attached: the forecaster is trained on real logged trips "
+              "rather than on plant output, so its validity never depended on "
+              "this gate, and the plant's real job is the reinforcement-"
+              "learning environment and the closed loop. The trip-to-trip "
+              "road-load spread, roughly 10 percent on mechanical energy, was "
+              "to be represented as randomised training conditions rather "
+              "than a fixed parameter set. That condition is still open and "
+              "appears in the decisions list.")
 
     doc.add_heading("Is the model right everywhere, or only on average?",
                     level=2)
