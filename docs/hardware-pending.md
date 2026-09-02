@@ -45,10 +45,14 @@ direction holds and its factor of twelve comes out as a factor of 2.3. Its
 claim that battery current cannot separate the two modes is refuted, by a
 scoping defect in `predict_a4.py` that section 6 of the results note sets out.
 
-Still not measured, and now the only part of C5 that is not: the tail. The
-prediction puts the crossover at a 5 s outage, where the handling is supposed
-to earn its cost back. `run_a4_closedloop.py --blackout-s 5.0` is the run, with
-onsets re-chosen so the outage and its recovery fit inside the cycle.
+The tail was run too, at a 5 s outage, and the crossover is real: worst case
+7.386 m/s with the handling on against 7.949 m/s with it off, against a
+prediction of 6.881 and 8.024. Claim C5 is now carried by measurement in both
+halves.
+
+What is not measured is where between 1 s and 5 s the crossover sits. Only
+those two durations were run, so no crossover duration may be quoted. Running
+2 s and 3 s would bracket it, at about three minutes a build.
 
 ## 2. The full stack on the device
 
