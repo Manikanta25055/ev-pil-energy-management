@@ -100,13 +100,21 @@ comparison is a rebuild and both remain measurable.
 | Over 59,650 loops, ten minutes | Synchronous | Pipelined |
 |---|---|---|
 | Jitter p99 | within 25 us | within 25 us |
-| Worst round trip | 7,405 us | **77 us** |
+| `rtt_max_us` (see note) | 7,405 us | 77 us |
 | Reply timeouts | 6 | 0 |
 | Steps on a stale state | not applicable | 8 |
 | Malformed or lost frames | 0 | 0 |
 
-The round trip falls by a factor of 96, because the loop no longer waits for
-it. Timing is unchanged, which is the expected result: the loop was never the
+**Correction, 2026-09-11.** This section used to say "the round trip falls by
+a factor of 96". That compares two different quantities. The firmware computes
+`rtt_max_us` as the time from stamping and sending the current request to
+reading a reply (`firmware/main/tasks.c`). In the synchronous loop the reply
+read is the answer to that request, so 7,405 us is a real round trip. In the
+pipelined loop the reply read is the answer to the *previous* request, usually
+already buffered, so 77 us is how long it took to read a waiting reply, not a
+round trip. The real pipelined round trip was not measured. What stands is the
+reason for the change: the loop no longer waits for the host inside its own
+slot. Timing is unchanged, which is the expected result: the loop was never the
 problem.
 
 **Eight events remain, and the gate still fails.** What changed is what an

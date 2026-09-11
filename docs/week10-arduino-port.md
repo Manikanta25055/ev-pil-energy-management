@@ -121,7 +121,7 @@ is still optimistic by roughly the same factor.
 | Loops | 59,650 | 59,650 | identical |
 | Control task WCET | 97 us | **61 us** | better |
 | Inference WCET | 836 us | **776 us** | better |
-| Worst round trip | 1,766 us | **1,637 us** | better |
+| `rtt_max_us` (not a round trip in the pipelined loop; `docs/g3-loop-timing.md`) | 1,766 us | 1,637 us | not comparable as a round trip |
 | Period range | 9,845 to 10,011 us | 9,729 to 10,001 us | wider low side |
 | **Dropped frames** | **3** | **9** | **worse** |
 | `limp_steps` | 0 | 1 | worse |
@@ -138,6 +138,22 @@ event, 0.005% against 0.015% of loops, and the campaign was never designed to
 resolve a rate that low. What can be said is that the port did not fix G3 and
 did not obviously break it either. What cannot be said, from these two runs, is
 that the port tripled the drop rate.
+
+**Repeated five times on 2026-09-11,** on the Arduino build with the actor in
+the loop, which is the image that ships. 10 minutes each, same harness.
+Dropped frames per run: 16, 4, 6, 9, 9. Pooled, 44 in 298,250 loops, 0.0148%,
+or 8.8 per 10-minute run, with an exact 95% Poisson interval of 6.4 to 11.8 per
+run. `ctrl_late` was 0 and jitter p99 25 us in all five, and the actor answered
+5,965 of 5,965 outer steps every time. Data: `docs/g3-repeat-arduino-{1..5}.json`.
+
+Identical runs differ by a factor of four, so a single run says little. The
+earlier Arduino figures, 9 before the actor and 5 with it, are ordinary
+samples. The IDF's single 3 is below the range of the five, but it is one run,
+taken before the actor was wired in, and the IDF repeats were deferred on
+2026-09-11. **Whether the toolchain moved the rate is still open**; what is now
+established is the shipped image's own rate. Run 1 overlapped light editing
+work on the host and is kept rather than dropped; it is the high value. G3
+verdict unchanged, FAIL in every run, on the frame criterion.
 
 **G3 verdict unchanged: FAIL**, on the same criterion, for the same reason: the
 host does not always answer in time. The distinction the project has been
@@ -172,13 +188,21 @@ here:
   supply current was not measured on this build and the spec's constraint was
   written about supply current as well as timing. Anyone repeating the
   current-draw argument should measure it on this image first.
-- **G3's drop count.** Two single runs cannot resolve it. If the drop rate
-  matters to a reviewer, it needs five or more runs per toolchain, not one.
-- **Ablation A4 and the week 7 fallback campaign** were measured on the IDF
-  build, earlier the same day. The control task's timing is unchanged and
-  `ctrl_late` is still 0, so there is no reason to expect them to move, but
-  they have not been re-run and that is a statement about what was done, not a
-  claim about what would happen.
+- **G3's drop count: five Arduino runs done 2026-09-11,** 8.8 per 10-minute
+  run pooled, 95% interval 6.4 to 11.8. The IDF repeats were deferred, so the
+  toolchain comparison is still open.
+- **Ablation A4 and the week 7 fallback campaign: re-run on this build,
+  2026-09-11, and both reproduce.** Fallback with `FAULT_INJECT=1`: every
+  counter expectation holds, 180 / 94 / 20 / 20 against the IDF's
+  180 / 96 / 20 / 20, torque ramps 226.18 to 0.00 Nm, `ctrl_late` 0
+  (`docs/week7-fallback-arduino.json`). A4's counter campaign: guarded
+  counters 0, torque held flat at 226.07 Nm (`docs/week9-a4-arduino-counters.json`).
+  Watchdog with `FAULT_INJECT=2`: the board resets and reports boot reason 6,
+  task watchdog, at 19.9 s and 42.2 s against 19.8 s and 41.9 s on the IDF
+  (`docs/week7-watchdog-arduino.json`). The Arduino core configures the task
+  watchdog itself, so that one could have come out differently and did not.
+  The closed-loop A4 sweep was run on this build as well, at five outage
+  lengths; `docs/week9-a4.md` section 10.
 
 ## 5. Reproducing
 

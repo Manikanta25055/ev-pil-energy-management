@@ -87,7 +87,7 @@ Ten minutes, 59,650 control loops, unchanged from the week 3 campaign.
 | jitter p99 | 25 us | **25 us** | 1000 us |
 | jitter p99.9 | 25 us | **25 us** | -- |
 | control-task WCET | -- | **97 us** | 10,000 us |
-| worst round trip | 77 us | **799 us** | -- |
+| `rtt_max_us` (see note) | 77 us | **799 us** | -- |
 | loops late against their own deadline | not counted | **0** | -- |
 | host answered late (stale steps) | 8 | **4** | 0 |
 | reply timeouts | 0 | **0** | 0 |
@@ -98,9 +98,15 @@ The control task's worst case rose to 97 us because it now does real work: a
 feedforward with two trigonometric calls, a filtered-derivative PID and the
 anti-windup branch. That is 0.97% of the period.
 
-The worst round trip rose from 77 us to 799 us. The frames are larger -- 54
-bytes of state against 46 -- and the host does more per reply. It is still an
-order of magnitude inside the period, and it is not what the gate turns on.
+**Correction, 2026-09-11.** This row used to be labelled "worst round trip",
+and the text explained its rise from 77 to 799 us by the larger frames and the
+extra host work. Both runs were pipelined, and in the pipelined loop
+`rtt_max_us` times the read of the reply to the *previous* request against the
+*current* request's timestamp, so it is not a round trip
+(`docs/g3-loop-timing.md` has the detail). It is also a running maximum since
+boot, which `scripts/run_g3.py` notes includes the start-up transient. The
+explanation given for the rise is therefore not supported, and none is offered
+here. It is not what the gate turns on.
 
 **G3 still fails, on the same criterion and for the same reason, with the
 evidence now sharper.** Four events in 59,650 loops, all of them the host

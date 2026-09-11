@@ -50,9 +50,15 @@ The tail was run too, at a 5 s outage, and the crossover is real: worst case
 prediction of 6.881 and 8.024. Claim C5 is now carried by measurement in both
 halves.
 
-What is not measured is where between 1 s and 5 s the crossover sits. Only
-those two durations were run, so no crossover duration may be quoted. Running
-2 s and 3 s would bracket it, at about three minutes a build.
+**Bracketed on 2026-09-11.** The closed-loop campaign was run at 1, 2, 3, 4
+and 5 s on the Arduino build with the SAC actor in the loop, every length
+afresh because the firmware had changed since the IDF runs. The worst case
+goes to the ablation at 1 to 4 s and to the handling at 5 s, so the crossover
+is between 4 and 5 s, as fine as a whole-second sweep resolves. No figure
+inside that interval is measured or may be quoted. `docs/week9-a4.md` section
+10. The counter campaign was repeated on the same build and reproduced: the
+guarded counters read 0 under the ablation and the torque ramps out with the
+handling in and holds flat without it.
 
 ## 2. The full stack on the device -- DONE
 
@@ -104,10 +110,12 @@ Left open by that campaign, and stated so it is not mistaken for finished:
   Bluetooth in and cannot be told not to. Nothing starts them, but the design
   spec's radio constraint covers current draw as well as timing, and only
   timing was checked.
-- G3's dropped-frame count went from 3 to 9 in 59,650 loops. That is two
-  single samples of a rare event and does not establish a rate. Five or more
-  runs per toolchain would.
-- Ablation A4 and the week 7 fallback campaign were measured on the IDF build
-  the same day and have not been repeated on the Arduino one. The control
-  task's timing is unchanged, so there is no reason to expect movement, but
-  that is a reason to expect, not a measurement.
+- G3's dropped-frame count went from 3 to 9 in 59,650 loops, two single
+  samples. **Arduino half done 2026-09-11:** five 10-minute runs on the
+  shipped image gave 16, 4, 6, 9, 9, pooled 8.8 per run, 95% interval 6.4 to
+  11.8, `ctrl_late` 0 throughout. The IDF repeats were deferred by the user,
+  so the toolchain comparison is still open.
+- **DONE 2026-09-11.** Ablation A4 (counters and the closed-loop sweep), the
+  week 7 fallback campaign and the watchdog were all repeated on the Arduino
+  build. Every one reproduces; `docs/week10-arduino-port.md` section 4 has the
+  figures.

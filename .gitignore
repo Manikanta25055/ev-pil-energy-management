@@ -2,6 +2,12 @@
 .remember/
 .DS_Store
 Icon?
+
+# Other people's documents, kept on disk for reference but never in the repo:
+# a published paper and another student's report. Stripped from all history
+# on 2026-09-11 before the first push.
+/s41598-025-25987-1.pdf
+/Ayush Vatsa Project Final report .pdf
 .venv/
 __pycache__/
 *.pyc

@@ -6,7 +6,8 @@
 `scripts/run_a4_closedloop.py` (control quality)
 **Data:** `docs/week9-a4.json`, `docs/week9-a4-baseline.json`,
 `docs/week9-a4-closed-on.json`, `docs/week9-a4-closed-off.json`,
-`docs/week9-a4-closed-on-5s.json`, `docs/week9-a4-closed-off-5s.json`
+`docs/week9-a4-closed-on-5s.json`, `docs/week9-a4-closed-off-5s.json`;
+the Arduino-build sweep, 2026-09-11: `docs/week9-a4-arduino-{on,off}-{1,2,3,4,5}s.json`
 **Prediction it is scored against:** `docs/week9-a4-prediction.md`
 
 The board arrived. Ablation A4 has now been run, and so has its baseline.
@@ -285,7 +286,7 @@ is expensive, and at this duration that cost is the handling's largest.
 | Tracking cost at a 1.0 s outage | **Measured.** 0.292 on against 0.125 off, median |
 | Recovery current at a 1.0 s outage | **Measured.** 101.2 on against 71.6 off, median |
 | Does the handling buy the tail back? | **Measured.** Yes at 5 s, worst case 7.386 on against 7.949 off |
-| Where exactly the crossover sits | **Not measured.** Somewhere between 1 and 5 s; only two durations were run |
+| Where exactly the crossover sits | **Bracketed, 2026-09-11.** Worst case between 4 and 5 s, on the Arduino build with the actor in the loop. Section 10 |
 
 Claim C5 is carried by measurement in both halves. A miss is detected, handled
 and counted rather than silently absorbed, and the degradation is quantified at
@@ -294,10 +295,103 @@ and starts being the reason it exists.
 
 ## 9. What is left
 
-Two durations is enough to show the crossover exists and not enough to locate
-it. `--blackout-s` takes any value, so bracketing it is a matter of running 2 s
-and 3 s, at about three minutes a build. Nobody should quote a crossover
-duration from these two points.
+*Superseded by section 10 for the crossover.* The original text said two
+durations could show the crossover exists but not locate it, and that running
+2 s and 3 s would bracket it. That was done on 2026-09-11, on the Arduino
+build.
 
-The prediction's 10 s row is also untested, and its 0.2 s and 0.5 s rows are
+The prediction's 10 s row is still untested, and its 0.2 s and 0.5 s rows are
 below anything measured here.
+
+## 10. The sweep, on the Arduino build with the actor in the loop
+
+**Date:** 2026-09-11. **Data:** `docs/week9-a4-arduino-{on,off}-{1,2,3,4,5}s.json`.
+**Figure:** `docs/figures/week9-a4-arduino-sweep.png`, drawn by
+`scripts/plot_a4_sweep.py`.
+
+Two things changed since sections 5 and 7, and both are why this is a new
+campaign rather than two points added to the old one. The firmware is now
+built by `scripts/arduino_build.sh` rather than the IDF, and, more important,
+the SAC actor now drives the outer loop (week 10). Sections 5 and 7 ran with
+the rule action on both branches of `ems_task`. So every duration was run
+on the current image, 1 s and 5 s included, and **the IDF points are not
+mixed with these on any axis.** The 4 s pair was added last, after the G3
+repeats, to halve the bracket the first four lengths left.
+
+Builds: `-DFAULT_INJECT=0 -DFALLBACK_ENABLED=1` and `-DFAULT_INJECT=0
+-DFALLBACK_ENABLED=0`, both switches passed explicitly each time. Same eight
+onsets per duration in both builds, 15 s lead-in, 2 s recovery. Every run
+passed its counter checks and `ctrl_late` was 0 in all ten. Worst
+pre-blackout error across all runs 0.283 m/s.
+
+| Outage | Median on | Median off | Worst on | Worst off | Onsets won (off / on / tie) |
+|---|---|---|---|---|---|
+| 1 s | 0.289 | **0.122** | 1.089 | **0.714** | 6 / 1 / 1 |
+| 2 s | 0.562 | 0.563 | 3.229 | **1.600** | 5 / 2 / 1 |
+| 3 s | 0.820 | 0.831 | 5.188 | **2.469** | 6 / 2 / 0 |
+| 4 s | **1.102** | 1.410 | 6.668 | **3.732** | 5 / 3 / 0 |
+| 5 s | 1.533 | **1.361** | **7.394** | 7.948 | 5 / 3 / 0 |
+
+Peak absolute speed error, m/s. A tie is a difference under 0.005 m/s, which
+only the standstill onsets reach.
+
+**The worst-case crossover lies between 4 and 5 s.** The ablation still has
+the smaller worst case at 4 s, 3.732 m/s against 6.668, and the handling has
+it at 5 s, 7.394 against 7.948. That is as fine as a whole-second sweep
+resolves, and nothing inside it is measured: do not quote a crossover
+duration, or any interpolated figure.
+
+The swap is abrupt. At 4 s the ablation's worst case is still about half the
+handling's; one second later it is 7% worse. The stopping row carries it: at
+the onset near 593 s, where the cycle is braking to a halt, holding a stale
+command costs 3.472 m/s at 4 s and 7.948 m/s at 5 s, while the handling's
+figure there stays small (0.696 and 2.163).
+
+The 5 s mechanism is the same row as section 7, onset 592.0 s, v_ref 2.75 m/s
+and falling: 7.948 m/s with a stale command held against 2.163 with the
+handling. The 1 s and 5 s tracking numbers with the handling on reproduce the
+IDF ones closely (5 s median 1.533 against 1.532, worst 7.394 against 7.386),
+so the actor did not move the limp path's tracking.
+
+**The median does not settle, and should not be read.** A tie at 2 and 3 s,
+the handling ahead at 4 s (1.102 against 1.410), the ablation ahead at 5 s
+(1.361 against 1.533). With eight onsets per point the median is decided by
+which onset lands in the middle, and these swings are noise around a small
+gap. Section 7's IDF figure at 5 s was a near tie (1.597 off against 1.532
+on). What holds on both campaigns is that the median gap is small from 2 s on
+and the worst case is where the modes separate.
+
+**Recovery current no longer saturates, and the reason is before the outage,
+not in it.** With the handling on, the median recovery current at 5 s is
+137.9 A against 298.4 A in section 7, and no onset reaches the 332 A ceiling
+where four did. The lead-in shows why this is not an A4 effect. At onset
+16.0 s the lead-in peak is 105.6 A on this image against 134.2 A on the IDF
+one, and the lead-in is identical in both handling modes by construction. So
+the current is being bounded by the outer loop, and the only thing that
+changed in the outer loop is that the actor now sets the power limit and
+regen blend. That is consistent with the actor commanding a tighter power
+limit than the rule manager did; it is not proven, because `p_limit_w` is
+consumed by the plant but not logged in the result files. The handling still
+costs recovery current at every duration (median on above off at all four),
+which is what section 6 found.
+
+**The counter campaign reproduces on this build.** `run_fallback.py` against
+`-DFAULT_INJECT=1` with the handling on and off, same day, same board.
+
+| Counter | on, IDF | on, Arduino | off, IDF | off, Arduino |
+|---|---|---|---|---|
+| `ctrl_fallback_steps` | 180 | 180 | 0 | 0 |
+| `limp_steps` | 96 | 94 | 0 | 0 |
+| `ems_fallback_steps` | 20 | 20 | 20 | 20 |
+| `infer_deadline_misses` | 20 | 20 | 20 | 20 |
+| `stale_steps` | 101 | 107 | 102 | 108 |
+| `ctrl_late` | 0 | 0 | 0 | 0 |
+| Torque through the 1 s silence | 226.18 to 0.00 Nm | 226.18 to 0.00 Nm | flat at 226.07 Nm | flat at 226.07 Nm |
+
+Data: `docs/week7-fallback-arduino.json` (on; the IDF "on" column is
+`docs/week7-fallback.json`), `docs/week9-a4-arduino-counters.json` (off). Every
+expectation written before the IDF run holds unchanged on this build.
+
+What this section does not establish: a crossover duration, anything below
+1 s or above 5 s, and whether the medians' sign at any length is stable. The last
+would need repeat runs per duration, which were not done.

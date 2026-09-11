@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import re
 from pathlib import Path
@@ -721,8 +722,8 @@ def changes_section(doc: Document) -> None:
               "Originally the chip sent a request and then waited for the reply "
               "inside the same 10 millisecond slot, tying its deadline to the "
               "scheduling behaviour of a general-purpose laptop. It now requests "
-              "the next state and acts on the most recent one it holds, and the "
-              "worst round trip fell from 7,405 microseconds to 77. This is a "
+              "the next state and acts on the most recent one it holds, so it "
+              "no longer waits for the laptop inside its own time slot. This is a "
               "genuine trade rather than a free win, because the controller now "
               "acts on information one cycle old, and that cost is measured and "
               "reported.")
@@ -1751,7 +1752,8 @@ def hardware_section(doc: Document, g3) -> None:
              f"{e['period_min_us']} to {e['period_max_us']} us", "10,000 nominal"],
             ["Control computation, worst case", f"{e['ctrl_wcet_us']} us",
              "under 10,000"],
-            ["Round trip to the laptop, worst case", f"{e['rtt_max_us']} us", "-"],
+            ["Picking up a waiting reply, worst case (not a round trip)",
+             f"{e['rtt_max_us']} us", "-"],
             ["Frames lost", f"{g3['dropped_total']}",
              f"{g3['limits']['dropped']}"],
         ], [2.4, 1.9, 1.4])
@@ -1799,9 +1801,7 @@ def hardware_section(doc: Document, g3) -> None:
             f"microsecond slot, and the count of loops that missed their own "
             f"deadline is {c['ctrl_late']}.",
             f"What missed, {c['stale_steps']} times in "
-            f"{c['loop_count']:,} loops, was the laptop answering in time. "
-            f"The worst measured round trip was {e['rtt_max_us']} "
-            f"microseconds.",
+            f"{c['loop_count']:,} loops, was the laptop answering in time.",
         ])
         para(doc, "The misses are not spread evenly. They arrive in short "
                   "bursts on an otherwise idle laptop, which is macOS doing "
@@ -1819,15 +1819,26 @@ def hardware_section(doc: Document, g3) -> None:
 
         table(doc, ["Over 59,650 loops, ten minutes", "Original", "Pipelined"], [
             ["Timing spread, 99th percentile", "within 25 us", "within 25 us"],
-            ["Worst round trip to the laptop", "7,405 us", "77 us"],
+            ["Wait for a reply, worst case (see below)", "7,405 us", "77 us"],
             ["Replies that arrived too late", "6", "0"],
             ["Steps using a state one period old", "not applicable", "8"],
             ["Corrupted or lost frames", "0", "0"],
         ], [2.6, 1.5, 1.5])
 
-        para(doc, "The round trip falls by a factor of 96, because the loop no "
-                  "longer waits for it. The timing is unchanged, which is the "
-                  "expected result: the loop was never the problem.")
+        para(doc, "An earlier version of this report said the round trip fell "
+                  "by a factor of 96. That compared two different things, and "
+                  "is withdrawn. In the original loop the chip waits for the "
+                  "answer to the request it has just sent, so 7,405 "
+                  "microseconds is a true round trip. In the pipelined loop "
+                  "the answer it reads is the reply to the previous request, "
+                  "which has usually been waiting for most of a period, so 77 "
+                  "microseconds is only how long it took to pick up a reply "
+                  "that was already there. The true round trip in the "
+                  "pipelined loop was not measured. What does stand is the "
+                  "point of the change: the loop no longer waits for the "
+                  "laptop inside its own time slot. The timing is unchanged, "
+                  "which is the expected result: the loop was never the "
+                  "problem.")
 
         para(doc, "A handful of events survive and the gate still fails. What changed "
                   "is what an event costs. In the original loop a miss meant "
@@ -1873,7 +1884,8 @@ def hardware_section(doc: Document, g3) -> None:
              f"within {g3['p99_us']:.0f} us"],
             ["Control computation, worst case", "16 us",
              f"{e['ctrl_wcet_us']} us"],
-            ["Worst round trip to the laptop", "77 us", f"{e['rtt_max_us']} us"],
+            ["Picking up a waiting reply, worst case (not a round trip)",
+             "77 us", f"{e['rtt_max_us']} us"],
             ["Loops that missed their own deadline", "not counted",
              f"{c['ctrl_late']}"],
             ["Laptop answered late", "8", f"{c['stale_steps']}"],
@@ -2659,10 +2671,10 @@ def a4_measured_section(doc: Document, on, off, on5, off5) -> None:
 
     doc.add_heading("What is still not measured", level=2)
     para(doc, "Two outage lengths are enough to show that the crossover "
-              "exists and not enough to say where it is. It lies somewhere "
-              "between one and five seconds, and no number between those two "
-              "should be quoted from this work. Bracketing it is a matter of "
-              "repeating the campaign at two or three seconds.")
+              "exists and not enough to say where it is. The campaign was "
+              "later repeated at every whole second from one to five on the "
+              "current firmware, and section " + ref("a4sweep") + " narrows "
+              "where the worst case changes hands.")
 
 
 def deployment_section(doc: Document, fs, sac) -> None:
@@ -2780,7 +2792,39 @@ def deployment_section(doc: Document, fs, sac) -> None:
               f"earlier results were measured under.")
 
 
-def port_section(doc: Document, g1, g5, g3a, actora, g3) -> None:
+def load_g3_repeats() -> list | None:
+    """The five Arduino-build G3 repeats, or None if any is missing."""
+    runs = [load(f"g3-repeat-arduino-{n}.json") for n in range(1, 6)]
+    return runs if all(runs) else None
+
+
+def poisson_ci(k: int, conf: float = 0.95) -> tuple[float, float]:
+    """Exact (Garwood) interval on a Poisson count, without scipy."""
+    a = (1.0 - conf) / 2.0
+
+    def cdf(n: int, lam: float) -> float:
+        if lam <= 0.0:
+            return 1.0
+        return sum(math.exp(-lam + i * math.log(lam) - math.lgamma(i + 1))
+                   for i in range(n + 1))
+
+    def smallest(pred, lo: float, hi: float) -> float:
+        for _ in range(200):
+            mid = (lo + hi) / 2.0
+            if pred(mid):
+                hi = mid
+            else:
+                lo = mid
+        return (lo + hi) / 2.0
+
+    top = 5.0 * k + 50.0
+    lower = 0.0 if k == 0 else smallest(lambda lam: 1.0 - cdf(k - 1, lam) >= a,
+                                        0.0, top)
+    upper = smallest(lambda lam: cdf(k, lam) <= a, 0.0, top)
+    return lower, upper
+
+
+def port_section(doc: Document, g1, g5, g3a, actora, g3, g3rep=None) -> None:
     """The toolchain port and the gates re-measured against it."""
     h1(doc, "Changing the build toolchain, and re-measuring because of it",
        "port")
@@ -2857,12 +2901,37 @@ def port_section(doc: Document, g1, g5, g3a, actora, g3) -> None:
               f"was enough for the car to be eased out of torque once during "
               f"the ten-minute run.")
 
-    para(doc, "That is two single samples of a rare event, three hundredths "
-              "of a percent against fifteen hundredths, from one run on each "
-              "build. It is not enough to establish a rate, and it is not "
-              "claimed as one. What the runs do support is narrower: the "
-              "change did not fix the gate and did not clearly break it. "
-              "Settling it would take five or more runs on each build.")
+    if not g3rep:
+        para(doc, "That is two single samples of a rare event, five "
+                  "thousandths of a percent against fifteen thousandths, from "
+                  "one run on each build. It is not enough to establish a "
+                  "rate, and it is not claimed as one. Settling it would take "
+                  "five or more runs on each build.")
+    else:
+        counts = [r["dropped_total"] for r in g3rep]
+        loops = sum(r["counters"]["loop_count"] for r in g3rep)
+        k = sum(counts)
+        per_run = loops / len(g3rep)
+        lo, hi = poisson_ci(k)
+        late = sum(r["counters"]["ctrl_late"] for r in g3rep)
+        para(doc, f"One run on each build was not enough to tell, so the "
+                  f"ten-minute run was repeated {len(g3rep)} times on the "
+                  f"Arduino build, with the learned controller in the loop as "
+                  f"it ships. The counts were "
+                  f"{', '.join(str(c) for c in counts)}: {k} in {loops:,} "
+                  f"loops, about {k / len(g3rep):.1f} per ten-minute run, "
+                  f"with a 95% range of {lo / len(g3rep):.1f} to "
+                  f"{hi / len(g3rep):.1f}. Identical runs differ by a factor "
+                  f"of {max(counts) / max(min(counts), 1):.0f}, so a single "
+                  f"run says little.")
+        para(doc, "The earlier Arduino figures sit inside that spread. The "
+                  "single Espressif-build figure of 3 sits below it, but it is "
+                  "one run on older firmware, and the Espressif repeats were "
+                  "not done, so whether the change of toolchain moved the rate "
+                  "is still open. What is now established is the rate of the "
+                  "firmware that ships. Across all "
+                  f"{len(g3rep)} runs the loop missed its own deadline "
+                  f"{late} times.")
 
     doc.add_heading("What the new build cannot do", level=2)
     para(doc, "The Arduino build compiles the wireless radios into the "
@@ -2874,6 +2943,143 @@ def port_section(doc: Document, g1, g5, g3a, actora, g3) -> None:
               "not re-measured on the new build, so that half of the "
               "constraint is currently supported by argument rather than by "
               "measurement, and is written here as such.")
+
+
+A4_SWEEP_S = (1, 2, 3, 4, 5)
+
+
+def load_a4_sweep() -> dict | None:
+    """The Arduino-build A4 sweep as {seconds: (on, off)}, or None if incomplete."""
+    pairs = {}
+    for s in A4_SWEEP_S:
+        on = load(f"week9-a4-arduino-on-{s}s.json")
+        off = load(f"week9-a4-arduino-off-{s}s.json")
+        if not on or not off:
+            return None
+        pairs[s] = (on, off)
+    return pairs
+
+
+def a4_sweep_section(doc: Document, pairs) -> None:
+    """A4 swept over outage length on the current firmware, actor in the loop.
+
+    Placed after the port and the deployment because it needs both: it was run
+    on the Arduino build, with the learned controller driving the outer loop.
+    The earlier Espressif-build points are not mixed into its table.
+    """
+    h1(doc, "Where the failure handling starts to pay, measured again",
+       "a4sweep")
+
+    if not pairs:
+        para(doc, "The outage-length sweep had not been run when this report "
+                  "was generated.", italic=True, colour=MUTED)
+        return
+
+    para(doc, "Section " + ref("a4meas") + " measured the failure handling at "
+              "outages of one and five seconds and found that the two versions "
+              "of the firmware swap places somewhere in between. This section "
+              "locates that point more closely. The same experiment was run at "
+              "one, two, three, four and five seconds.")
+
+    para(doc, "It was run on the firmware as it is now: built with the "
+              "Arduino toolchain (section " + ref("port") + ") and with the "
+              "learned controller making the energy decisions (section " +
+              ref("deploy") + "). Neither was true when the earlier points "
+              "were measured, so every length was measured afresh, "
+              "including the two that had been measured before, and the "
+              "earlier figures are not mixed into this table.")
+
+    rows = []
+    for s, (on, off) in pairs.items():
+        won_off = won_on = ties = 0
+        for a, b in zip(on["blackouts"], off["blackouts"]):
+            d = b["err_peak_mps"] - a["err_peak_mps"]
+            if abs(d) < 0.005:
+                ties += 1
+            elif d < 0:
+                won_off += 1
+            else:
+                won_on += 1
+        rows.append([
+            f"{s}",
+            f"{on['err_peak_mps']['median']:.3f}",
+            f"{off['err_peak_mps']['median']:.3f}",
+            f"{on['err_peak_mps']['worst']:.3f}",
+            f"{off['err_peak_mps']['worst']:.3f}",
+            f"{won_off} / {won_on} / {ties}",
+        ])
+    table(doc,
+          ["Outage, s", "Typical error on, m/s", "Typical error off, m/s",
+           "Worst error on, m/s", "Worst error off, m/s",
+           "Outages won: off / on / tie"],
+          rows)
+    para(doc, "Table. Eight outages per length, each run against both versions "
+              "of the firmware. A tie is a difference under 0.005 metres per "
+              "second, which only happens with the car standing still. "
+              "MEASURED on the board.",
+         size=9, italic=True, colour=MUTED)
+
+    figure(doc, DOCS / "figures" / "week9-a4-arduino-sweep.png",
+           "The failure handling across four outage lengths. Blue is the "
+           "shipped firmware, orange has the handling removed. The lines only "
+           "join the measured points; nothing between them was measured.")
+
+    # Where the worst case changes hands, read from the data rather than typed,
+    # so adding an outage length cannot leave a stale bracket in the prose.
+    lengths = sorted(pairs)
+    handling_better = [pairs[s][0]["err_peak_mps"]["worst"]
+                       < pairs[s][1]["err_peak_mps"]["worst"] for s in lengths]
+    words = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five"}
+    lo = hi = None
+    for a, b, fa, fb in zip(lengths, lengths[1:], handling_better,
+                            handling_better[1:]):
+        if not fa and fb:
+            lo, hi = a, b
+            break
+    if lo is None:
+        para(doc, "Across the lengths measured, the worst case does not change "
+                  "hands, so this sweep does not locate a crossover.")
+    else:
+        on_lo, off_lo = pairs[lo]
+        on_hi, off_hi = pairs[hi]
+        para(doc, f"The worst case swaps between {words[lo]} and {words[hi]} "
+                  f"seconds. At {words[lo]} seconds the firmware without the "
+                  f"handling still has the smaller worst case, "
+                  f"{off_lo['err_peak_mps']['worst']:.2f} metres per second "
+                  f"against {on_lo['err_peak_mps']['worst']:.2f}. At "
+                  f"{words[hi]} seconds the shipped firmware has it, "
+                  f"{on_hi['err_peak_mps']['worst']:.2f} against "
+                  f"{off_hi['err_peak_mps']['worst']:.2f}. That is as closely "
+                  f"as the crossover is known. No figure inside that interval "
+                  f"was measured, and none is quoted.")
+        later = [s for s, h in zip(lengths, handling_better) if s > hi and not h]
+        if later:
+            para(doc, "The swap is not clean: at "
+                      + ", ".join(words[s] for s in later)
+                      + " seconds the firmware without the handling has the "
+                        "smaller worst case again, so the bracket above is the "
+                        "first change of hands, not the only one.")
+
+    para(doc, "The typical case tells a quieter story. Removing the handling "
+              "helps clearly at one second, and from two seconds on the two "
+              "versions are close. The worst case is where they separate, "
+              "which is the point of the handling: it is there to stop the "
+              "rare bad outcome, not to improve the ordinary one.")
+
+    on5 = pairs[5][0]
+    para(doc, f"One thing changed that has nothing to do with the handling. "
+              f"The current drawn from the battery while recovering is much "
+              f"lower than in the earlier runs, and never reaches the limit it "
+              f"hit four times before: at five seconds the shipped firmware's "
+              f"typical figure is {on5['i_peak_recovery_a']['median']:.0f} "
+              f"amps. The cause is visible before any outage starts. The "
+              f"current during the ordinary driving that precedes each outage, "
+              f"which is identical for both versions, is lower too. So the "
+              f"learned controller, which now sets the power limit, is holding "
+              f"the current down. That limit is not recorded in the result "
+              f"files, so this is the most likely reading rather than a "
+              f"measured one. The handling still costs recovery current at "
+              f"every outage length, as it did before.")
 
 
 def sac_section(doc: Document, sac, onchip) -> None:
@@ -3184,79 +3390,79 @@ def remaining_section(doc: Document) -> None:
               "forecast makes no measurable difference. Sections 16 and 17",
          "DONE: the controller runs on the chip, matches Python, and takes "
          "0.121 ms of the 40 allowed", "-"],
-        ["9", "Tune the reward function. Held back deliberately: tuning the "
-              "reward of a controller that is chasing a constant has no "
-              "destination until the question in section " + ref("headroom") +
-              " is settled",
-         "PARTLY DONE: ablation A4's firmware builds, its measurement script "
-         "is written with its expectations fixed in advance, and its outcome "
-         "is predicted in section " + ref("a4") + ". The run itself, and the "
-         "full system on the chip, need the board",
+        ["9", "Not done, by decision. The missing headroom in section " +
+              ref("headroom") + " is reported as a negative result, so "
+              "tuning the reward of a controller chasing a constant has no "
+              "destination",
+         "DONE: ablation A4 measured on the board, predicted in section " +
+         ref("a4") + ", measured in section " + ref("a4meas") + ", and the "
+         "crossover narrowed to between four and five seconds in section " +
+         ref("a4sweep"),
          "-"],
-        ["10", "-", "Measurement campaign: six scenarios, several controllers, "
-                    "several random starts", "-"],
+        ["10", "-", "DONE: the learned controller runs on the chip (section " +
+                    ref("deploy") + "), and every on-chip result was taken "
+                    "again on the Arduino build (section " + ref("port") +
+                    "). NEXT: the measurement campaign, six scenarios, "
+                    "several controllers, several random starts", "-"],
         ["11", "Analysis and figures", "Oscilloscope timing measurements", "-"],
         ["12", "Write up and submit", "-", "-"],
     ], [0.5, 2.5, 2.5, 0.5])
 
-    doc.add_heading("The two experiments that carry real risk", level=2)
+    doc.add_heading("The two experiments that carried real risk", level=2)
+    para(doc, "Both have now been run, and neither turned out the way a "
+              "hopeful plan would have wanted.")
     bullets(doc, [
-        "A3 asks whether the forecast actually improves control. If removing "
-        "it changes nothing, the entire prediction stack is decorative on the "
-        "chip and the paper will say so. That is a publishable finding about "
-        "preview horizons in embedded energy management, and it would free the "
-        "memory for other uses. It is planned and it will be run.",
-        "Reinforcement learning is the identified skill gap and it is "
-        "genuinely temperamental. A full ramp-up week is scheduled before the "
-        "real training. If it does not converge, the conventional controller "
-        "and the offline optimum are guaranteed working comparisons, so the "
-        "paper survives.",
+        "A3 asked whether the forecast actually improves control. Removing it "
+        "made no measurable difference, so the forecaster does not ship. That "
+        "is reported as a finding about preview horizons in embedded energy "
+        "management, not hidden.",
+        "The reinforcement learner trained and converged over five runs, and "
+        "finished slightly worse than the conventional controller. The "
+        "conventional controller and the offline optimum were there as "
+        "working comparisons for exactly this case.",
     ])
 
-    doc.add_heading("Decisions waiting on a gate or on the supervisor", level=2)
+    doc.add_heading("Decisions taken", level=2)
     bullets(doc, [
-        "What to do about the missing headroom in the energy-management "
-        "problem, described in section " + ref("headroom") + ". This is the one that should be "
-        "settled first, because weeks 8 and 9 are built on top of it.",
+        "The missing headroom in the energy-management problem, section " +
+        ref("headroom") + ", is reported as a negative result rather than "
+        "worked around by widening the problem.",
+        "The learned controller trained without the forecast is what runs on "
+        "the chip, with no forecaster, section " + ref("deploy") + ".",
+        "The firmware is built with the Arduino toolchain, and every on-chip "
+        "result was measured again against it, section " + ref("port") + ".",
+    ])
+
+    doc.add_heading("Decisions still waiting on a gate or on the supervisor",
+                    level=2)
+    bullets(doc, [
         "Whether gate G3's zero-lost-frame rule should distinguish a "
         "controller that missed its own deadline, of which there are none, "
         "from a laptop that answered late, of which there are a few. The "
         "counter that separates them was added and measured this week.",
         "Whether to restate gate G4 against the linear regression rather than "
         "the naive baseline. Recorded in the design document for G4 to decide.",
-        "Which model to deploy. The Transformer is the most accurate and fits. "
-        "The linear regression reaches 87% of the benefit for 1.2% of the cost. "
-        "Ablation A3 decides whether the difference matters to the controller.",
         "Whether the road-load variation should become randomised training "
         "conditions for the reinforcement learner. The cross-vehicle test says "
         "the spread that matters is between vehicles and depends on "
         "temperature, which is wider than originally planned for.",
-        "Whether the firmware should be built with arduino-cli instead of the "
-        "Espressif toolchain. This was asked for and has not been done, "
-        "because it is not a change of build command: the firmware is a "
-        "native Espressif project, arduino-cli reads none of its build files "
-        "or its configuration, and it has no equivalent of the compile-time "
-        "switches that every ablation depends on. That configuration is also "
-        "what disables the radios, which the timing and current measurements "
-        "require. A port would mean re-measuring gates G1, G3 and G5 on the "
-        "board, since all three were taken under a setup a port replaces. "
-        "Flashing with arduino-cli while still building with the Espressif "
-        "tools costs nothing and is assumed until decided otherwise.",
     ])
 
-    doc.add_heading("Waiting only on the board being attached", level=2)
-    para(doc, "No development board was connected when this report was "
-              "generated, so the following are ready rather than done. None "
-              "of them is blocked on a decision.")
+    doc.add_heading("Open, and not waiting on anything", level=2)
     bullets(doc, [
-        "Ablation A4's measurement run. The firmware builds, the measurement "
-        "script is written, its expectations are fixed in advance, and the "
-        "result is predicted in section " + ref("a4") + ". One command once "
-        "the board is plugged in.",
-        "The full system running on the chip together, rather than the "
-        "controller and the forecaster measured one at a time.",
-        "The measurement campaign in week 10, which needs the board and needs "
-        "the deployment question settled first.",
+        "The measurement campaign in week 10. The board is attached, the "
+        "toolchain is settled and the deployed controller is on the chip, so "
+        "this is the next piece of work rather than a blocked one.",
+        "The current drawn from the supply on the Arduino build. Only timing "
+        "was re-measured after the port, and the radios cannot be left out of "
+        "that build. Deferred on 11 September 2026, so the radio constraint "
+        "is still supported by argument for current, not by measurement.",
+        "The exact outage length where the failure handling starts to pay. It "
+        "lies between four and five seconds, as fine as a whole-second sweep "
+        "resolves.",
+        "The stand-in workload in the forecaster's slot, which still runs "
+        "although no forecaster ships. It is kept because the deadline-miss "
+        "experiments were triggered through it.",
     ])
 
 
@@ -3381,6 +3587,8 @@ def main() -> int:
     actora = load("week8-actor-onchip-arduino.json")
     fullstack = load("week10-fullstack.json")
     dis = load("a2-distillation.json")
+    a4_sweep = load_a4_sweep()
+    g3rep = load_g3_repeats()
 
     cost_path = DOCS / "forecast-deploy-cost.csv"
     cost_rows = None
@@ -3422,7 +3630,8 @@ def main() -> int:
     sac_section(doc, sac, onchip)
     actor_onchip_section(doc, sac, onchip)
     deployment_section(doc, fullstack, sac)
-    port_section(doc, g1a, g5a, g3a, actora, g3)
+    port_section(doc, g1a, g5a, g3a, actora, g3, g3rep)
+    a4_sweep_section(doc, a4_sweep)
     negatives_section(doc)
     changes_section(doc)
     remaining_section(doc)
@@ -3442,6 +3651,8 @@ def main() -> int:
                ("A4 prediction", a4), ("A4 measured", a4_on and a4_off),
                ("A4 tail at 5 s", a4_on5 and a4_off5),
                ("toolchain port", g1a and g5a and g3a),
+               ("A4 sweep (Arduino build)", a4_sweep),
+               ("G3 repeats (Arduino build)", g3rep),
                ("on-chip deployment", fullstack),
                ("distillation", dis))
     have = [n for n, v in tracked if v]
