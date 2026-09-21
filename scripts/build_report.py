@@ -2945,7 +2945,19 @@ def port_section(doc: Document, g1, g5, g3a, actora, g3, g3rep=None) -> None:
               "measurement, and is written here as such.")
 
 
-A4_SWEEP_S = (1, 2, 3, 4, 5)
+# The prediction tabulated 0.2, 0.5 and 10 seconds as well, and those three
+# were measured on 2026-09-21, which completes the sweep it is scored against.
+A4_SWEEP_S = (0.2, 0.5, 1, 2, 3, 4, 5, 10)
+
+_DURATION_WORDS = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five",
+                   10: "ten"}
+
+
+def dur(s) -> str:
+    """An outage length in prose. Whole seconds get their name, parts of a
+    second get their number -- "nought point two seconds" reads worse than
+    "0.2 seconds" and this report is read by people checking figures."""
+    return _DURATION_WORDS.get(s, f"{s:g}")
 
 
 def load_a4_sweep() -> dict | None:
@@ -2979,7 +2991,8 @@ def a4_sweep_section(doc: Document, pairs) -> None:
               "outages of one and five seconds and found that the two versions "
               "of the firmware swap places somewhere in between. This section "
               "locates that point more closely. The same experiment was run at "
-              "one, two, three, four and five seconds.")
+              + ", ".join(dur(s) for s in A4_SWEEP_S[:-1])
+              + " and " + dur(A4_SWEEP_S[-1]) + " seconds.")
 
     para(doc, "It was run on the firmware as it is now: built with the "
               "Arduino toolchain (section " + ref("port") + ") and with the "
@@ -3020,16 +3033,19 @@ def a4_sweep_section(doc: Document, pairs) -> None:
          size=9, italic=True, colour=MUTED)
 
     figure(doc, DOCS / "figures" / "week9-a4-arduino-sweep.png",
-           "The failure handling across four outage lengths. Blue is the "
-           "shipped firmware, orange has the handling removed. The lines only "
-           "join the measured points; nothing between them was measured.")
+           "The failure handling across outage lengths of one to five "
+           "seconds. Blue is the shipped firmware, orange has the handling "
+           "removed. The lines only join the measured points; nothing between "
+           "them was measured. The figure predates the 0.2, 0.5 and 10 second "
+           "rows and does not show them; the table above is the complete "
+           "sweep.")
 
     # Where the worst case changes hands, read from the data rather than typed,
     # so adding an outage length cannot leave a stale bracket in the prose.
     lengths = sorted(pairs)
     handling_better = [pairs[s][0]["err_peak_mps"]["worst"]
                        < pairs[s][1]["err_peak_mps"]["worst"] for s in lengths]
-    words = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five"}
+    words = {s: dur(s) for s in lengths}
     lo = hi = None
     for a, b, fa, fb in zip(lengths, lengths[1:], handling_better,
                             handling_better[1:]):
@@ -3059,6 +3075,24 @@ def a4_sweep_section(doc: Document, pairs) -> None:
                       + " seconds the firmware without the handling has the "
                         "smaller worst case again, so the bracket above is the "
                         "first change of hands, not the only one.")
+
+        earlier = [s for s, h in zip(lengths, handling_better) if s < lo and h]
+        if earlier:
+            on_e, off_e = pairs[earlier[0]]
+            para(doc, "At the short end the ordering is the other way round "
+                      "again. At "
+                      + ", ".join(words[s] for s in earlier)
+                      + " seconds the shipped firmware has the smaller worst "
+                        f"case, {on_e['err_peak_mps']['worst']:.3f} metres per "
+                        f"second against "
+                        f"{off_e['err_peak_mps']['worst']:.3f}. This is not "
+                        "being read as a second crossover. Both figures are "
+                        "small enough to sit inside the spread of eight "
+                        "outages, the difference between them is a few "
+                        "hundredths of a metre per second, and each rests on "
+                        "whichever single outage happened to be worst. The "
+                        "four-to-five second bracket is carried by a "
+                        "mechanism, set out below; this is not.")
 
     para(doc, "The typical case tells a quieter story. Removing the handling "
               "helps clearly at one second, and from two seconds on the two "
