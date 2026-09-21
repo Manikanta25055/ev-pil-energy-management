@@ -389,7 +389,8 @@ def main() -> int:
     # before it, and on the order the axes happen to be listed in.
     if not args.no_reset:
         print(f"PIL campaign: {args.controller} arm, "
-              f"{len(pending)} of {len(runs)} runs left, port {args.port}")
+              f"{len(pending)} of {len(runs)} runs left, port {args.port}",
+              flush=True)
         reset_and_reexec(args.port, drop_flag="--no-reset",
                          add_flag="--no-reset")
 
@@ -408,11 +409,16 @@ def main() -> int:
     results = [r for r in results if key_of(r) != key_of(result)]
     results.append(result)
 
+    # flush=True is load-bearing: os.execv below replaces the process image
+    # without flushing Python's stdout buffer, and stdout is block-buffered
+    # when redirected to a file, so an unflushed summary line is simply lost.
+    # The whole actor arm ran once with a log of progress percentages and no
+    # results in it.
     print(f"    rmse {result['tracking_rmse_mps']:.4f} m/s   "
           f"equiv {result['equivalent_wh_per_km']:.2f} Wh/km   "
           f"ctrl_late {result['ctrl_late']}   "
           f"dropped {result['dropped_frames']}   "
-          f"actor_steps {result['actor_steps']}")
+          f"actor_steps {result['actor_steps']}", flush=True)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(
@@ -424,7 +430,7 @@ def main() -> int:
         reset_and_reexec(args.port, drop_flag="--no-reset",
                          add_flag="--no-reset")
 
-    print(f"\nwrote {out_path}  ({len(results)} runs)")
+    print(f"\nwrote {out_path}  ({len(results)} runs)", flush=True)
     return 0
 
 
