@@ -123,11 +123,27 @@ def test_timing_table_matches_the_campaign(campaign, document):
         assert cells[5] == f"{max(r['actor_wcet_us'] for r in arm)}"
 
 
+# Mirrors build_report.TRACKING_VALID_MPS. A setting where the car did not
+# follow the cycle has no meaningful energy per kilometre, and the report
+# leaves those out of its comparison; the test has to apply the same rule or
+# it checks a count the report never claimed.
+TRACKING_VALID_MPS = 1.0
+
+
+def _valid_keys(runs):
+    by_key = {(r["scenario"], r["level"], r["controller"]): r for r in runs}
+    keys = {(r["scenario"], r["level"]) for r in runs}
+    return by_key, {
+        k for k in keys
+        if by_key[(k[0], k[1], "rule")]["tracking_rmse_mps"] < TRACKING_VALID_MPS
+        and by_key[(k[0], k[1], "actor")]["tracking_rmse_mps"] < TRACKING_VALID_MPS
+    }
+
+
 def test_the_headline_count_is_not_typed_in(campaign, document):
     """The sentence counting settings where the policy costs more energy."""
     runs = campaign["runs"]
-    by_key = {(r["scenario"], r["level"], r["controller"]): r for r in runs}
-    keys = {(r["scenario"], r["level"]) for r in runs}
+    by_key, keys = _valid_keys(runs)
     worse = sum(
         1 for axis, level in keys
         if by_key[(axis, level, "actor")]["equivalent_wh_per_km"]
@@ -165,8 +181,7 @@ def test_the_report_states_the_conclusion_the_measurements_support(campaign,
     Neither branch lets the report be silent, and neither lets it overclaim.
     """
     runs = campaign["runs"]
-    by_key = {(r["scenario"], r["level"], r["controller"]): r for r in runs}
-    keys = {(r["scenario"], r["level"]) for r in runs}
+    by_key, keys = _valid_keys(runs)
     worse = sum(
         1 for axis, level in keys
         if by_key[(axis, level, "actor")]["equivalent_wh_per_km"]

@@ -134,6 +134,133 @@ flight.
 
 ## 6. Results
 
-*To be written when both arms are complete. Nothing is recorded here that the
-measurement files do not carry, and the report's table is generated from those
-files rather than from this note.*
+36 runs, 2,282,832 control steps, `ctrl_late` **0** throughout. Every run of
+the actor arm reported `actor_steps` greater than zero and every run of the
+rule arm reported exactly zero, so each arm was measured on the image it
+claims.
+
+### 6.1 The timing result, which is what the campaign was for
+
+The loop never missed its own deadline. Not once in 2.28 million control
+steps, with a learned policy inside it, across six kinds of variation
+including one that broke the host link badly enough to stop the car following
+the cycle at all. That is the embedded claim this project set out to make and
+it is now made at the widest scope available.
+
+### 6.2 The energy result, which the campaign was not expecting
+
+| Setting | Rule, Wh/km | Actor, Wh/km | Actor vs rule |
+|---|---|---|---|
+| driving_condition / highway | 154.01 | 154.14 | +0.09% |
+| driving_condition / urban | 168.11 | 168.56 | +0.27% |
+| road_grade / downhill | 79.67 | 75.85 | -4.79% |
+| battery_state / low | 190.47 | 176.62 | -7.27% |
+| battery_state / high | 190.66 | 176.52 | -7.42% |
+| driving_condition / aggressive_mixed | 190.79 | 176.53 | -7.47% |
+| battery_state / medium | 190.61 | 176.33 | -7.49% |
+| road_grade / flat | 191.16 | 176.77 | -7.53% |
+| comm_delay / none | 190.88 | 176.47 | -7.55% |
+| driver_aggression / normal | 190.95 | 176.50 | -7.57% |
+| sensor_noise / floor | 191.04 | 176.23 | -7.75% |
+| sensor_noise / elevated | 192.22 | 176.92 | -7.96% |
+| road_grade / uphill | 305.14 | 274.20 | -10.14% |
+| sensor_noise / severe | 200.65 | 173.17 | -13.70% |
+| driver_aggression / brisk | 196.83 | 168.21 | -14.54% |
+| driver_aggression / aggressive | 203.26 | 159.34 | -21.61% |
+
+Two settings excluded, `comm_delay/one_period` and `comm_delay/three_periods`,
+where neither controller followed the cycle (tracking RMSE 32.8 to 45.9 m/s
+against hundredths elsewhere) so Wh/km has no denominator worth dividing by.
+Section 6.5 explains that axis.
+
+**The actor is ahead in 14 of the 16 valid settings, by 8.28% on average.**
+The two it loses are the two gentlest cycles.
+
+### 6.3 Why this is not a contradiction of week 8
+
+`docs/week8-sac.json` records `"cycle": "hwfet"` and
+`"test_cycle_sealed": "us06"`. The 0.51% deficit the project has carried since
+week 8 was measured **on the validation cycle**, with US06 sealed and never
+spent. This campaign is the first comparison on it.
+
+The highway row reproduces week 8 almost exactly:
+
+| | week 8, offline | here, on the chip |
+|---|---|---|
+| HWFET, rule | 153.90 Wh/km | 154.01 Wh/km |
+| SoC at end | 0.6900 | 0.6900 |
+
+0.07% apart, from independent implementations on different machines. Week 8
+was right about the highway. The highway is where the two controllers have
+least to disagree about.
+
+### 6.4 The mechanism, inferred and not observed
+
+The actor draws a lower peak current in every valid setting. Battery loss goes
+as the square of current, so shaving peaks saves energy, and saves more the
+harder the car works. The ordering follows exactly:
+
+| Axis, in order of demand | Actor advantage |
+|---|---|
+| driver_aggression: normal / brisk / aggressive | 7.57% / 14.54% / 21.61% |
+| road_grade: downhill / flat / uphill | 4.79% / 7.53% / 10.14% |
+| cycle: hwfet / udds / us06 | -0.09% / -0.27% / 7.47% |
+
+Three independent axes, each monotonic in how hard the vehicle is driven. The
+likely cause is the discharge power ceiling, which the actor sets and the rule
+manager effectively does not, and which ablation A4 already pointed at from
+the other direction.
+
+**`p_limit_w` is not logged.** Only the current that follows from it is. So
+this is a mechanism that fits every number in the campaign and has never been
+observed directly. Adding that counter to the DIAG frame is the single highest
+value change available to this project, and it should happen before this
+result is published.
+
+The sensor-noise axis adds a second, separate effect: the rule manager
+degrades as noise rises (191.04, 192.22, 200.65) while the actor does not
+(176.23, 176.92, 173.17). A threshold-switching controller chatters across its
+thresholds when its inputs are noisy; a network output does not. That is a
+robustness result and it is independent of the current argument.
+
+### 6.5 What the communication-delay axis actually measured
+
+Not link latency. The delay is a wait before every host reply and it
+serialises with the host's own plant step, so at 10 ms on a 10 ms loop the
+host cannot answer as often as it is asked and falls behind without bound
+rather than settling one step late. `ctrl_late` stayed 0: the chip met every
+deadline it owned. The axis measured host throughput.
+
+The rationale written in `src/evpil/control/scenarios.py` is wrong about this
+and has been left as written, with this correction recorded rather than folded
+back, the same way the A4 prediction's errors were handled. Measuring latency
+properly needs the delay applied to delivery while answers keep flowing, which
+this rig cannot do.
+
+### 6.6 How much a number here is worth
+
+The baseline setting is a level of five separate axes, so it was run five
+times per controller with a different noise draw each time. Those runs should
+agree, and how far apart they land bounds what anything else may claim:
+
+| | mean | spread | spread % |
+|---|---|---|---|
+| Rule, energy | 190.96 Wh/km | 0.13 | 0.07% |
+| Actor, energy | 176.50 Wh/km | 0.17 | 0.10% |
+| Tracking error | — | — | ~18% |
+
+Energy repeats to about a tenth of a per cent, so the 7 to 21% differences
+above are between fifty and two hundred times the noise. Tracking error does
+not repeat nearly as well, so the tracking column separates nothing and no
+ordering is claimed from it.
+
+### 6.7 What this does not establish
+
+One run per cell, so no figure carries an interval. Interactions are not
+measured: one axis moved at a time. The mechanism is inferred from current,
+not observed. And a reversal of a headline result deserves a repeat campaign
+before publication, which this is not.
+
+**This note reports what was measured. It does not settle what the project
+should conclude, and that decision is not one a measurement campaign makes on
+its own.**

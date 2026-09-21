@@ -3656,8 +3656,10 @@ def pil_campaign_section(doc: Document, pil) -> None:
 
     runs = pil["runs"]
     para(doc, "Every result before this one compares the two energy managers "
-              "under one set of conditions at a time. This campaign varies the "
-              "conditions. Six things that a real vehicle meets and a "
+              "under one set of conditions at a time. This campaign, the "
+              "processor-in-the-loop or PIL campaign that week 10 of the plan "
+              "calls for, varies the conditions instead. Six things that a "
+              "real vehicle meets and a "
               "laboratory cycle does not, namely the kind of road, its slope, "
               "how full the battery is, how noisy the sensors are, how late "
               "the communication link answers and how hard the driver pushes, "

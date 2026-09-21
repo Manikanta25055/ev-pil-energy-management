@@ -535,7 +535,7 @@ that gap is itself a reportable result. See `docs/hardware-inventory.md`.
 | 7 | DP global optimum; PID baseline; RL ramp-up on a toy SB3 environment | Watchdog and fallback path | |
 | 8 | SAC outer loop, 5 seeds; **A3** -- DONE, both null against the baseline | Actor export and on-device verification -- DONE, 0.121 ms measured | |
 | 9 | Reward and hyperparameter refinement | Full stack on device; **A4** | |
-| 10 | — | Full PIL campaign: 6 scenarios x controllers x seeds | |
+| 10 | — | Full PIL campaign: 6 scenarios x controllers x seeds -- **DONE 2026-09-21**, 36 runs, `ctrl_late` 0 over 2,282,832 steps, `docs/week10-pil-campaign.md` | |
 | 11 | VED out-of-distribution check; analysis; figures | AD3 measurement campaign | |
 | 12 | Write-up and submission | | |
 
