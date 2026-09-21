@@ -3911,17 +3911,52 @@ def pil_campaign_section(doc: Document, pil) -> None:
                       f"{easiest[0]['peak_current_a']:.0f} amps against "
                       f"{easiest[1]['peak_current_a']:.0f}, and the gap is "
                       f"{abs(gap(easiest)):.1f} per cent.")
-            para(doc, "The likely cause is the discharge power ceiling, which "
-                      "is one of the three things the energy manager sets and "
-                      "which the learned controller uses and the rules "
-                      "effectively do not. Section " + ref("a4sweep") + " saw "
-                      "the same effect from the other direction and reached "
-                      "the same explanation. It remains an inference: the "
-                      "power ceiling the chip applies is not recorded in the "
-                      "result files, only the current that follows from it. "
-                      "Logging it is the single change that would turn this "
-                      "from a consistent story into a measured one, and it is "
-                      "worth making before this result is published.")
+            # The ceiling is logged from 2026-09-21. Where the campaign file
+            # carries it, the mechanism is stated from measurement; where it
+            # does not, the older inference is printed with its caveat, so an
+            # earlier campaign file still renders an honest section.
+            pl = [(r, a) for r, a in cur_pairs
+                  if r.get("p_limit_mean_w", 0) > 0
+                  and a.get("p_limit_mean_w", 0) > 0]
+            if pl:
+                r_mean = sum(r["p_limit_mean_w"] for r, _ in pl) / len(pl)
+                a_mean = sum(a["p_limit_mean_w"] for _, a in pl) / len(pl)
+                r_max = max(r["p_limit_max_w"] for r, _ in pl)
+                a_max = max(a["p_limit_max_w"] for _, a in pl)
+                tighter = sum(1 for r, a in pl
+                              if a["p_limit_mean_w"] < r["p_limit_mean_w"])
+                para(doc, "The cause is the discharge power ceiling, one of "
+                          "the three things the energy manager sets. This is "
+                          "measured rather than inferred: the ceiling the "
+                          "chip actually applies is now recorded, after this "
+                          "campaign raised the question and could not answer "
+                          "it.")
+                para(doc, f"Both controllers use the ceiling, which is worth "
+                          f"saying because it was previously assumed only one "
+                          f"did. Both reach about "
+                          f"{max(r_max, a_max) / 1000:.0f} kilowatts at their "
+                          f"highest. The difference is how hard they hold it "
+                          f"down on average: over these settings the rules "
+                          f"average {r_mean / 1000:.0f} kilowatts and the "
+                          f"learned controller {a_mean / 1000:.0f}, and the "
+                          f"learned controller is the tighter of the two in "
+                          f"{tighter} of the {len(pl)} settings. A ceiling "
+                          f"held roughly "
+                          f"{100 * (r_mean - a_mean) / r_mean:.0f} per cent "
+                          f"lower through the run is what keeps the peaks "
+                          f"down, and the current measurements above are what "
+                          f"it produced. Section " + ref("a4sweep") + " saw "
+                          "the same effect from the other direction.")
+            else:
+                para(doc, "The likely cause is the discharge power ceiling, "
+                          "one of the three things the energy manager sets. "
+                          "It remains an inference for this campaign: the "
+                          "ceiling the chip applied was not recorded when "
+                          "these runs were taken, only the current that "
+                          "follows from it. Section " + ref("a4sweep") + " "
+                          "reached the same explanation from the other "
+                          "direction. The telemetry was added afterwards, so "
+                          "a repeat of this campaign can settle it.")
 
         best = min(paired, key=lambda p: p[1]["equivalent_wh_per_km"]
                    - p[0]["equivalent_wh_per_km"])
