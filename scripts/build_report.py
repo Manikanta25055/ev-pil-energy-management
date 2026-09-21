@@ -3844,6 +3844,46 @@ def pil_campaign_section(doc: Document, pil) -> None:
                   "make about putting a learned policy in a real-time loop, "
                   "and the campaign is the widest evidence for it.")
 
+    # The communication-delay axis does not measure what its name says, and
+    # the table's own numbers are what show it. Computed rather than asserted,
+    # so the paragraph disappears if a future harness fixes the axis.
+    delayed = [r for r in runs
+               if r["scenario"] == "comm_delay" and r["comm_delay_s"] > 0]
+    undelayed = [r for r in runs
+                 if r["scenario"] == "comm_delay" and r["comm_delay_s"] == 0]
+    if delayed and undelayed:
+        worst = max(delayed, key=lambda r: r["tracking_rmse_mps"])
+        clean = min(undelayed, key=lambda r: r["tracking_rmse_mps"])
+        if worst["tracking_rmse_mps"] > 20 * max(clean["tracking_rmse_mps"],
+                                                 1e-9):
+            doc.add_heading("What the communication-delay rows actually show",
+                            level=2)
+            para(doc, "These rows need reading carefully, because the obvious "
+                      "reading of them is wrong. With a delay of "
+                      f"{worst['comm_delay_s'] * 1000:.0f} milliseconds the "
+                      f"tracking error is {worst['tracking_rmse_mps']:.1f} "
+                      "metres per second, against "
+                      f"{clean['tracking_rmse_mps']:.4f} with no delay. The "
+                      "car is not following the drive cycle at all.")
+            para(doc, "That is not the controller failing. The control loop "
+                      "runs every ten milliseconds, and the delay was added by "
+                      "making the laptop wait before each reply, so the wait "
+                      "is added to the laptop's own work on every single step. "
+                      "At ten milliseconds of delay on a ten millisecond loop "
+                      "the laptop can no longer answer as often as it is "
+                      "asked, and it falls further behind with every step "
+                      "rather than settling one step late. The chip meanwhile "
+                      "met every one of its own deadlines: "
+                      f"{worst['ctrl_late']} missed, in "
+                      f"{worst['steps']:,} steps.")
+            para(doc, "So this axis measures how fast the laptop can keep up, "
+                      "not how much delay the controller tolerates. Measuring "
+                      "the second thing needs the delay applied to delivery "
+                      "while the answers keep flowing, which this rig cannot "
+                      "currently do. The rows are reported as measured and the "
+                      "conclusion that the controller is delay-sensitive is "
+                      "not available from them.")
+
     para(doc, "What this campaign does not establish. Each cell was run once, "
               "so no figure here carries an interval and small differences "
               "between two settings are not separable. The three settings of "
