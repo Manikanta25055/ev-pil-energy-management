@@ -3779,18 +3779,104 @@ def pil_campaign_section(doc: Document, pil) -> None:
         mean_d = sum(diffs) / len(diffs)
         mean_pct = 100.0 * mean_d / (
             sum(r["equivalent_wh_per_km"] for r, _ in paired) / len(paired))
+        better = len(paired) - worse
         para(doc, f"The learned controller uses more energy than the rules in "
-                  f"{worse} of the {len(paired)} settings, by "
-                  f"{abs(mean_pct):.2f} per cent on average"
-                  f"{' in its favour' if mean_d < 0 else ''}. Section "
-                  + ref("deploy") + " reported the same thing on one cycle, at "
-                  "0.51 per cent. Varying the conditions does not rescue it. "
-                  "This is the result the project has had since week 8 and it "
-                  "survives the widest test made of it: the learned energy "
-                  "manager is not recommended on energy grounds. What it "
-                  "demonstrates is that a policy of this size fits inside the "
-                  "timing budget of a real control loop, which is a different "
-                  "claim and the one this project actually supports.")
+                  f"{worse} of the {len(paired)} settings and less in "
+                  f"{better}. Averaged over all of them it uses "
+                  f"{abs(mean_pct):.2f} per cent "
+                  f"{'less' if mean_d < 0 else 'more'}.")
+
+        if better > worse:
+            para(doc, "That reverses the result this project has carried since "
+                      "week 8, and the reversal needs explaining rather than "
+                      "announcing.")
+            para(doc, "Section " + ref("deploy") + " reports the learned "
+                      "controller as 0.51 per cent worse, measured at 154.68 "
+                      "watt-hours per kilometre against 153.90. That "
+                      "measurement was taken on the highway cycle. The "
+                      "project's own plan names the aggressive US06 cycle as "
+                      "the one to report a controller on, and sealed it so "
+                      "that nothing could be tuned against it. It was never "
+                      "spent. This campaign is the first time the two "
+                      "controllers have been compared on it.")
+            hw = [(r, a) for r, a in paired if r["cycle"] == "hwfet"]
+            if hw:
+                r_hw, a_hw = hw[0]
+                para(doc, "The highway row here reproduces the earlier "
+                          f"measurement closely: {r_hw['equivalent_wh_per_km']:.2f} "
+                          f"watt-hours per kilometre for the rules against the "
+                          f"153.90 measured offline in week 8, a difference of "
+                          f"{abs(100 * (r_hw['equivalent_wh_per_km'] - 153.90) / 153.90):.2f} "
+                          "per cent, from a simulation on a laptop and a "
+                          "measurement on a microcontroller. So the two "
+                          "results do not conflict. The earlier one is correct "
+                          "about the highway, and the highway is where the two "
+                          "controllers have the least to disagree about.")
+            para(doc, "A word of caution about how much weight this carries. "
+                      "Each setting was run once. The saving is many times the "
+                      "repeat spread measured above, so it is not noise, but a "
+                      "reversal of a headline result deserves a repeat "
+                      "campaign before it is published, and the mechanism "
+                      "below is inferred from the current rather than observed "
+                      "directly. This section reports what was measured; it "
+                      "does not settle what the project should conclude.")
+        else:
+            para(doc, "Section " + ref("deploy") + " reported the same thing "
+                      "on one cycle, at 0.51 per cent. Varying the conditions "
+                      "does not rescue it. This is the result the project has "
+                      "had since week 8 and it survives the widest test made "
+                      "of it: the learned energy manager is not recommended on "
+                      "energy grounds. What it demonstrates is that a policy "
+                      "of this size fits inside the timing budget of a real "
+                      "control loop, which is a different claim and the one "
+                      "this project actually supports.")
+
+        # Where the saving comes from, as far as the logged channels allow.
+        # Peak current is logged; the power ceiling that would explain it is
+        # not, so the wording stops at "consistent with".
+        cur_pairs = [(r, a) for r, a in paired
+                     if r["peak_current_a"] > 0 and a["peak_current_a"] > 0]
+        if better > worse and cur_pairs:
+            lower = sum(1 for r, a in cur_pairs
+                        if a["peak_current_a"] < r["peak_current_a"])
+            hardest = max(cur_pairs, key=lambda p: p[0]["peak_current_a"])
+            easiest = min(cur_pairs, key=lambda p: p[0]["peak_current_a"])
+
+            def gap(p):
+                return 100.0 * (p[1]["equivalent_wh_per_km"]
+                                - p[0]["equivalent_wh_per_km"]) \
+                    / p[0]["equivalent_wh_per_km"]
+
+            doc.add_heading("Where the saving appears to come from", level=2)
+            para(doc, "The learned controller draws a lower peak current than "
+                      f"the rules in {lower} of the {len(cur_pairs)} settings. "
+                      "Losses inside the battery rise with the square of the "
+                      "current, so shaving the peaks saves energy, and it "
+                      "saves more the harder the car is being driven. That is "
+                      "the pattern in the table.")
+            para(doc, "The two ends of it. The hardest setting, "
+                      f"{PIL_AXIS_TITLES.get(hardest[0]['scenario'], '').lower()} "
+                      f"at {hardest[0]['level'].replace('_', ' ')}, peaks at "
+                      f"{hardest[0]['peak_current_a']:.0f} amps for the rules "
+                      f"and {hardest[1]['peak_current_a']:.0f} for the learned "
+                      f"controller, and the energy gap there is "
+                      f"{abs(gap(hardest)):.1f} per cent. The gentlest, "
+                      f"{PIL_AXIS_TITLES.get(easiest[0]['scenario'], '').lower()} "
+                      f"at {easiest[0]['level'].replace('_', ' ')}, peaks at "
+                      f"{easiest[0]['peak_current_a']:.0f} amps against "
+                      f"{easiest[1]['peak_current_a']:.0f}, and the gap is "
+                      f"{abs(gap(easiest)):.1f} per cent.")
+            para(doc, "The likely cause is the discharge power ceiling, which "
+                      "is one of the three things the energy manager sets and "
+                      "which the learned controller uses and the rules "
+                      "effectively do not. Section " + ref("a4sweep") + " saw "
+                      "the same effect from the other direction and reached "
+                      "the same explanation. It remains an inference: the "
+                      "power ceiling the chip applies is not recorded in the "
+                      "result files, only the current that follows from it. "
+                      "Logging it is the single change that would turn this "
+                      "from a consistent story into a measured one, and it is "
+                      "worth making before this result is published.")
 
         best = min(paired, key=lambda p: p[1]["equivalent_wh_per_km"]
                    - p[0]["equivalent_wh_per_km"])

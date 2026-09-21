@@ -135,18 +135,67 @@ def test_the_headline_count_is_not_typed_in(campaign, document):
 
     text = "\n".join(p.text for p in document.paragraphs)
     needle = (f"The learned controller uses more energy than the rules in "
-              f"{worse} of the {len(keys)} settings")
+              f"{worse} of the {len(keys)} settings and less in "
+              f"{len(keys) - worse}")
     assert needle in text, (
         "the report's headline sentence does not match the campaign file; "
         f"expected to find: {needle!r}")
 
 
-def test_report_does_not_recommend_the_learned_controller(document):
-    """A standing constraint, not a stylistic one.
+def test_the_report_states_the_conclusion_the_measurements_support(campaign,
+                                                                   document):
+    """The report must follow the data, in whichever direction it points.
 
-    The policy is measurably worse on energy than the rules it replaces. The
-    report is allowed to say the deployment demonstrates a timing result; it
-    is not allowed to imply the controller is recommended.
+    This test replaces an earlier one that simply required the sentence "is
+    not recommended on energy grounds" to be present. That was written from
+    the project's standing week-8 finding, before this campaign had run. On
+    the sealed US06 cycle the measurements reverse it, and a test that pinned
+    the old sentence would have forced the report to contradict its own table
+    in order to stay green.
+
+    So the assertion is conditional on the data rather than on the previous
+    conclusion:
+
+    * where the rules win more settings than the policy, the report must still
+      say the policy is not recommended on energy grounds;
+    * where the policy wins more, the report must not simply announce it. It
+      has to carry the caution that one run per cell and an inferred mechanism
+      are not enough to overturn a headline result.
+
+    Neither branch lets the report be silent, and neither lets it overclaim.
     """
-    text = "\n".join(p.text for p in document.paragraphs).lower()
-    assert "is not recommended on energy grounds" in text
+    runs = campaign["runs"]
+    by_key = {(r["scenario"], r["level"], r["controller"]): r for r in runs}
+    keys = {(r["scenario"], r["level"]) for r in runs}
+    worse = sum(
+        1 for axis, level in keys
+        if by_key[(axis, level, "actor")]["equivalent_wh_per_km"]
+        > by_key[(axis, level, "rule")]["equivalent_wh_per_km"])
+    better = len(keys) - worse
+
+    text = "\n".join(p.text for p in document.paragraphs)
+    if better > worse:
+        assert "deserves a repeat campaign before it is published" in text, (
+            "the campaign shows the learned controller ahead on energy, and "
+            "the report announces it without the caution that one run per "
+            "cell and an inferred mechanism cannot overturn a headline result")
+        assert "does not settle what the project should conclude" in text
+    else:
+        assert "is not recommended on energy grounds" in text
+
+
+def test_the_deployment_cost_travels_with_the_energy_claim(document):
+    """No energy result ships without what it costs on the chip.
+
+    A standing rule on this project: an accuracy or energy number that
+    arrives without its on-device cost invites a deployment decision the
+    measurements do not support.
+    """
+    # The costs are reported in the deployment tables rather than in prose,
+    # so the whole document is searched, cells included.
+    text = "\n".join(p.text for p in document.paragraphs)
+    text += "\n".join(c.text for t in document.tables
+                      for row in t.rows for c in row.cells)
+    assert "825" in text, "the cold-start inference cost is missing"
+    assert "0.123" in text or "0.121" in text, (
+        "the steady-state inference cost is missing")
