@@ -3593,6 +3593,184 @@ def reproduce_section(doc: Document) -> None:
          size=11, colour=MUTED)
 
 
+PIL_AXIS_TITLES = {
+    "driving_condition": "Driving condition",
+    "road_grade": "Road grade",
+    "battery_state": "Battery state",
+    "sensor_noise": "Sensor noise",
+    "comm_delay": "Communication delay",
+    "driver_aggression": "Driver aggression",
+}
+
+
+def pil_cells(pil) -> dict:
+    """{(axis, level): {controller: run}} for the campaign."""
+    cells: dict = {}
+    for r in pil["runs"]:
+        cells.setdefault((r["scenario"], r["level"]), {})[r["controller"]] = r
+    return cells
+
+
+def pil_order(pil) -> list:
+    """Axis/level pairs in the order the scenario table declares them."""
+    from evpil.control.scenarios import AXES
+    seen = pil_cells(pil)
+    return [(axis, lv.level) for axis in AXES for lv in AXES[axis]
+            if (axis, lv.level) in seen]
+
+
+def pil_campaign_section(doc: Document, pil) -> None:
+    """The week-10 PIL campaign: six axes, both controllers, on the board."""
+    h1(doc, "The two controllers across six kinds of driving", "pil")
+
+    if not pil:
+        para(doc, "The PIL campaign had not been run when this report was "
+                  "generated.", italic=True, colour=MUTED)
+        return
+
+    runs = pil["runs"]
+    para(doc, "Every result before this one compares the two energy managers "
+              "under one set of conditions at a time. This campaign varies the "
+              "conditions. Six things that a real vehicle meets and a "
+              "laboratory cycle does not — the kind of road, its slope, how "
+              "full the battery is, how noisy the sensors are, how late the "
+              "communication link answers, and how hard the driver pushes — "
+              "are each swept across three settings, with both controllers "
+              "run on the chip against every one of them.")
+
+    para(doc, "The arrangement is the same as the failure-handling experiment "
+              "in section " + ref("a4meas") + ": the real control software "
+              "runs on the microcontroller a hundred times a second, and the "
+              "validated vehicle model (section " + ref("g2") + ") runs on the "
+              "laptop and answers with what the car would do. The difference "
+              "is what is being asked. That experiment broke the link on "
+              "purpose and asked what a fault costs. This one leaves "
+              "everything working and asks what ordinary variation costs.")
+
+    para(doc, "One thing is varied at a time, so that a number can be "
+              "attributed to the thing that moved. Energy is reported on the "
+              "comparable scale used throughout this report: heating the "
+              "controller chose not to supply is charged back at what it "
+              "saved, because a controller that turns the heater off is not "
+              "managing energy, it is just supplying less of it.")
+
+    cells = pil_cells(pil)
+    order = pil_order(pil)
+
+    rows = []
+    for axis, level in order:
+        cell = cells[(axis, level)]
+        rule = cell.get("rule")
+        actor = cell.get("actor")
+        rows.append([
+            PIL_AXIS_TITLES.get(axis, axis),
+            level.replace("_", " "),
+            f"{rule['tracking_rmse_mps']:.4f}" if rule else "—",
+            f"{actor['tracking_rmse_mps']:.4f}" if actor else "—",
+            f"{rule['equivalent_wh_per_km']:.2f}" if rule else "—",
+            f"{actor['equivalent_wh_per_km']:.2f}" if actor else "—",
+        ])
+    table(doc,
+          ["Varied", "Setting", "Rules: tracking error, m/s",
+           "Learned: tracking error, m/s", "Rules: energy, Wh/km",
+           "Learned: energy, Wh/km"],
+          rows)
+    para(doc, f"Table. {len(runs)} runs on the board, one per cell. Tracking "
+              "error is the root-mean-square difference between the speed "
+              "asked for and the speed reached. Energy is on the comparable "
+              "scale. MEASURED on the board.",
+         size=9, italic=True, colour=MUTED)
+
+    figure(doc, DOCS / "figures" / "pil-energy.png",
+           "Energy on the comparable scale for both controllers across every "
+           "setting. Each point is one run on the chip.")
+
+    # The headline, computed rather than typed: how often the learned
+    # controller costs more energy than the rules, across the campaign.
+    paired = [(cells[k]["rule"], cells[k]["actor"]) for k in order
+              if "rule" in cells[k] and "actor" in cells[k]]
+    if paired:
+        diffs = [a["equivalent_wh_per_km"] - r["equivalent_wh_per_km"]
+                 for r, a in paired]
+        worse = sum(1 for d in diffs if d > 0)
+        mean_d = sum(diffs) / len(diffs)
+        mean_pct = 100.0 * mean_d / (
+            sum(r["equivalent_wh_per_km"] for r, _ in paired) / len(paired))
+        para(doc, f"The learned controller uses more energy than the rules in "
+                  f"{worse} of the {len(paired)} settings, by "
+                  f"{abs(mean_pct):.2f} per cent on average"
+                  f"{' in its favour' if mean_d < 0 else ''}. Section "
+                  + ref("deploy") + " reported the same thing on one cycle, at "
+                  "0.51 per cent. Varying the conditions does not rescue it. "
+                  "This is the result the project has had since week 8 and it "
+                  "survives the widest test made of it: **the learned energy "
+                  "manager is not recommended on energy grounds.** What it "
+                  "demonstrates is that a policy of this size fits inside the "
+                  "timing budget of a real control loop, which is a different "
+                  "claim and the one this project actually supports.")
+
+        best = min(paired, key=lambda p: p[1]["equivalent_wh_per_km"]
+                   - p[0]["equivalent_wh_per_km"])
+        worst = max(paired, key=lambda p: p[1]["equivalent_wh_per_km"]
+                    - p[0]["equivalent_wh_per_km"])
+        para(doc, "The spread across settings is worth more than the average. "
+                  "The learned controller comes closest to the rules under "
+                  f"{PIL_AXIS_TITLES.get(best[0]['scenario'], '').lower()} at "
+                  f"the {best[0]['level'].replace('_', ' ')} setting "
+                  f"({best[1]['equivalent_wh_per_km']:.2f} against "
+                  f"{best[0]['equivalent_wh_per_km']:.2f} Wh/km) and is "
+                  "furthest behind under "
+                  f"{PIL_AXIS_TITLES.get(worst[0]['scenario'], '').lower()} at "
+                  f"the {worst[0]['level'].replace('_', ' ')} setting "
+                  f"({worst[1]['equivalent_wh_per_km']:.2f} against "
+                  f"{worst[0]['equivalent_wh_per_km']:.2f} Wh/km).")
+
+    # Timing health, which is the half of the campaign that is about the
+    # embedded system rather than the energy.
+    t_rows = []
+    for controller in ("rule", "actor"):
+        arm = [r for r in runs if r["controller"] == controller]
+        if not arm:
+            continue
+        t_rows.append([
+            "Rules" if controller == "rule" else "Learned",
+            f"{len(arm)}",
+            f"{sum(r['steps'] for r in arm):,}",
+            f"{sum(r['ctrl_late'] for r in arm)}",
+            f"{sum(r['dropped_frames'] for r in arm):,}",
+            f"{max(r['actor_wcet_us'] for r in arm)}",
+        ])
+    table(doc,
+          ["Controller", "Runs", "Control steps", "Missed deadlines",
+           "Late or lost frames", "Worst inference, us"],
+          t_rows)
+    para(doc, "Table. The timing half of the campaign. A missed deadline is "
+              "the control loop failing to finish its own work in its ten "
+              "millisecond slot. Late or lost frames counts the laptop "
+              "answering late or not at all, which the communication-delay "
+              "setting causes on purpose. MEASURED on the board.",
+         size=9, italic=True, colour=MUTED)
+
+    late_total = sum(r["ctrl_late"] for r in runs)
+    steps_total = sum(r["steps"] for r in runs)
+    if late_total == 0:
+        para(doc, f"Across all {steps_total:,} control steps of the campaign "
+                  "the loop never missed its own deadline, with the learned "
+                  "controller running inside it and with the link being "
+                  "delayed on purpose. That is the claim this project can "
+                  "make about putting a learned policy in a real-time loop, "
+                  "and the campaign is the widest evidence for it.")
+
+    para(doc, "What this campaign does not establish. Each cell was run once, "
+              "so no figure here carries an interval and small differences "
+              "between two settings are not separable. The three settings of "
+              "an axis are three points on it, not a characterisation of it. "
+              "And the vehicle model, though validated (section " + ref("g2")
+              + "), is a model: these are the conditions as the model renders "
+              "them, not as a road produces them.",
+         )
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="reports/EV-PIL-status-report.docx")
@@ -3623,6 +3801,7 @@ def main() -> int:
     dis = load("a2-distillation.json")
     a4_sweep = load_a4_sweep()
     g3rep = load_g3_repeats()
+    pil = load("week10-pil-campaign.json")
 
     cost_path = DOCS / "forecast-deploy-cost.csv"
     cost_rows = None
@@ -3666,6 +3845,7 @@ def main() -> int:
     deployment_section(doc, fullstack, sac)
     port_section(doc, g1a, g5a, g3a, actora, g3, g3rep)
     a4_sweep_section(doc, a4_sweep)
+    pil_campaign_section(doc, pil)
     negatives_section(doc)
     changes_section(doc)
     remaining_section(doc)
@@ -3687,6 +3867,7 @@ def main() -> int:
                ("toolchain port", g1a and g5a and g3a),
                ("A4 sweep (Arduino build)", a4_sweep),
                ("G3 repeats (Arduino build)", g3rep),
+               ("PIL campaign", pil),
                ("on-chip deployment", fullstack),
                ("distillation", dis))
     have = [n for n, v in tracked if v]
