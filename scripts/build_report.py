@@ -3641,11 +3641,11 @@ def pil_campaign_section(doc: Document, pil) -> None:
     para(doc, "The arrangement is the same as the failure-handling experiment "
               "in section " + ref("a4meas") + ": the real control software "
               "runs on the microcontroller a hundred times a second, and the "
-              "validated vehicle model (section " + ref("g2") + ") runs on the "
-              "laptop and answers with what the car would do. The difference "
-              "is what is being asked. That experiment broke the link on "
-              "purpose and asked what a fault costs. This one leaves "
-              "everything working and asks what ordinary variation costs.")
+              "validated vehicle model runs on the laptop and answers with "
+              "what the car would do. The difference is what is being asked. "
+              "That experiment broke the link on purpose and asked what a "
+              "fault costs. This one leaves everything working and asks what "
+              "ordinary variation costs.")
 
     para(doc, "One thing is varied at a time, so that a number can be "
               "attributed to the thing that moved. Energy is reported on the "
@@ -3703,8 +3703,8 @@ def pil_campaign_section(doc: Document, pil) -> None:
                   + ref("deploy") + " reported the same thing on one cycle, at "
                   "0.51 per cent. Varying the conditions does not rescue it. "
                   "This is the result the project has had since week 8 and it "
-                  "survives the widest test made of it: **the learned energy "
-                  "manager is not recommended on energy grounds.** What it "
+                  "survives the widest test made of it: the learned energy "
+                  "manager is not recommended on energy grounds. What it "
                   "demonstrates is that a policy of this size fits inside the "
                   "timing budget of a real control loop, which is a different "
                   "claim and the one this project actually supports.")
@@ -3765,10 +3765,9 @@ def pil_campaign_section(doc: Document, pil) -> None:
               "so no figure here carries an interval and small differences "
               "between two settings are not separable. The three settings of "
               "an axis are three points on it, not a characterisation of it. "
-              "And the vehicle model, though validated (section " + ref("g2")
-              + "), is a model: these are the conditions as the model renders "
-              "them, not as a road produces them.",
-         )
+              "And the vehicle model, though validated against held-out trips "
+              "earlier in this report, is a model: these are the conditions "
+              "as the model renders them, not as a road produces them.")
 
 
 def main() -> int:
