@@ -135,6 +135,17 @@ typedef struct {
     uint32_t boot_reason;          /* esp_reset_reason() at startup; watchdog resets show up here */
     uint32_t actor_steps;          /* outer steps the deployed SAC actor answered */
     uint32_t actor_wcet_us;        /* worst single actor inference on silicon */
+    /* The discharge power ceiling the energy manager actually applied, in
+       watts, over the whole run. Added 2026-09-21 after the PIL campaign put
+       the learned controller 8% ahead of the rule manager on energy with a
+       lower peak current in every setting: the explanation was that it limits
+       power and the rule manager does not, and nothing recorded the limit, so
+       the explanation could not be checked. `p_limit_max_w` is the direct
+       test -- a manager that never limits pins its ceiling at maximum for the
+       whole run. Keep in step with evpil.protocol.DIAG_FIELDS. */
+    uint32_t p_limit_min_w;
+    uint32_t p_limit_mean_w;
+    uint32_t p_limit_max_w;
     uint16_t jitter_hist[JITTER_N_BINS];
 } diag_stats_t;
 

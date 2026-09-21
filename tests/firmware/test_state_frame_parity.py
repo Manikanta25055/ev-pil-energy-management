@@ -82,3 +82,19 @@ def test_the_diag_frame_carries_every_counter_the_host_expects():
 def test_week10_additions_reached_the_firmware(field):
     """Named individually, because these three are why this file exists."""
     assert field in TASKS_H.read_text()
+
+
+@pytest.mark.parametrize("field",
+                         ["p_limit_min_w", "p_limit_mean_w", "p_limit_max_w"])
+def test_the_power_ceiling_is_logged(field):
+    """The PIL campaign's explanation has to become observable.
+
+    The learned controller finished 8 per cent ahead of the rule manager on
+    energy, and the mechanism that fits every row is a discharge power ceiling
+    it applies and the rule manager does not. Nothing recorded the ceiling, so
+    that stayed an inference standing on peak current. These three counters
+    are what turn it into a measurement, and a campaign run without them
+    cannot settle the question it was re-run to settle.
+    """
+    assert field in TASKS_H.read_text(), f"{field} missing from tasks.h"
+    assert field in TASKS_C.read_text(), f"{field} never packed in tasks.c"

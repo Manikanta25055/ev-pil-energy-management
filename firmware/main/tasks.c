@@ -61,6 +61,12 @@ static float s_torque_cmd  = 0.0f;
 static volatile float    s_regen_blend = 0.5f;
 static volatile float    s_p_limit_w   = 50000.0f;
 static volatile float    s_aux_derate  = 0.0f;
+/* Accumulators for the ceiling the energy manager actually applied. Kept out
+   of diag_stats_t because the sum has to be 64-bit and the frame is not: a
+   campaign cell is 6,000 outer steps and a ceiling can be 100 kW, which wraps
+   a 32-bit accumulator and reports a mean far below the truth. */
+static uint64_t s_p_limit_sum;
+static uint32_t s_p_limit_n;
 static volatile uint32_t s_ems_t_us    = 0;
 
 /* Set by infer when it overruns, cleared by ems once it has acted on it. */
@@ -353,6 +359,21 @@ static void ems_task(void *arg)
         s_aux_derate  = a.aux_derate;
         s_ems_t_us    = (uint32_t) esp_timer_get_time();
 
+        /* Record the ceiling this step actually applied. The sum is kept in
+           64 bits and divided when the frame is packed: a run is 6,000 outer
+           steps and a ceiling can be 100 kW, so a 32-bit accumulator would
+           wrap inside a single campaign cell and report a mean far below the
+           truth. Negative is not physical here and is clamped rather than
+           wrapped into a huge unsigned. */
+        {
+            float pl_f = a.p_limit_w;
+            uint32_t pl = (pl_f <= 0.0f) ? 0u : (uint32_t) pl_f;
+            if (pl < s_diag.p_limit_min_w) s_diag.p_limit_min_w = pl;
+            if (pl > s_diag.p_limit_max_w) s_diag.p_limit_max_w = pl;
+            s_p_limit_sum += (uint64_t) pl;
+            s_p_limit_n++;
+        }
+
         vTaskDelayUntil(&next, pdMS_TO_TICKS(EMS_PERIOD_MS));
     }
 }
@@ -362,7 +383,7 @@ static void diag_task(void *arg)
     (void) arg;
     TickType_t next = xTaskGetTickCount();
     uint8_t tx[128];
-    uint8_t payload[18 * 4 + JITTER_N_BINS * 2];
+    uint8_t payload[21 * 4 + JITTER_N_BINS * 2];
     uint32_t seq = 0;
 
     for (;;) {
@@ -371,8 +392,16 @@ static void diag_task(void *arg)
            interleaved into a binary stream costs the host a resynchronisation
            on every diagnostic line. Framing it also means the host parses one
            format instead of scraping a printf. */
+        /* The mean is computed here rather than carried, so the running sum
+           can stay 64-bit without widening the frame. Before any outer step
+           the ceiling fields read 0, which is separable from a real ceiling
+           of 0 W because loop_count is 0 too. */
+        s_diag.p_limit_mean_w = s_p_limit_n
+            ? (uint32_t) (s_p_limit_sum / s_p_limit_n) : 0u;
+        uint32_t pl_min = s_p_limit_n ? s_diag.p_limit_min_w : 0u;
+
         /* Order must match evpil.protocol.DIAG_FIELDS. */
-        uint32_t u32[18] = {
+        uint32_t u32[21] = {
             s_diag.loop_count, s_diag.rx_timeouts, s_diag.rx_bad,
             s_diag.infer_deadline_misses, s_diag.ctrl_wcet_us,
             s_diag.infer_wcet_us, s_diag.rtt_max_us,
@@ -382,6 +411,7 @@ static void diag_task(void *arg)
             s_diag.limp_steps, s_diag.ems_fallback_steps,
             s_diag.boot_reason,
             s_diag.actor_steps, s_diag.actor_wcet_us,
+            pl_min, s_diag.p_limit_mean_w, s_diag.p_limit_max_w,
         };
         memcpy(payload, u32, sizeof u32);
         memcpy(payload + sizeof u32, s_diag.jitter_hist,
@@ -401,6 +431,12 @@ void tasks_start(void)
     s_state_mux = xSemaphoreCreateMutex();
     configASSERT(s_state_mux);
     memset(&s_diag, 0, sizeof s_diag);
+    /* Not zero: this is a running minimum and zero is the smallest ceiling
+       there is, so a zeroed field would never be replaced and every run would
+       report a floor of 0 W. */
+    s_diag.p_limit_min_w = UINT32_MAX;
+    s_p_limit_sum = 0;
+    s_p_limit_n = 0;
     memset(&s_pid, 0, sizeof s_pid);
 
     /* The reset reason survives a reset, which is the only way a watchdog

@@ -250,9 +250,13 @@ def run_one(
     delta = {}
     if diag_first and diag_last:
         for key in diag_last:
+            # Levels, not counts. Differencing a running minimum or a mean
+            # across the run produces a number with no meaning, and for a
+            # minimum it is usually negative, which is how this was caught.
             if key in ("boot_reason", "ctrl_wcet_us", "infer_wcet_us",
                        "rtt_max_us", "period_min_us", "period_max_us",
-                       "actor_wcet_us", "stale_worst"):
+                       "actor_wcet_us", "stale_worst",
+                       "p_limit_min_w", "p_limit_mean_w", "p_limit_max_w"):
                 delta[key] = int(diag_last[key])
             else:
                 delta[key] = int(diag_last[key]) - int(diag_first[key])

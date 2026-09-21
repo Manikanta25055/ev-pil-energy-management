@@ -176,6 +176,19 @@ DIAG_FIELDS: tuple[str, ...] = (
     # worst inference on silicon, which is the deployment cost that has to ship
     # next to any energy number it produces.
     "actor_steps", "actor_wcet_us",
+    # Week 10's PIL campaign, 2026-09-21. The learned controller came out 8%
+    # ahead of the rule manager on energy, and the explanation that fits every
+    # number is that it applies a discharge power ceiling the rule manager
+    # effectively does not: its peak current is lower in every setting, and
+    # battery loss goes as the square of current. That explanation was an
+    # inference, because the ceiling itself was never recorded -- only the
+    # current downstream of it. These three make it observable.
+    #
+    # Watts, as integers, because DIAG carries uint32 and a watt is already
+    # finer than the quantity is known. `p_limit_max_w` is the one that tests
+    # the claim directly: a manager that never limits should report a ceiling
+    # pinned at its maximum for the whole run.
+    "p_limit_min_w", "p_limit_mean_w", "p_limit_max_w",
 )
 
 _DIAG = struct.Struct(f"<{len(DIAG_FIELDS)}I{N_JITTER_BINS}H")

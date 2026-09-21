@@ -1,5 +1,16 @@
 # Night Protocol anchor — EV PIL, final measurements and report
 
+> **AMENDED 2026-09-21 23:19 by the operator, in chat, after the first
+> objective completed.** The original objective is met: criteria 1-6 and 8
+> passed, and criterion 7 was finished by the operator sending the drafted
+> email. The new instruction is: *"now log p_limit_w and repeat the campaign"*.
+>
+> This amendment does one thing the original anchor forbade in terms — it
+> opens `firmware/` — and it is recorded here rather than assumed, because
+> "Any edit to `firmware/` source" was the first line of OUT OF SCOPE and the
+> single thing I flagged as most likely to tempt a run off course. The
+> operator has now asked for exactly it. See OBJECTIVE 2 below.
+
 Written 2026-09-21. Board present and confirmed on the native USB-Serial/JTAG
 connector: VID 0x303A, "USB JTAG_serial debug unit", MAC 1C:DB:D4:46:24:E8,
 `/dev/cu.usbmodem101`. Every board script defaults to `/dev/cu.usbmodem1101`,
