@@ -418,8 +418,8 @@ Worst case 13.216 m/s with it against 24.704 without, where at 5 s the two were
 7.394 and 7.948. The individual outages split evenly, four each, which is the
 point: the ablation wins the ordinary ones narrowly and loses the bad ones by a
 wide margin. Its two worst are 24.704 m/s at the 505.4 s onset and 13.213 at
-16.0 s, both places where `v_ref` is low and falling — the same mechanism
-section 7 identified at 5 s, a stale torque command driving a vehicle that
+16.0 s, both places where `v_ref` is low and falling. That is the mechanism
+section 7 identified at 5 s: a stale torque command driving a vehicle that
 should be braking. The handling's worst, 13.216 m/s at the 587.0 s onset, is
 the same size as the ablation's *second* worst. Limping fails small; holding
 fails large, and the gap widens with the outage.
@@ -431,8 +431,8 @@ eight happened to be worst. Section 10's rule applies unchanged: at eight
 onsets these are not separable. The 4-to-5 s bracket is carried by an
 identifiable row; this is not, and nothing here revises the bracket.
 
-At 0.5 s the ordering is the familiar one — the ablation ahead on both median
-and worst — so the handling's cost in ordinary tracking is already present at
+At 0.5 s the ordering is the familiar one, the ablation ahead on both median
+and worst, so the handling's cost in ordinary tracking is already present at
 half a second.
 
 Recovery current at 10 s is the one figure that does *not* separate the modes:

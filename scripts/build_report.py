@@ -3632,9 +3632,9 @@ def pil_campaign_section(doc: Document, pil) -> None:
     para(doc, "Every result before this one compares the two energy managers "
               "under one set of conditions at a time. This campaign varies the "
               "conditions. Six things that a real vehicle meets and a "
-              "laboratory cycle does not — the kind of road, its slope, how "
-              "full the battery is, how noisy the sensors are, how late the "
-              "communication link answers, and how hard the driver pushes — "
+              "laboratory cycle does not, namely the kind of road, its slope, "
+              "how full the battery is, how noisy the sensors are, how late "
+              "the communication link answers and how hard the driver pushes, "
               "are each swept across three settings, with both controllers "
               "run on the chip against every one of them.")
 
