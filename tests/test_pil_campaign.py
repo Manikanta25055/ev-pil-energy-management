@@ -141,3 +141,23 @@ def test_run_one_records_the_scenario_it_was_given():
     assert result["comm_delay_s"] == pytest.approx(0.030)
     assert result["noise_scale"] == pytest.approx(BASELINE.noise_scale)
     assert result["cycle"] == "us06"
+
+
+def test_arm_check_rejects_an_actor_image_filed_as_rule():
+    from scripts.run_pil_campaign import check_arm
+    with pytest.raises(SystemExit) as e:
+        check_arm({"controller": "rule", "actor_steps": 5965, "steps": 60000})
+    assert "actor build" in str(e.value)
+
+
+def test_arm_check_rejects_a_ruleless_actor_run():
+    from scripts.run_pil_campaign import check_arm
+    with pytest.raises(SystemExit) as e:
+        check_arm({"controller": "actor", "actor_steps": 0, "steps": 60000})
+    assert "no policy in it" in str(e.value)
+
+
+def test_arm_check_passes_the_matching_pairs():
+    from scripts.run_pil_campaign import check_arm
+    check_arm({"controller": "actor", "actor_steps": 5965, "steps": 60000})
+    check_arm({"controller": "rule", "actor_steps": 0, "steps": 60000})

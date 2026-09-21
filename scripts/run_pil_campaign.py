@@ -292,6 +292,36 @@ def run_one(
     }
 
 
+def check_arm(result: dict) -> None:
+    """Refuse to file a run under a controller the board was not running.
+
+    The arm is a compile-time choice with no runtime signature in the frame
+    protocol, so the only thing standing between "flashed the wrong image" and
+    a campaign table that silently compares an arm with itself is this check.
+    `actor_steps` counts outer steps the policy answered: the actor image
+    cannot report zero over a whole cycle, and the rule image cannot report
+    anything else, because the counter is only incremented inside the
+    `HAVE_SAC_ACTOR` branch.
+
+    This is the class of mistake the CMake cache produced once already, where
+    a baseline build silently came out as the ablation. Cheap to check, and
+    the alternative is three hours of runs that mean nothing.
+    """
+    steps = result["actor_steps"]
+    controller = result["controller"]
+    if controller == "actor" and steps <= 0:
+        raise SystemExit(
+            f"--controller actor but the board reported actor_steps={steps} "
+            f"over {result['steps']} control steps. The flashed image has no "
+            f"policy in it: check that firmware/main/sac_actor_weights.h was "
+            f"present when scripts/arduino_build.sh ran.")
+    if controller == "rule" and steps > 0:
+        raise SystemExit(
+            f"--controller rule but the board reported actor_steps={steps}. "
+            f"The flashed image is the actor build; these runs would be the "
+            f"learned policy filed under the rule manager.")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", default="/dev/cu.usbmodem1101")
@@ -301,9 +331,8 @@ def main() -> int:
     ap.add_argument("--axis", action="append", default=None,
                     help="restrict to one axis; repeatable")
     ap.add_argument("--out-json", required=True)
-    ap.add_argument("--append", action="store_true",
-                    help="merge into an existing --out-json rather than "
-                         "replacing it, so an axis can be run on its own")
+    ap.add_argument("--no-reset", action="store_true",
+                    help="set by the re-exec; the board was just reset")
     args = ap.parse_args()
 
     if args.axis:
@@ -316,49 +345,66 @@ def main() -> int:
     params = params_from_json(args.params)
 
     out_path = Path(args.out_json)
-    existing: list[dict] = []
-    if args.append and out_path.exists():
-        existing = json.loads(out_path.read_text())["runs"]
+    results: list[dict] = []
+    if out_path.exists():
+        results = json.loads(out_path.read_text())["runs"]
 
-    print(f"PIL campaign: {args.controller} arm, {len(runs)} runs, "
-          f"port {args.port}")
-    results = list(existing)
-    for i, run in enumerate(runs, 1):
-        print(f"\n[{i}/{len(runs)}] {run.axis}/{run.level} seed {run.seed}",
-              flush=True)
-        # One reset per run. The plant restarts at the scenario's SoC and the
-        # board's PID must not carry integral state across a cycle boundary;
-        # leaving it would make a run depend on the one before it and on the
-        # order the axes happen to be listed in.
-        reset_and_reexec(args.port)
-        link = SerialLink(args.port, baud=args.baud)
-        try:
-            result = run_one(link, scenario=run.scenario,
-                             controller=run.controller, seed=run.seed,
-                             port=args.port, params=params, progress=True)
-        finally:
-            link.close()
+    def key_of(d) -> tuple:
+        return (d["scenario"], d["level"], d["controller"], d["seed"])
 
+    done = {key_of(r) for r in results}
+    pending = [r for r in runs
+               if (r.axis, r.level, r.controller, r.seed) not in done]
+
+    if not pending:
+        print(f"nothing left to run; {len(results)} runs already in {out_path}")
+        return 0
+
+    # One board reset per run, and the reset is why this runs a single cell per
+    # process. `reset_and_reexec` resets the chip and then replaces the process
+    # image, because resetting and reopening the port from the same process
+    # reads zero bytes on this machine -- link.py documents the measurement.
+    # So the campaign advances one cell per exec, resuming from the file it
+    # already wrote. Without a reset between cells the board's PID would carry
+    # integral state across a cycle boundary and a run would depend on the one
+    # before it, and on the order the axes happen to be listed in.
+    if not args.no_reset:
+        print(f"PIL campaign: {args.controller} arm, "
+              f"{len(pending)} of {len(runs)} runs left, port {args.port}")
+        reset_and_reexec(args.port, drop_flag="--no-reset",
+                         add_flag="--no-reset")
+
+    run = pending[0]
+    i = len(runs) - len(pending) + 1
+    print(f"\n[{i}/{len(runs)}] {run.axis}/{run.level} seed {run.seed}",
+          flush=True)
+
+    with SerialLink(args.port, args.baud) as link:
+        result = run_one(link, scenario=run.scenario,
+                         controller=run.controller, seed=run.seed,
+                         port=args.port, params=params, progress=True)
         result["host_frames_dropped"] = int(link.stats()["frames_dropped"])
-        result["dropped_frames"] += result["host_frames_dropped"]
-        # Drop any earlier row for this cell, so --append re-running an axis
-        # replaces it instead of silently doubling the campaign.
-        key = (result["scenario"], result["level"], result["controller"],
-               result["seed"])
-        results = [r for r in results
-                   if (r["scenario"], r["level"], r["controller"],
-                       r["seed"]) != key]
-        results.append(result)
 
-        print(f"    rmse {result['tracking_rmse_mps']:.4f} m/s   "
-              f"equiv {result['equivalent_wh_per_km']:.2f} Wh/km   "
-              f"ctrl_late {result['ctrl_late']}   "
-              f"dropped {result['dropped_frames']}   "
-              f"actor_steps {result['actor_steps']}")
+    result["dropped_frames"] += result["host_frames_dropped"]
+    check_arm(result)
+    results = [r for r in results if key_of(r) != key_of(result)]
+    results.append(result)
 
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path.write_text(json.dumps(
-            {"port": args.port, "runs": results}, indent=1) + "\n")
+    print(f"    rmse {result['tracking_rmse_mps']:.4f} m/s   "
+          f"equiv {result['equivalent_wh_per_km']:.2f} Wh/km   "
+          f"ctrl_late {result['ctrl_late']}   "
+          f"dropped {result['dropped_frames']}   "
+          f"actor_steps {result['actor_steps']}")
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(
+        {"port": args.port, "runs": results}, indent=1) + "\n")
+
+    if len(pending) > 1:
+        # Reset for the next cell, which restarts this script; it will reload
+        # the file just written and skip everything in it.
+        reset_and_reexec(args.port, drop_flag="--no-reset",
+                         add_flag="--no-reset")
 
     print(f"\nwrote {out_path}  ({len(results)} runs)")
     return 0
