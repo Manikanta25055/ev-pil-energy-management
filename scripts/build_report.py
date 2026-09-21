@@ -3776,8 +3776,41 @@ def pil_campaign_section(doc: Document, pil) -> None:
 
     # The headline, computed rather than typed: how often the learned
     # controller costs more energy than the rules, across the campaign.
-    paired = [(cells[k]["rule"], cells[k]["actor"]) for k in order
-              if "rule" in cells[k] and "actor" in cells[k]]
+    #
+    # Energy per kilometre only means anything when the car followed the
+    # cycle. Where the loop could not keep up, the distance in the
+    # denominator is not the cycle's distance, and the ratio is an artefact.
+    # The threshold is deliberately far above any working run: the worst
+    # healthy tracking anywhere in this campaign is a few hundredths of a
+    # metre per second, and the excluded ones are in the tens.
+    TRACKING_VALID_MPS = 1.0
+    all_paired = [(cells[k]["rule"], cells[k]["actor"]) for k in order
+                  if "rule" in cells[k] and "actor" in cells[k]]
+    paired = [(r, a) for r, a in all_paired
+              if r["tracking_rmse_mps"] < TRACKING_VALID_MPS
+              and a["tracking_rmse_mps"] < TRACKING_VALID_MPS]
+    dropped = [(r, a) for r, a in all_paired if (r, a) not in paired]
+    if dropped:
+        para(doc, f"{len(dropped)} of the {len(all_paired)} settings are left "
+                  f"out of the comparison that follows, and appear in the "
+                  f"table above only. In those the car did not follow the "
+                  f"drive cycle at all, with tracking errors in the tens of "
+                  f"metres per second against hundredths everywhere else, so "
+                  f"the distance it covered is not the distance the cycle "
+                  f"asked for and energy per kilometre stops meaning "
+                  f"anything. They are the communication-delay settings, and "
+                  f"the section below them explains what went wrong there.")
+        healthy = max((max(r['tracking_rmse_mps'], a['tracking_rmse_mps'])
+                       for r, a in paired), default=0.0)
+        para(doc, f"The rule for leaving a setting out was chosen after those "
+                  f"runs were seen to fail, not before, so it is stated "
+                  f"plainly: a setting is excluded when either controller's "
+                  f"tracking error exceeds {TRACKING_VALID_MPS:.0f} metre per "
+                  f"second. Nothing in the campaign lies near that line. The "
+                  f"worst included run is {healthy:.3f} and the excluded ones "
+                  f"are in the tens, so the threshold could be moved by a "
+                  f"factor of ten in either direction without changing which "
+                  f"settings are dropped.")
     if paired:
         diffs = [a["equivalent_wh_per_km"] - r["equivalent_wh_per_km"]
                  for r, a in paired]
