@@ -3708,8 +3708,14 @@ def pil_campaign_section(doc: Document, pil) -> None:
          size=9, italic=True, colour=MUTED)
 
     figure(doc, DOCS / "figures" / "pil-energy.png",
-           "Energy on the comparable scale for both controllers across every "
-           "setting. Each point is one run on the chip.")
+           "Both controllers across every setting, measured on the chip. The "
+           "upper panel is energy on the comparable scale and the bars can be "
+           "compared: the scale starts at zero and the differences shown are "
+           "larger than the repeat spread measured below. The lower panel is "
+           "tracking error, and its bars cannot: repeats of one setting move "
+           "that quantity by about as much as the controllers differ, so the "
+           "panel is there to show that both controllers follow the cycle, "
+           "not to rank them. Each bar is one run.")
 
     # How much a number moves when nothing has changed. Without this the
     # table invites conclusions from differences that are smaller than the
