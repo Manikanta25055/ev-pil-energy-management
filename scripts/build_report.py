@@ -3603,6 +3603,32 @@ PIL_AXIS_TITLES = {
 }
 
 
+def pil_replicates(pil) -> dict:
+    """Runs that are the same scenario at a different seed, per controller.
+
+    The campaign did not plan a repeat, but it contains one. The baseline
+    setting -- US06, flat, 0.80 charge, floor noise, no delay, normal driver --
+    is the level of several axes at once, so it is run more than once per
+    controller with a different noise realisation each time. That gives a
+    measured run-to-run spread, which is what says whether any other
+    difference in the table is worth reading.
+    """
+    out: dict = {}
+    for r in pil["runs"]:
+        if (r["cycle"] == "us06" and r["grade_offset_rad"] == 0.0
+                and r["soc0"] == 0.80 and r["noise_scale"] == 1.0
+                and r["comm_delay_s"] == 0.0 and r["aggression"] == 1.0):
+            out.setdefault(r["controller"], []).append(r)
+    return {k: v for k, v in out.items() if len(v) > 1}
+
+
+def _spread(values) -> tuple:
+    n = len(values)
+    mean = sum(values) / n
+    sd = (sum((v - mean) ** 2 for v in values) / n) ** 0.5
+    return mean, sd, (100.0 * sd / mean if mean else float("nan"))
+
+
 def pil_cells(pil) -> dict:
     """{(axis, level): {controller: run}} for the campaign."""
     cells: dict = {}
@@ -3684,6 +3710,63 @@ def pil_campaign_section(doc: Document, pil) -> None:
     figure(doc, DOCS / "figures" / "pil-energy.png",
            "Energy on the comparable scale for both controllers across every "
            "setting. Each point is one run on the chip.")
+
+    # How much a number moves when nothing has changed. Without this the
+    # table invites conclusions from differences that are smaller than the
+    # measurement's own spread.
+    reps = pil_replicates(pil)
+    if reps:
+        rows = []
+        for controller in ("rule", "actor"):
+            if controller not in reps:
+                continue
+            runs_r = reps[controller]
+            e_mean, e_sd, e_pct = _spread(
+                [r["equivalent_wh_per_km"] for r in runs_r])
+            t_mean, t_sd, t_pct = _spread(
+                [r["tracking_rmse_mps"] for r in runs_r])
+            rows.append([
+                "Rules" if controller == "rule" else "Learned",
+                f"{len(runs_r)}",
+                f"{e_mean:.2f}", f"{e_sd:.2f}", f"{e_pct:.2f}%",
+                f"{t_mean:.4f}", f"{t_sd:.4f}", f"{t_pct:.1f}%",
+            ])
+        doc.add_heading("How much a number moves when nothing has changed",
+                        level=2)
+        para(doc, "The campaign did not plan a repeated measurement, but it "
+                  "contains one. The plain setting, the aggressive cycle on "
+                  "the flat with a full battery and clean sensors, is a level "
+                  "of several of the six things at once, so it was run more "
+                  "than once for each controller, each time with a different "
+                  "draw of sensor noise. Those runs should give the same "
+                  "answer. How far apart they actually land is the smallest "
+                  "difference anything else in this section is allowed to "
+                  "claim.")
+        table(doc,
+              ["Controller", "Repeats", "Energy mean, Wh/km", "Energy spread",
+               "Energy spread, %", "Tracking mean, m/s", "Tracking spread",
+               "Tracking spread, %"],
+              rows)
+        para(doc, "Table. Repeats of one identical setting, differing only in "
+                  "the random draw of sensor noise. MEASURED on the board.",
+             size=9, italic=True, colour=MUTED)
+
+        all_e = [p for c in reps.values()
+                 for p in [_spread([r["equivalent_wh_per_km"] for r in c])[2]]]
+        all_t = [p for c in reps.values()
+                 for p in [_spread([r["tracking_rmse_mps"] for r in c])[2]]]
+        para(doc, f"The two columns behave completely differently, and the "
+                  f"difference decides how the rest of this section may be "
+                  f"read. Energy repeats to within "
+                  f"{max(all_e):.2f} per cent, so the gap between the two "
+                  f"controllers, which is about half a per cent, is several "
+                  f"times the measurement's own spread and is a real "
+                  f"difference. Tracking error repeats only to within "
+                  f"{max(all_t):.0f} per cent, so two tracking figures in the "
+                  f"table that differ by less than that are not "
+                  f"distinguishable, and no ordering between them is claimed "
+                  f"here however suggestive the table looks. Each cell was "
+                  f"run once; this is what one run is worth.")
 
     # The headline, computed rather than typed: how often the learned
     # controller costs more energy than the rules, across the campaign.
