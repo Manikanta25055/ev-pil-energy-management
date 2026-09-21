@@ -56,3 +56,14 @@ with `--controller`.
   in both directions.
 - The A4 sweep may not mix firmware images; nothing under `firmware/` is
   edited at any point.
+
+## Housekeeping owed at acceptance
+
+- `docs/week10-pil-{actor,rule}.json` are per-arm intermediates. They are not in
+  the blast radius and criterion 8 requires an empty `git status --porcelain`,
+  so they are moved to the scratchpad once merged. The merge is a pure
+  concatenation, so `docs/week10-pil-campaign.json` holds every run verbatim and
+  nothing is lost.
+- `.claude/night/*.log` likewise: untracked, moved or removed before the sweep.
+- `reports/EV-PIL-status-report.docx` is regenerated from the merged campaign
+  and committed last, after the parity test passes against it.
