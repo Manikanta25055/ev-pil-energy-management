@@ -4059,6 +4059,117 @@ def pil_campaign_section(doc: Document, pil) -> None:
               "as the model renders them, not as a road produces them.")
 
 
+def pil_repeat_section(doc: Document, pil, pil2) -> None:
+    """The campaign run a second time, on the build that logs the ceiling.
+
+    Two things are owed at this point and this section pays both. The energy
+    reversal in the previous section rested on one run per setting, and the
+    explanation for it rested on a quantity nobody had recorded. A repeat on
+    instrumented firmware answers both at once.
+    """
+    if not pil or not pil2:
+        return
+
+    h1(doc, "The same campaign, run again on instrumented firmware", "pilrep")
+
+    para(doc, "The previous section reports one run per setting, and its "
+              "explanation for the energy result rests on a quantity that was "
+              "not being recorded when those runs were taken. Both of those "
+              "are weaknesses that a second campaign can remove, so the whole "
+              "thing was run again after adding the missing measurement to "
+              "the firmware.")
+    para(doc, "Note what that means for comparing the two. The repeat runs on "
+              "a build that differs from the first by these counters. Inside "
+              "each campaign the comparison between the two controllers is "
+              "clean, because both of its arms share one image. Across the "
+              "two campaigns the firmware is not identical, so they are shown "
+              "side by side and never pooled.")
+
+    a = {(r["scenario"], r["level"], r["controller"]): r for r in pil["runs"]}
+    b = {(r["scenario"], r["level"], r["controller"]): r for r in pil2["runs"]}
+    shared = sorted(set(a) & set(b))
+    valid = [k for k in shared
+             if a[k]["tracking_rmse_mps"] < 1.0
+             and b[k]["tracking_rmse_mps"] < 1.0]
+
+    if valid:
+        diffs = [abs(100.0 * (b[k]["equivalent_wh_per_km"]
+                              - a[k]["equivalent_wh_per_km"])
+                     / a[k]["equivalent_wh_per_km"]) for k in valid]
+        worst = max(diffs)
+        worst_k = valid[diffs.index(worst)]
+        doc.add_heading("Does it reproduce?", level=2)
+        para(doc, f"Across the {len(valid)} settings where both campaigns "
+                  f"tracked the cycle, the energy figures agree to "
+                  f"{sum(diffs) / len(diffs):.2f} per cent on average and "
+                  f"{worst:.2f} per cent at worst, the worst being "
+                  f"{PIL_AXIS_TITLES.get(worst_k[0], worst_k[0]).lower()} at "
+                  f"the {worst_k[1].replace('_', ' ')} setting for the "
+                  f"{'rules' if worst_k[2] == 'rule' else 'learned controller'}"
+                  f". The campaigns ran hours apart, on separately flashed "
+                  f"images, with the board reset between every run.")
+
+        pairs = sorted({(k[0], k[1]) for k in valid})
+        n_rev = sum(
+            1 for s, lv in pairs
+            if (s, lv, "actor") in b and (s, lv, "rule") in b
+            and b[(s, lv, "actor")]["equivalent_wh_per_km"]
+            < b[(s, lv, "rule")]["equivalent_wh_per_km"])
+        n_pairs = sum(1 for s, lv in pairs
+                      if (s, lv, "actor") in b and (s, lv, "rule") in b)
+        para(doc, f"The direction of the headline result is unchanged. In the "
+                  f"repeat the learned controller uses less energy than the "
+                  f"rules in {n_rev} of the {n_pairs} settings, against "
+                  f"{sum(1 for s, lv in pairs if a[(s, lv, 'actor')]['equivalent_wh_per_km'] < a[(s, lv, 'rule')]['equivalent_wh_per_km'])} "
+                  f"in the first campaign. Two independent campaigns is not "
+                  f"many, and neither is one run per cell within each, but "
+                  f"the result is no longer a single measurement.")
+
+    # The ceiling, now that it is recorded.
+    pl_rows = []
+    for controller, label in (("rule", "Rules"), ("actor", "Learned")):
+        vals = [r for r in pil2["runs"]
+                if r["controller"] == controller
+                and r["tracking_rmse_mps"] < 1.0
+                and r.get("p_limit_mean_w", 0) > 0]
+        if not vals:
+            continue
+        pl_rows.append([
+            label,
+            f"{min(r['p_limit_min_w'] for r in vals) / 1000:.0f}",
+            f"{sum(r['p_limit_mean_w'] for r in vals) / len(vals) / 1000:.0f}",
+            f"{max(r['p_limit_max_w'] for r in vals) / 1000:.0f}",
+        ])
+    if len(pl_rows) == 2:
+        doc.add_heading("The power ceiling, measured rather than inferred",
+                        level=2)
+        para(doc, "The previous section attributes the energy saving to the "
+                  "discharge power ceiling, and could only infer it from the "
+                  "current that follows from it. The firmware now records the "
+                  "ceiling it applies. This is what it applied.")
+        table(doc, ["Controller", "Lowest, kW", "Average, kW", "Highest, kW"],
+              pl_rows)
+        para(doc, "Table. The discharge power ceiling the energy manager set, "
+                  "over every setting where the car followed the cycle. "
+                  "MEASURED on the board.", size=9, italic=True, colour=MUTED)
+        para(doc, "The first thing this settles is a correction. Both "
+                  "controllers use the ceiling, across the same range. An "
+                  "earlier reading of this project held that only the learned "
+                  "one did, and that was wrong.")
+        r_mean = float(pl_rows[0][2])
+        a_mean = float(pl_rows[1][2])
+        if r_mean > 0:
+            para(doc, f"What separates them is how hard each holds it down "
+                      f"through the run: {pl_rows[0][2]} kilowatts on average "
+                      f"for the rules against {pl_rows[1][2]} for the learned "
+                      f"controller, which is "
+                      f"{100 * (r_mean - a_mean) / r_mean:.0f} per cent lower. "
+                      f"That is a sustained difference rather than a different "
+                      f"limit, and it is the quantity that produces the lower "
+                      f"peak currents reported in the previous section. The "
+                      f"explanation there can now be stated as a measurement.")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="reports/EV-PIL-status-report.docx")
@@ -4090,6 +4201,7 @@ def main() -> int:
     a4_sweep = load_a4_sweep()
     g3rep = load_g3_repeats()
     pil = load("week10-pil-campaign.json")
+    pil2 = load("week10-pil-campaign-repeat.json")
 
     cost_path = DOCS / "forecast-deploy-cost.csv"
     cost_rows = None
@@ -4134,6 +4246,7 @@ def main() -> int:
     port_section(doc, g1a, g5a, g3a, actora, g3, g3rep)
     a4_sweep_section(doc, a4_sweep)
     pil_campaign_section(doc, pil)
+    pil_repeat_section(doc, pil, pil2)
     negatives_section(doc)
     changes_section(doc)
     remaining_section(doc)
@@ -4156,6 +4269,7 @@ def main() -> int:
                ("A4 sweep (Arduino build)", a4_sweep),
                ("G3 repeats (Arduino build)", g3rep),
                ("PIL campaign", pil),
+               ("PIL repeat campaign", pil2),
                ("on-chip deployment", fullstack),
                ("distillation", dis))
     have = [n for n, v in tracked if v]
