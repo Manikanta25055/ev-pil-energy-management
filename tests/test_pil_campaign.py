@@ -88,12 +88,25 @@ class FakeBoard:
     actuation are sequenced and accounted for correctly.
     """
 
-    def __init__(self, torque_nm: float = 150.0, n_steps: int = 400):
+    def __init__(self, torque_nm: float = 150.0, n_steps: int = 400,
+                 frames_dropped: int = 0):
         self.torque_nm = torque_nm
         self.n_steps = n_steps
         self.seq = 0
         self.pending = None
         self.sent_states: list[dict] = []
+        self._frames_dropped = frames_dropped
+
+    @property
+    def stats(self) -> dict:
+        """A property, exactly as SerialLink.stats is.
+
+        The shape matters as much as the value: reading it as a method
+        returns a dict and calling that dict raises, which is how a whole
+        run was lost once.
+        """
+        return {"frames_ok": self.seq, "frames_bad": 0,
+                "frames_dropped": self._frames_dropped, "open_attempts": 1}
 
     def recv(self, timeout_s: float = 0.5):
         if self.seq >= self.n_steps:
@@ -161,3 +174,14 @@ def test_arm_check_passes_the_matching_pairs():
     from scripts.run_pil_campaign import check_arm
     check_arm({"controller": "actor", "actor_steps": 5965, "steps": 60000})
     check_arm({"controller": "rule", "actor_steps": 0, "steps": 60000})
+
+
+def test_host_dropped_frames_are_read_from_the_link_property():
+    """Regression: SerialLink.stats is a property, not a method."""
+    board = FakeBoard(n_steps=200, frames_dropped=4)
+    result = run_one(board, scenario=AXES["road_grade"][1], controller="rule",
+                     seed=1, max_steps=100, port="/dev/fake")
+    assert result["host_frames_dropped"] == 4
+    # The campaign total folds the host's count in with the board's, the way
+    # run_g3.py composes its dropped-frame figure.
+    assert result["dropped_frames"] >= 4

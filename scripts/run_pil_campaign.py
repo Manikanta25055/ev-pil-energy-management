@@ -235,6 +235,13 @@ def run_one(
                 diag_first = dict(stats)
             diag_last = dict(stats)
 
+    # `SerialLink.stats` is a property, not a method. Reading it here rather
+    # than in main() puts it on the path the fake-link tests exercise; when it
+    # lived in main() a mistyped call went unnoticed until it threw at the end
+    # of a twenty-three minute run and discarded it.
+    host_dropped = int(dict(getattr(link, "stats", {})).get(
+        "frames_dropped", 0))
+
     distance_km = state.distance_m / 1000.0
     energy_wh = net_ws / 3600.0
     aux_shed_wh = aux_shed_ws / 3600.0
@@ -287,7 +294,9 @@ def run_one(
         "actor_wcet_us": int(delta.get("actor_wcet_us", -1)),
         "ems_fallback_steps": int(delta.get("ems_fallback_steps", -1)),
         "loop_count": int(delta.get("loop_count", -1)),
-        "dropped_frames": int(sum(delta.get(p, 0) for p in DROPPED_PARTS)),
+        "host_frames_dropped": host_dropped,
+        "dropped_frames": int(sum(delta.get(p, 0)
+                                  for p in DROPPED_PARTS)) + host_dropped,
         "diag_delta": delta,
     }
 
@@ -383,9 +392,7 @@ def main() -> int:
         result = run_one(link, scenario=run.scenario,
                          controller=run.controller, seed=run.seed,
                          port=args.port, params=params, progress=True)
-        result["host_frames_dropped"] = int(link.stats()["frames_dropped"])
 
-    result["dropped_frames"] += result["host_frames_dropped"]
     check_arm(result)
     results = [r for r in results if key_of(r) != key_of(result)]
     results.append(result)
