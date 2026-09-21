@@ -342,7 +342,17 @@ def main() -> int:
     ap.add_argument("--out-json", required=True)
     ap.add_argument("--no-reset", action="store_true",
                     help="set by the re-exec; the board was just reset")
+    ap.add_argument("--max-steps", type=int, default=None,
+                    help="truncate each run; for smoke-testing this script "
+                         "against the board without spending a whole cycle. "
+                         "Results from a truncated run are not a campaign and "
+                         "may not be written to the campaign file.")
     args = ap.parse_args()
+
+    if args.max_steps is not None and "week10-pil-campaign" in args.out_json:
+        raise SystemExit(
+            "--max-steps produces truncated runs; refusing to write them to "
+            "the campaign file. Point --out-json somewhere else.")
 
     if args.axis:
         unknown = set(args.axis) - set(AXES)
@@ -391,7 +401,8 @@ def main() -> int:
     with SerialLink(args.port, args.baud) as link:
         result = run_one(link, scenario=run.scenario,
                          controller=run.controller, seed=run.seed,
-                         port=args.port, params=params, progress=True)
+                         port=args.port, params=params, progress=True,
+                         max_steps=args.max_steps)
 
     check_arm(result)
     results = [r for r in results if key_of(r) != key_of(result)]
