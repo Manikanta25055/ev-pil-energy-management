@@ -305,9 +305,13 @@ def summary(doc: Document, ladder, tf, cost_rows, g3, a2, sac, onchip,
             f"{w['mean']:.2f} watt-hours per kilometre against the "
             f"conventional controller's "
             f"{sac['baseline']['equivalent_wh_per_km']:.2f}, once the cabin "
-            f"heating it switched off is charged back at what it saved. It is "
-            f"reliably slightly worse, which is what week 7's offline optimum "
-            f"predicted. Section {ref('learned')}.",
+            f"heating it switched off is charged back at what it saved. On "
+            f"that cycle it is reliably slightly worse, which is what week 7's "
+            f"offline optimum predicted. Section {ref('learned')}. That "
+            f"measurement was taken on the highway cycle, and the "
+            f"processor-in-the-loop campaign in section {ref('pil')} finds the "
+            f"opposite on the aggressive cycle that was sealed for testing. "
+            f"Read the two together; neither on its own is the whole answer.",
             f"Removing the forecast from what the controller can see changes "
             f"nothing measurable: "
             f"{sac['a3']['diff_mean_wh_per_km']:+.3f} watt-hours per "
