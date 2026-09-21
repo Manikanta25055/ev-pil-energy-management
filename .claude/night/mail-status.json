@@ -1,0 +1,18 @@
+{
+ "criterion": 7,
+ "status": "NOT SENT - blocked",
+ "draft_created": true,
+ "draft_id": "r-2102797737439537886",
+ "message_id": "1a0c4f3bd4eafc36",
+ "to": "swathi.tangi@manipal.edu",
+ "from": "mgonugondlamanikanta@gmail.com",
+ "attachment": "reports/EV-PIL-status-report.docx",
+ "attachment_bytes": 2111358,
+ "blocker": "The Gmail and Drive tools both take attachment content as a base64 string inside the tool call. This report is 2,111,358 bytes, which is 2,815,144 base64 characters, and cannot be carried in a tool call. No available tool transfers a binary of this size.",
+ "why_not_sent_anyway": "The user authorised mailing the final report. An email to a supervisor with the report missing is a different action from the one authorised, it is irreversible, and a missing attachment reflects on the sender. The draft is written and waiting; attaching the file and pressing send is one step.",
+ "what_the_user_must_do": [
+  "Open Gmail, Drafts, 'EV PIL project - week 10 status report'",
+  "Attach reports/EV-PIL-status-report.docx",
+  "Send"
+ ]
+}
