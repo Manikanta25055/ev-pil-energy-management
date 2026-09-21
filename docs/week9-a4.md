@@ -395,3 +395,53 @@ expectation written before the IDF run holds unchanged on this build.
 What this section does not establish: a crossover duration, anything below
 1 s or above 5 s, and whether the medians' sign at any length is stable. The last
 would need repeat runs per duration, which were not done.
+
+## 11. The three lengths the prediction tabulated and the board had never run
+
+**Measured 2026-09-21**, same Arduino image as section 10, actor in the loop,
+eight onsets per length, `-DFAULT_INJECT=0` and the fallback switch passed
+explicitly in both directions. The sweep in section 10 stopped at 1 s and 5 s
+because those were the lengths the earlier campaigns had used; the prediction
+file tabulates 0.2 s, 0.5 s and 10 s as well, and none had been run on
+hardware. They have now, so the measurement covers the whole predicted range.
+
+| Outage | on, median | off, median | on, worst | off, worst | outages won, off / on / tie |
+|---|---|---|---|---|---|
+| 0.2 s | 0.037 | 0.026 | 0.096 | 0.150 | 4 / 3 / 1 |
+| 0.5 s | 0.135 | 0.062 | 0.571 | 0.365 | 6 / 1 / 1 |
+| 10 s | 3.579 | 4.470 | 13.216 | 24.704 | 4 / 4 / 0 |
+
+Peak absolute speed error in m/s over the outage and the 2 s after it.
+
+**The ten-second row is the strongest evidence the handling has anywhere.**
+Worst case 13.216 m/s with it against 24.704 without, where at 5 s the two were
+7.394 and 7.948. The individual outages split evenly, four each, which is the
+point: the ablation wins the ordinary ones narrowly and loses the bad ones by a
+wide margin. Its two worst are 24.704 m/s at the 505.4 s onset and 13.213 at
+16.0 s, both places where `v_ref` is low and falling — the same mechanism
+section 7 identified at 5 s, a stale torque command driving a vehicle that
+should be braking. The handling's worst, 13.216 m/s at the 587.0 s onset, is
+the same size as the ablation's *second* worst. Limping fails small; holding
+fails large, and the gap widens with the outage.
+
+**The 0.2 s row reverses the ordering and is not being called a crossover.**
+The shipped firmware has the smaller worst case, 0.096 m/s against 0.150. Both
+are tiny, the difference is 0.054 m/s, and each is whichever single onset of
+eight happened to be worst. Section 10's rule applies unchanged: at eight
+onsets these are not separable. The 4-to-5 s bracket is carried by an
+identifiable row; this is not, and nothing here revises the bracket.
+
+At 0.5 s the ordering is the familiar one — the ablation ahead on both median
+and worst — so the handling's cost in ordinary tracking is already present at
+half a second.
+
+Recovery current at 10 s is the one figure that does *not* separate the modes:
+126.7 A on against 127.0 A off at the median. Section 10 found the actor image
+holding current down relative to the IDF runs, and at this duration the two
+modes land on top of each other, which is consistent with the limit being set
+by the outer loop rather than by the handling.
+
+Data: `docs/week9-a4-arduino-{on,off}-{0.2,0.5,10}s.json`.
+
+What this section does not establish: any crossover duration, the stability of
+any median's sign, and anything about outages longer than 10 s.
