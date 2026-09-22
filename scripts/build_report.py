@@ -3607,6 +3607,21 @@ PIL_AXIS_TITLES = {
 }
 
 
+def plimit(run, key: str) -> int:
+    """The power ceiling, wherever the campaign file happens to keep it.
+
+    The campaign script records these three inside `diag_delta` with the rest
+    of the counters, not at the top level beside `ctrl_late`. Reading them from
+    the top level returns zero for every run, which does not raise: it silently
+    empties the list and the section that depends on them never renders. That
+    is exactly what happened to the first build of the repeat report, so the
+    lookup is written once, here, and both sites use it.
+    """
+    if key in run:
+        return int(run[key])
+    return int(run.get("diag_delta", {}).get(key, 0))
+
+
 def pil_replicates(pil) -> dict:
     """Runs that are the same scenario at a different seed, per controller.
 
@@ -3916,15 +3931,16 @@ def pil_campaign_section(doc: Document, pil) -> None:
             # does not, the older inference is printed with its caveat, so an
             # earlier campaign file still renders an honest section.
             pl = [(r, a) for r, a in cur_pairs
-                  if r.get("p_limit_mean_w", 0) > 0
-                  and a.get("p_limit_mean_w", 0) > 0]
+                  if plimit(r, "p_limit_mean_w") > 0
+                  and plimit(a, "p_limit_mean_w") > 0]
             if pl:
-                r_mean = sum(r["p_limit_mean_w"] for r, _ in pl) / len(pl)
-                a_mean = sum(a["p_limit_mean_w"] for _, a in pl) / len(pl)
-                r_max = max(r["p_limit_max_w"] for r, _ in pl)
-                a_max = max(a["p_limit_max_w"] for _, a in pl)
+                r_mean = sum(plimit(r, "p_limit_mean_w") for r, _ in pl) / len(pl)
+                a_mean = sum(plimit(a, "p_limit_mean_w") for _, a in pl) / len(pl)
+                r_max = max(plimit(r, "p_limit_max_w") for r, _ in pl)
+                a_max = max(plimit(a, "p_limit_max_w") for _, a in pl)
                 tighter = sum(1 for r, a in pl
-                              if a["p_limit_mean_w"] < r["p_limit_mean_w"])
+                              if plimit(a, "p_limit_mean_w")
+                              < plimit(r, "p_limit_mean_w"))
                 para(doc, "The cause is the discharge power ceiling, one of "
                           "the three things the energy manager sets. This is "
                           "measured rather than inferred: the ceiling the "
@@ -4131,14 +4147,14 @@ def pil_repeat_section(doc: Document, pil, pil2) -> None:
         vals = [r for r in pil2["runs"]
                 if r["controller"] == controller
                 and r["tracking_rmse_mps"] < 1.0
-                and r.get("p_limit_mean_w", 0) > 0]
+                and plimit(r, "p_limit_mean_w") > 0]
         if not vals:
             continue
         pl_rows.append([
             label,
-            f"{min(r['p_limit_min_w'] for r in vals) / 1000:.0f}",
-            f"{sum(r['p_limit_mean_w'] for r in vals) / len(vals) / 1000:.0f}",
-            f"{max(r['p_limit_max_w'] for r in vals) / 1000:.0f}",
+            f"{min(plimit(r, 'p_limit_min_w') for r in vals) / 1000:.0f}",
+            f"{sum(plimit(r, 'p_limit_mean_w') for r in vals) / len(vals) / 1000:.0f}",
+            f"{max(plimit(r, 'p_limit_max_w') for r in vals) / 1000:.0f}",
         ])
     if len(pl_rows) == 2:
         doc.add_heading("The power ceiling, measured rather than inferred",
