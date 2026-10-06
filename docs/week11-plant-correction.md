@@ -2,6 +2,9 @@
 
 **Date:** 2026-10-06
 **Fix:** commit `82ca2fe`, `src/evpil/plant/plant.py`
+**Data:** `docs/week11-plant-correction.json`, from
+`scripts/run_plant_correction.py`, which runs the pre-fix plant out of the
+repository history beside the corrected one
 **Tests:** `tests/plant/test_plant.py`, four new cases
 **Withdraws:** the energy result of `docs/week10-pil-campaign.md` sections 6.2
 to 6.4, the matching paragraph of `docs/hardware-pending.md`, and the
@@ -33,7 +36,8 @@ A 5 kW ceiling drove the whole of US06, to the metre, on 8 Wh/km.
 The learned controller's action space puts the ceiling between 40 kW and
 125 kW. On the chip it scored 176.4 Wh/km on US06 against 190.6 for the rules,
 at the same distance and the same tracking error. A constant 40 kW ceiling on
-the old plant scores 174.85.
+the old plant scores 174.85, and the deployed actor simulated on the old plant
+scores 176.71.
 
 Three things in the campaign's own tables were pointing at this:
 
@@ -64,8 +68,11 @@ SIMULATED, same conditions as section 1:
 | US06 | always-regen, 60 kW | 190.31 | 12.886 km | 0.0687 m/s | 1.158 m/s |
 | US06 | always-regen, 40 kW | 189.80 | 12.815 km | 0.5157 m/s | 3.751 m/s |
 | US06 | always-regen, 20 kW | 180.57 | 11.845 km | 2.9224 m/s | 9.464 m/s |
+| US06 | always-regen, 5 kW | 156.16 | 4.453 km | 16.1464 m/s | 25.647 m/s |
 | US06 | rules | 190.47 | 12.888 km | 0.0013 m/s | 0.017 m/s |
 | US06 | deployed actor (seed 3) | 190.71 | 12.824 km | 0.4815 m/s | 3.652 m/s |
+| WLTC 3b | rules | 175.99 | 23.266 km | 0.0006 m/s | 0.006 m/s |
+| WLTC 3b | deployed actor (seed 3) | 176.53 | 23.266 km | 0.0286 m/s | 0.485 m/s |
 | HWFET | rules | 153.90 | 16.507 km | 0.0003 m/s | 0.004 m/s |
 | HWFET | deployed actor (seed 3) | 154.07 | 16.507 km | 0.0003 m/s | 0.004 m/s |
 | UDDS | rules | 167.93 | 11.990 km | 0.0007 m/s | 0.009 m/s |

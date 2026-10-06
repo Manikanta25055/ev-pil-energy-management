@@ -307,11 +307,11 @@ def summary(doc: Document, ladder, tf, cost_rows, g3, a2, sac, onchip,
             f"{sac['baseline']['equivalent_wh_per_km']:.2f}, once the cabin "
             f"heating it switched off is charged back at what it saved. On "
             f"that cycle it is reliably slightly worse, which is what week 7's "
-            f"offline optimum predicted. Section {ref('learned')}. That "
-            f"measurement was taken on the highway cycle, and the "
-            f"processor-in-the-loop campaign in section {ref('pil')} finds the "
-            f"opposite on the aggressive cycle that was sealed for testing. "
-            f"Read the two together; neither on its own is the whole answer.",
+            f"offline optimum predicted. Section {ref('learned')}. The "
+            f"processor-in-the-loop campaign in section {ref('pil')} "
+            f"appeared to find the opposite on the aggressive cycle. That "
+            f"finding is withdrawn: it came from a fault in the vehicle "
+            f"model, described in section {ref('fix')}.",
             f"Removing the forecast from what the controller can see changes "
             f"nothing measurable: "
             f"{sac['a3']['diff_mean_wh_per_km']:+.3f} watt-hours per "
@@ -3309,6 +3309,207 @@ def actor_onchip_section(doc: Document, sac, onchip) -> None:
               + ref("negatives") + " records it.")
 
 
+def correction_section(doc: Document, corr, pilc) -> None:
+    """The plant fault behind the week-10 energy result, and the re-measurement.
+
+    Everything quantitative is read from the correction file and the corrected
+    campaign, so the section cannot drift from what was measured.
+    """
+    h1(doc, "Correction: the power ceiling did not slow the car", "fix")
+
+    if not corr:
+        para(doc, "The correction measurement had not been run when this "
+                  "report was generated.", italic=True, colour=MUTED)
+        return
+
+    rows_by = {(r["plant"], r["cycle"], r["arm"]): r for r in corr["rows"]}
+
+    para(doc, "Each energy manager sends the vehicle model three numbers, "
+              "and one of them is a ceiling on battery discharge power. Until "
+              "6 October 2026 the model applied that ceiling to the power it "
+              "billed and not to the torque it delivered. A controller that "
+              "set the ceiling below what the motor was drawing was charged "
+              "for the ceiling, and the car accelerated as if no ceiling "
+              "existed.")
+    para(doc, "The table shows it. One fixed ceiling is held for the whole "
+              "of the aggressive cycle, on the model as it stood and on the "
+              "model as it stands now.")
+
+    rows = []
+    for arm in sorted((a for (pl, c, a) in rows_by
+                       if pl == "before" and a.startswith("ceiling-")),
+                      key=lambda a: -int(a.split("-")[1][:-2])):
+        b = rows_by[("before", "us06", arm)]
+        a = rows_by.get(("after", "us06", arm))
+        rows.append([
+            f"{int(arm.split('-')[1][:-2])} kW",
+            f"{b['equivalent_wh_per_km']:.2f}",
+            f"{b['tracking_rmse_mps']:.4f}",
+            f"{a['equivalent_wh_per_km']:.2f}" if a else "—",
+            f"{a['tracking_rmse_mps']:.4f}" if a else "—",
+            f"{a['distance_km']:.3f}" if a else "—",
+        ])
+    table(doc,
+          ["Ceiling", "Before: energy, Wh/km", "Before: tracking error, m/s",
+           "After: energy, Wh/km", "After: tracking error, m/s",
+           "After: distance, km"],
+          rows)
+    para(doc, "Table. A constant power ceiling on US06, regeneration fully "
+              "on. SIMULATED on the laptop. The \"before\" columns run the "
+              "vehicle model from the commit preceding the fix, read out of "
+              "the repository history by scripts/run_plant_correction.py.",
+         size=9, italic=True, colour=MUTED)
+
+    lo = min((r for (pl, c, a), r in rows_by.items()
+              if pl == "before" and a.startswith("ceiling-")),
+             key=lambda r: r["equivalent_wh_per_km"])
+    op = rows_by[("before", "us06", "ceiling-250kw")]
+    para(doc, f"On the old model the lowest ceiling drove the same "
+              f"{lo['distance_km']:.2f} kilometres with the same tracking "
+              f"error for {lo['equivalent_wh_per_km']:.2f} watt-hours per "
+              f"kilometre, against {op['equivalent_wh_per_km']:.2f} with the "
+              f"ceiling open. That is not an efficient drive. It is a bill "
+              f"that stopped counting.")
+
+    doc.add_heading("Why this was the week-10 result", level=2)
+    b40 = rows_by.get(("before", "us06", "ceiling-40kw"))
+    ba = rows_by[("before", "us06", "actor")]
+    br = rows_by[("before", "us06", "rule")]
+    para(doc, f"The learned controller may set the ceiling anywhere from 40 "
+              f"to 125 kilowatts. On the old model it scores "
+              f"{ba['equivalent_wh_per_km']:.2f} watt-hours per kilometre on "
+              f"US06 against {br['equivalent_wh_per_km']:.2f} for the rules"
+              + (f", and a ceiling pinned at 40 kilowatts scores "
+                 f"{b40['equivalent_wh_per_km']:.2f}" if b40 else "")
+              + ". The campaign on the chip measured the same gap. Three "
+              "features of that campaign's own tables pointed here and were "
+              "read as something else.")
+    bullets(doc, [
+        "The learned controller finished below the offline optimum of "
+        "section " + ref("headroom") + " at equal tracking error. An optimum "
+        "is not beaten by seven per cent.",
+        "Its advantage grew with how hard the car was driven, on three "
+        "separate axes. Harder driving is where a ceiling binds for longest.",
+        "The advantage vanished on the highway and urban cycles, where "
+        "demand stays under the 40 kilowatt floor and no ceiling can bind.",
+    ])
+    para(doc, "The earlier explanation, that the learned controller saves "
+              "energy by shaving current peaks, was labelled as inferred. It "
+              "was wrong.")
+
+    doc.add_heading("The fix", level=2)
+    para(doc, "The motor now receives what the battery delivered, less the "
+              "auxiliary load, and acceleration is computed from the torque "
+              "that power can produce, and the pack's current limit is "
+              "treated the same way because it had the same fault. Nothing "
+              "else changed. A limit that does not bind leaves every output "
+              "bit for bit as it was, and a test asserts that.")
+
+    doc.add_heading("Both controllers on the corrected model", level=2)
+    rows = []
+    for cycle in ("wltc3b", "udds", "hwfet", "us06"):
+        for plant in ("before", "after"):
+            r = rows_by.get((plant, cycle, "rule"))
+            a = rows_by.get((plant, cycle, "actor"))
+            if not r or not a:
+                continue
+            gap = 100.0 * (a["equivalent_wh_per_km"]
+                           - r["equivalent_wh_per_km"]) / r["equivalent_wh_per_km"]
+            rows.append([
+                cycle.upper(), plant,
+                f"{r['equivalent_wh_per_km']:.2f}",
+                f"{a['equivalent_wh_per_km']:.2f}",
+                f"{gap:+.2f}%",
+                f"{r['tracking_rmse_mps']:.4f}",
+                f"{a['tracking_rmse_mps']:.4f}",
+            ])
+    table(doc,
+          ["Cycle", "Model", "Rules, Wh/km", "Learned, Wh/km",
+           "Learned vs rules", "Rules: tracking, m/s",
+           "Learned: tracking, m/s"],
+          rows)
+    para(doc, "Table. The rule manager and the deployed learned controller, "
+              "before and after the fix. SIMULATED on the laptop.",
+         size=9, italic=True, colour=MUTED)
+
+    ar = rows_by.get(("after", "us06", "rule"))
+    aa = rows_by.get(("after", "us06", "actor"))
+    if ar and aa and br:
+        para(doc, f"The rules barely move: {br['equivalent_wh_per_km']:.2f} "
+                  f"before, {ar['equivalent_wh_per_km']:.2f} after. Their "
+                  f"ceiling sits near 125 kilowatts and almost never binds. "
+                  f"The deployed learned controller goes from "
+                  f"{ba['equivalent_wh_per_km']:.2f} to "
+                  f"{aa['equivalent_wh_per_km']:.2f}, and its tracking error "
+                  f"on US06 rises from {ba['tracking_rmse_mps']:.4f} to "
+                  f"{aa['tracking_rmse_mps']:.4f} metres per second, with a "
+                  f"worst lag of {aa['tracking_max_mps']:.2f}. It was "
+                  f"trained on a model that paid it to lower the ceiling, "
+                  f"and on a model that does not, the habit only costs it "
+                  f"speed.")
+
+    doc.add_heading("What stands and what does not", level=2)
+    bullets(doc, [
+        "Withdrawn: the statement that the learned controller uses less "
+        "energy than the rules in 14 of 16 settings, and its repeat.",
+        "Unaffected: every timing result. Missed deadlines, inference time "
+        "and jitter are measured on the chip and do not pass through the "
+        "energy bookkeeping.",
+        "Unaffected: the offline optimum and the highway comparison of "
+        "section " + ref("learned") + ". No ceiling bound in either.",
+        "To be re-measured: the learned-controller runs of the "
+        "failure-handling sweep in section " + ref("a4sweep") + ", where "
+        "the ceiling also bound.",
+    ])
+
+    doc.add_heading("The campaign again, on the corrected model", level=2)
+    if not pilc:
+        para(doc, "The campaign was being re-run on the board against the "
+                  "corrected model when this report was generated.",
+             italic=True, colour=MUTED)
+        return
+
+    cells = pil_cells(pilc)
+    order = pil_order(pilc)
+    rows = []
+    n_valid = n_less = 0
+    for axis, level in order:
+        cell = cells[(axis, level)]
+        rule, actor = cell.get("rule"), cell.get("actor")
+        gap = "—"
+        if rule and actor:
+            g = 100.0 * (actor["equivalent_wh_per_km"]
+                         - rule["equivalent_wh_per_km"]) / rule["equivalent_wh_per_km"]
+            gap = f"{g:+.2f}%"
+            if (rule["tracking_rmse_mps"] < 1.0
+                    and actor["tracking_rmse_mps"] < 1.0):
+                n_valid += 1
+                n_less += g < 0
+        rows.append([
+            PIL_AXIS_TITLES.get(axis, axis), level.replace("_", " "),
+            f"{rule['tracking_rmse_mps']:.4f}" if rule else "—",
+            f"{actor['tracking_rmse_mps']:.4f}" if actor else "—",
+            f"{rule['equivalent_wh_per_km']:.2f}" if rule else "—",
+            f"{actor['equivalent_wh_per_km']:.2f}" if actor else "—",
+            gap,
+        ])
+    table(doc,
+          ["Varied", "Setting", "Rules: tracking error, m/s",
+           "Learned: tracking error, m/s", "Rules: energy, Wh/km",
+           "Learned: energy, Wh/km", "Learned vs rules"],
+          rows)
+    late = sum(r["ctrl_late"] for r in pilc["runs"])
+    steps = sum(r["steps"] for r in pilc["runs"])
+    para(doc, f"Table. {len(pilc['runs'])} runs on the board against the "
+              f"corrected vehicle model, one per cell. {steps:,} control "
+              f"steps, {late} of them late. MEASURED on the board.",
+         size=9, italic=True, colour=MUTED)
+    if n_valid:
+        para(doc, f"In the {n_valid} settings where both controllers "
+                  f"followed the cycle to within one metre per second, the "
+                  f"learned controller used less energy in {n_less}.")
+
+
 def negatives_section(doc: Document) -> None:
     h1(doc, "Results that went against expectation", key="negatives")
 
@@ -3672,6 +3873,15 @@ def pil_campaign_section(doc: Document, pil) -> None:
         return
 
     runs = pil["runs"]
+    para(doc, "WITHDRAWN IN PART. The energy comparison in this section is "
+              "not valid. The vehicle model let a controller lower its power "
+              "ceiling and be charged less energy for the same drive, and "
+              "the learned controller did exactly that. Section "
+              + ref("fix") + " gives the evidence and the corrected numbers. "
+              "The timing results in this section do not depend on the "
+              "vehicle model and stand as measured. The energy tables are "
+              "left in place as the record of what was reported.",
+         colour=ACCENT)
     para(doc, "Every result before this one compares the two energy managers "
               "under one set of conditions at a time. This campaign, the "
               "processor-in-the-loop or PIL campaign that week 10 of the plan "
@@ -4086,6 +4296,16 @@ def pil_repeat_section(doc: Document, pil, pil2) -> None:
 
     h1(doc, "The same campaign, run again on instrumented firmware", "pilrep")
 
+    para(doc, "WITHDRAWN IN PART. The energy comparison in this section is "
+              "not valid. The vehicle model let a controller lower its power "
+              "ceiling and be charged less energy for the same drive, and "
+              "the learned controller did exactly that. Section "
+              + ref("fix") + " gives the evidence and the corrected numbers. "
+              "The timing results in this section do not depend on the "
+              "vehicle model and stand as measured. The energy tables are "
+              "left in place as the record of what was reported.",
+         colour=ACCENT)
+
     para(doc, "The previous section reports one run per setting, and its "
               "explanation for the energy result rests on a quantity that was "
               "not being recorded when those runs were taken. Both of those "
@@ -4216,6 +4436,8 @@ def main() -> int:
     g3rep = load_g3_repeats()
     pil = load("week10-pil-campaign.json")
     pil2 = load("week10-pil-campaign-repeat.json")
+    corr = load("week11-plant-correction.json")
+    pilc = load("week11-pil-corrected.json")
 
     cost_path = DOCS / "forecast-deploy-cost.csv"
     cost_rows = None
@@ -4261,6 +4483,7 @@ def main() -> int:
     a4_sweep_section(doc, a4_sweep)
     pil_campaign_section(doc, pil)
     pil_repeat_section(doc, pil, pil2)
+    correction_section(doc, corr, pilc)
     negatives_section(doc)
     changes_section(doc)
     remaining_section(doc)
@@ -4284,6 +4507,8 @@ def main() -> int:
                ("G3 repeats (Arduino build)", g3rep),
                ("PIL campaign", pil),
                ("PIL repeat campaign", pil2),
+               ("plant correction", corr),
+               ("PIL campaign on the corrected plant", pilc),
                ("on-chip deployment", fullstack),
                ("distillation", dis))
     have = [n for n, v in tracked if v]
