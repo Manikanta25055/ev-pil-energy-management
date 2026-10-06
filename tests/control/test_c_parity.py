@@ -23,6 +23,8 @@ import pytest
 from evpil.control.pid import PidState, feedforward_torque_nm, pid_step
 from evpil.control.rule_ems import RuleParams, rule_action
 from evpil.control.sim import DEFAULT_GAINS
+from evpil.control.speed_estimators import KalmanSpeed
+from evpil.control.speed_filter import SpeedFilterState, speed_filter_step
 from evpil.plant.motor import clamp_torque
 
 HOST_TEST = Path("firmware/host_test")
@@ -45,7 +47,7 @@ def dump():
                          capture_output=True, text=True).stdout
 
     rows: dict[str, list[list[float]]] = {"ff": [], "lim": [], "pid": [],
-                                          "rule": []}
+                                          "filt": [], "kf": [], "rule": []}
     for line in out.splitlines():
         if line.startswith("#"):
             continue
@@ -85,6 +87,80 @@ def test_the_c_pid_matches_the_python_one_step_for_step(params, dump):
             f"torque at step {int(n)}"
         assert got_int == pytest.approx(st.integral_nm, rel=REL, abs=ABS), \
             f"integrator at step {int(n)}"
+
+
+def test_the_c_speed_filter_matches_the_python_one_step_for_step(dump):
+    assert len(dump["filt"]) == 6 * 120
+    st = SpeedFilterState()
+    for alpha, n, v, got in dump["filt"]:
+        if n == 0:
+            st = SpeedFilterState()
+        # Python refuses an alpha outside (0, 1]; the firmware cannot raise
+        # and falls back to no filter. Both are checked: the refusal in
+        # test_speed_filter.py, the fallback here.
+        st, want = speed_filter_step(st, v, alpha if 0.0 < alpha <= 1.0 else 1.0)
+        assert got == pytest.approx(want, rel=REL, abs=ABS), \
+            f"filter at alpha={alpha} step {int(n)}"
+
+
+def test_the_c_speed_filter_at_alpha_one_returns_its_input_exactly(dump):
+    rows = [r for r in dump["filt"] if r[0] == 1.0]
+    assert rows and all(v == got for _, _, v, got in rows)
+
+
+def test_the_firmware_defaults_to_no_speed_filter():
+    """Every gate and campaign so far was measured on the unfiltered loop. A
+    default that drifted would change all of them without a rebuild flag
+    anywhere saying so."""
+    text = Path("firmware/main/tasks.h").read_text()
+    assert "#define SPEED_FILTER_ALPHA 1.0f" in text
+    tasks = Path("firmware/main/tasks.c").read_text()
+    assert "s_speed_alpha = SPEED_FILTER_ALPHA" in tasks
+    assert "control_speed_filter_step(&s_speed_filt, v_meas" in tasks
+
+
+def test_the_c_kalman_speed_estimate_matches_the_python_one(params, dump):
+    """Fixed and adaptive, step for step, including the noise level the
+    adaptive one reads off the jitter."""
+    rows = dump["kf"]
+    assert len(rows) == 2 * 600
+    for mode in (0, 1):
+        kf = (KalmanSpeed(params, q_mps=0.002, r_mps=0.02, adaptive=True)
+              if mode else KalmanSpeed(params, q_mps=0.0005, r_mps=0.06))
+        seen_sigma = []
+        for m, n, v, tq, grade, got, got_sigma in rows:
+            if m != mode:
+                continue
+            want = kf.step(v_meas_mps=v, torque_prev_nm=tq, grade_rad=grade,
+                           dt_s=0.01)
+            assert got == pytest.approx(want, rel=REL, abs=ABS), \
+                f"estimate, mode {mode}, step {int(n)}"
+            if mode:
+                assert got_sigma == pytest.approx(kf._meter.sigma_mps,
+                                                  rel=1e-3, abs=1e-5), \
+                    f"noise level at step {int(n)}"
+                seen_sigma.append(got_sigma)
+        if mode:
+            # The dump has to make the adaptive arm adapt, or this would pass
+            # with the meter disconnected.
+            assert max(seen_sigma[400:]) > 5 * max(seen_sigma[100:290])
+
+
+def test_the_firmware_kalman_settings_are_the_tuned_ones():
+    """The settings are chosen by a script and typed into a header. This is
+    the check that the typing was done, and redone if the tuning is rerun."""
+    import json
+    import re
+    tuned = json.loads(Path("docs/week11-speed-arms-tuned.json").read_text())
+    h = Path("firmware/main/tasks.h").read_text()
+
+    def const(name):
+        return float(re.search(rf"#define {name}\s+([0-9.]+)f", h).group(1))
+
+    assert const("KALMAN_FIXED_Q_MPS") == tuned["b3"]["q_mps"]
+    assert const("KALMAN_FIXED_R_MPS") == tuned["b3"]["r_mps"]
+    assert const("KALMAN_ADAPT_Q_MPS") == tuned["b3a"]["q_mps"]
+    assert "#define SPEED_KALMAN 0" in h, "the Kalman estimate must be opt-in"
 
 
 def test_the_c_rule_manager_matches_the_python_one(params, dump):

@@ -257,3 +257,46 @@ memory. Compute cost is a real loss and is reported as one.
 Step 3 is a decision point for the user: if a classical arm meets every
 criterion in 7.3, building T is a choice about the paper's story, not about
 the controller.
+
+## 10. Outcome of stage 1 for the classical arms (2026-10-06)
+
+SIMULATED. Data: `docs/week11-speed-arms.json`, `docs/week11-fault-arms.json`,
+`-b5.json`, `-b6.json`. Scripts: `scripts/run_speed_arms.py`,
+`scripts/run_fault_arms.py`.
+
+**The classical arm meets every criterion in section 7.3. The transformer is
+not built.** Section 6 said that if T could not beat the best classical arm
+the classical arm ships, and after stage 1 there is no criterion left for T to
+win on.
+
+Three arms were added to section 6's list as the work showed they were needed:
+
+| Arm | What it adds | What it showed |
+|---|---|---|
+| B4 | B3a plus a fault test on the gap between reading and model | 80 of 80 named faults within 0.32 s, no false alarm in 3.8 h; on a car 10% heavier than the model, 52 false alarms an hour and 1.48 m/s tracking error |
+| B5 | a second filter state for acceleration the model does not know about | cures the heavier car (0.031 m/s, no false alarm); then misses 11 of 80 faults, because a small offset now looks like a heavier car |
+| B6 | B5, with the fault test moved to the gap between the reading and speed dead-reckoned from measured acceleration | 160 of 160 named faults within 0.21 s on both cars; no false alarm on either, at 10x noise, or through a noise step |
+
+What ships: the two-state Kalman estimate (B5) for the speed loop, with B6's
+detector on top.
+
+Noise criteria, B5: clean energy within 0.01% of B0 on all three cycles and
+clean tracking equal to B0's; 99.5% of the penalty recovered at 10x and at
+25x; tracking 0.053 m/s at worst.
+
+What B6 does not do well, none of it inside the criteria:
+
+- A 0.5 m/s offset at 10x noise is flagged in 0.2 s but the car still ends up
+  to 0.56 m/s off, against 0.62 with no detector.
+- In 16 of 160 fault runs the flag had not dropped 8 s after the sensor came
+  back.
+- A drifting offset at 10x noise takes about 1 s to flag.
+
+**The assumption this now rests on.** B6 trusts the acceleration measurement
+in place of the vehicle model, and the simulated accelerometer is white noise
+on the true longitudinal acceleration. A real one reads gravity along a slope
+and carries a bias. That is the first thing to check, and it can be checked
+without a board: run B6's detector over the logged speed and acceleration of
+the BMW i3 trips and count false alarms. If real sensor behaviour breaks it,
+that is where a learned model would have a case, and it would be trained on
+those logs rather than on simulated noise.
