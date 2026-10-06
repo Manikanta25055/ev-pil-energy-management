@@ -132,6 +132,7 @@ def simulate(
     delay_steps: int = 0,
     seed: int = 0,
     speed_filter_alpha: float = 1.0,
+    speed_estimator=None,
 ) -> Result:
     """Run one cycle closed-loop and return its control metrics.
 
@@ -143,6 +144,14 @@ def simulate(
     `speed_filter_alpha` low-passes the measured speed before the speed loop
     sees it (`evpil.control.speed_filter`). The default of 1.0 is no filter
     and leaves every result bit for bit as it was.
+
+    `speed_estimator` is the general form of the same thing: any object with
+    the `step` method of `evpil.control.speed_estimators.SpeedEstimator`. It
+    is given the measurement, the torque commanded on the previous step and
+    the grade, never the true speed. When it is passed the alpha is unused.
+
+    `speed_noise_mps` may also be an array with one value per step, for a
+    noise level that changes during the cycle.
     """
     rng = np.random.default_rng(seed)
     # The feedforward may be computed from a deliberately wrong vehicle. With
@@ -181,17 +190,29 @@ def simulate(
     aux_shed_ws = 0.0
     a_meas = 0.0
     p_batt_prev = 0.0
+    torque_prev = 0.0
+    noise_k = None
+    if not np.isscalar(speed_noise_mps):
+        noise_k = np.asarray(speed_noise_mps, dtype=float)
+        if noise_k.shape != (n,):
+            raise ValueError(
+                f"speed_noise_mps has shape {noise_k.shape}, cycle has {n} steps")
 
     for k in range(n):
         v_true = state.v_mps
-        v_meas = v_true + (rng.normal(0.0, speed_noise_mps)
-                           if speed_noise_mps > 0.0 else 0.0)
+        sigma = float(noise_k[k]) if noise_k is not None else speed_noise_mps
+        v_meas = v_true + (rng.normal(0.0, sigma) if sigma > 0.0 else 0.0)
         if delay_steps > 0:
             delay_buf.append(v_meas)
             v_meas = delay_buf.pop(0)
-        v_filt, v_meas = speed_filter_step(v_filt, v_meas, speed_filter_alpha)
-
         grade = float(cycle.grade_rad[k])
+        if speed_estimator is not None:
+            v_meas = float(speed_estimator.step(
+                v_meas_mps=v_meas, torque_prev_nm=torque_prev,
+                grade_rad=grade if ff_knows_grade else 0.0, dt_s=dt))
+        else:
+            v_filt, v_meas = speed_filter_step(v_filt, v_meas,
+                                               speed_filter_alpha)
 
         if k % OUTER_DECIMATION == 0:
             action = policy(Observation(
@@ -213,6 +234,7 @@ def simulate(
                        v_meas_mps=v_meas, torque_ff_nm=ff,
                        torque_limit_nm=limit, dt_s=dt)
         pid = out.state
+        torque_prev = out.torque_nm
 
         p_aux_full = aux_power_w(params.aux, t_ambient_c)
         p_aux = p_aux_full * (1.0 - action.aux_derate)
