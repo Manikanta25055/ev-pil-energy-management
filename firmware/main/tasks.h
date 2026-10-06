@@ -32,6 +32,24 @@
 #ifndef SPEED_FILTER_ALPHA
 #define SPEED_FILTER_ALPHA 1.0f
 #endif
+/* What turns the measured speed into the speed the loop controls on.
+
+   0  the first-order filter above (which at alpha 1.0 is nothing at all)
+   1  Kalman estimate with a fixed noise assumption
+   2  Kalman estimate that measures the noise from the speed jitter
+
+   The settings are the ones scripts/run_speed_arms.py --tune chose on a
+   training cycle (docs/week11-speed-arms-tuned.json), arms B3 and B3a.
+
+     ./scripts/arduino_build.sh -DSPEED_KALMAN=2 */
+#ifndef SPEED_KALMAN
+#define SPEED_KALMAN 0
+#endif
+#define KALMAN_FIXED_Q_MPS     0.0005f
+#define KALMAN_FIXED_R_MPS     0.06f
+#define KALMAN_ADAPT_Q_MPS     0.002f
+#define KALMAN_ADAPT_R0_MPS    0.02f
+#define KALMAN_R_FLOOR_MPS     0.005f
 #define INFER_PERIOD_MS  100
 #define EMS_PERIOD_MS    100
 #define DIAG_PERIOD_MS   500

@@ -30,8 +30,10 @@ endif()
 #   ./scripts/idf.sh -DRUN_G1_BENCHMARK=1 build gate G1, int8 MAC throughput
 #   ./scripts/idf.sh -DRUN_G5_BENCHMARK=1 build gate G5, encoder latency
 #   ./scripts/idf.sh -DSPEED_FILTER_ALPHA=0.30f build  fixed speed filter
+#   ./scripts/idf.sh -DSPEED_KALMAN=2 build    Kalman speed estimate, adaptive
 foreach(opt FAULT_INJECT FALLBACK_ENABLED CTRL_PIPELINED RUN_ACTOR_BENCH
-            RUN_G1_BENCHMARK RUN_G5_BENCHMARK SPEED_FILTER_ALPHA)
+            RUN_G1_BENCHMARK RUN_G5_BENCHMARK SPEED_FILTER_ALPHA
+            SPEED_KALMAN)
     if(DEFINED ${opt})
         target_compile_definitions(${COMPONENT_LIB} PRIVATE ${opt}=${${opt}})
         message(STATUS "evpil: ${opt}=${${opt}}")

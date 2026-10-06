@@ -120,6 +120,99 @@ float control_speed_filter_step(speed_filter_t *f, float v_meas_mps,
     return f->y_mps;
 }
 
+/* --- Kalman speed estimate, mirroring evpil.control.speed_estimators ----- */
+
+void control_jitter_push(jitter_meter_t *m, float v_meas_mps)
+{
+    m->new_block = false;
+    if (m->have_prev) m->diffs[m->n_diffs++] = v_meas_mps - m->prev;
+    m->prev = v_meas_mps;
+    m->have_prev = true;
+    if (m->n_diffs < JITTER_BLOCK_STEPS) return;
+
+    float mean = 0.0f;
+    for (int i = 0; i < JITTER_BLOCK_STEPS; i++) mean += m->diffs[i];
+    mean /= (float) JITTER_BLOCK_STEPS;
+    float var = 0.0f;
+    for (int i = 0; i < JITTER_BLOCK_STEPS; i++) {
+        float d = m->diffs[i] - mean;
+        var += d * d;
+    }
+    var /= (float) JITTER_BLOCK_STEPS;
+    m->n_diffs = 0;
+
+    /* White noise of deviation s on each sample spreads the difference of
+       two neighbours by s*sqrt(2). */
+    m->recent[m->head] = sqrtf(var) / sqrtf(2.0f);
+    m->head = (m->head + 1) % JITTER_BLOCKS;
+    if (m->n_recent < JITTER_BLOCKS) m->n_recent++;
+    float sum = 0.0f;
+    for (int i = 0; i < m->n_recent; i++) sum += m->recent[i];
+    m->sigma_mps = sum / (float) m->n_recent;
+    m->new_block = true;
+}
+
+void control_kalman_init(kalman_speed_t *k, float r_mps)
+{
+    *k = (kalman_speed_t) {0};
+    k->r2 = r_mps * r_mps;
+    k->p = k->r2;
+}
+
+float control_kalman_step(const vehicle_t *v, kalman_speed_t *k,
+                          float q_mps, bool adaptive, float r_floor_mps,
+                          float v_meas_mps, float torque_prev_nm,
+                          float grade_rad, float dt_s)
+{
+    if (adaptive) {
+        control_jitter_push(&k->meter, v_meas_mps);
+        if (k->meter.new_block) {
+            float r2 = k->meter.sigma_mps * k->meter.sigma_mps;
+            float floor2 = r_floor_mps * r_floor_mps;
+            k->r2 = (r2 > floor2) ? r2 : floor2;
+        }
+    }
+    if (!k->primed) {
+        k->x_mps = v_meas_mps;
+        k->primed = true;
+        return k->x_mps;
+    }
+
+    float x = k->x_mps;
+    float omega = (x / v->wheel_radius_m) * v->gear_ratio;
+
+    /* The motor's envelope, as evpil.plant.motor.clamp_torque has it: above
+       the speed limit only driving torque is withheld. */
+    float torque;
+    if (fabsf(omega) > v->speed_max_radps) {
+        torque = (omega >= 0.0f) ? fminf(0.0f, torque_prev_nm)
+                                 : fmaxf(0.0f, torque_prev_nm);
+    } else {
+        float limit = v->torque_max_nm;
+        if (fabsf(omega) > 0.0f) {
+            float envelope = v->power_max_w / fabsf(omega);
+            if (envelope < limit) limit = envelope;
+        }
+        torque = clampf(torque_prev_nm, -limit, limit);
+    }
+
+    float f_wheel = (torque >= 0.0f)
+        ? torque * v->gear_ratio * v->drivetrain_eta / v->wheel_radius_m
+        : torque * v->gear_ratio / (v->drivetrain_eta * v->wheel_radius_m);
+    float dir = (x == 0.0f) ? 0.0f : (x > 0.0f ? 1.0f : -1.0f);
+    float f_resist = v->c_rr * v->mass_kg * GRAV * cosf(grade_rad) * dir
+                   + 0.5f * RHO_KGM3 * v->cd * v->frontal_area_m2 * x * x * dir
+                   + v->mass_kg * GRAV * sinf(grade_rad);
+    float a = (f_wheel - f_resist) / (v->mass_kg * (1.0f + v->rot_mass_factor));
+
+    float x_pred = x + a * dt_s;
+    float p_pred = k->p + q_mps * q_mps;
+    float gain = p_pred / (p_pred + k->r2);
+    k->x_mps = x_pred + gain * (v_meas_mps - x_pred);
+    k->p = (1.0f - gain) * p_pred;
+    return k->x_mps;
+}
+
 /* --- rule-based energy manager, mirroring evpil.control.rule_ems --------- */
 
 #define SOC_REGEN_TAPER_START  0.85f

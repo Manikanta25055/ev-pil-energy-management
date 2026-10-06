@@ -55,6 +55,32 @@ int main(void)
         }
     }
 
+    /* The Kalman estimate, fixed and adaptive, over one sequence: a launch,
+       a cruise, a braking phase on a grade, with a jitter on the measurement
+       that grows tenfold half way so the adaptive arm has something to adapt
+       to. The measurement is not a simulation of anything; parity only needs
+       both sides to see the same numbers. */
+    printf("# kf: mode step v_meas torque grade v_est sigma\n");
+    for (int mode = 0; mode < 2; mode++) {
+        kalman_speed_t kf;
+        control_kalman_init(&kf, mode ? 0.02f : 0.06f);
+        for (int n = 0; n < 600; n++) {
+            float jit = (float) ((n * 37) % 11 - 5) / 5.0f;
+            float amp = (n < 300) ? 0.03f : 0.3f;
+            float base = (n < 200) ? 0.02f * (float) n
+                       : (n < 400) ? 4.0f + 0.002f * (float) (n - 200)
+                       : 4.4f - 0.015f * (float) (n - 400);
+            float v = 25.0f + base + amp * jit;
+            float tq = (n < 200) ? 180.0f : (n < 400) ? 35.0f : -120.0f;
+            float grade = (n < 400) ? 0.0f : 0.03f;
+            float est = control_kalman_step(&k_vehicle, &kf,
+                                            mode ? 0.002f : 0.0005f, mode,
+                                            0.005f, v, tq, grade, 0.01f);
+            printf("kf %d %d %.6f %.6f %.6f %.6f %.6f\n", mode, n, v, tq,
+                   grade, est, kf.meter.sigma_mps);
+        }
+    }
+
     printf("# rule: soc v blend p_limit derate\n");
     const float socs[] = {0.05f, 0.07f, 0.12f, 0.20f, 0.50f, 0.85f, 0.90f,
                           0.94f, 0.99f};
