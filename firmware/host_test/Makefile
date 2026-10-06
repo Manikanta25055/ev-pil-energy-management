@@ -9,6 +9,11 @@ test_protocol: test_protocol.c ../main/protocol.c
 test_control: test_control.c ../main/control.c
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 
+# Dumps the block features the decision model reads.
+# tests/control/test_features_c_parity.py diffs it against the Python copy.
+test_features: test_features.c ../main/features.c
+	$(CC) $(CFLAGS) -o $@ $^ -lm
+
 # Built against a weights header supplied on the include path, so the same
 # inference code the board runs can be checked without a board. The header
 # comes from evpil.control.actor.write_c_header; ACTOR_INC points at whichever
@@ -29,9 +34,10 @@ test_decode: test_decode.c ../main/actor.c
 	$(CC) -I$(ACTOR_INC) $(CFLAGS) -o $@ $^ -lm
 
 .PHONY: check clean
-check: test_protocol test_control
+check: test_protocol test_control test_features
 	./test_protocol
 	./test_control > /dev/null && echo "ok:   control dump builds and runs"
+	./test_features > /dev/null && echo "ok:   feature dump builds and runs"
 
 clean:
-	rm -f test_protocol test_control test_actor test_decode
+	rm -f test_protocol test_control test_actor test_decode test_features

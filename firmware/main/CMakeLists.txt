@@ -1,5 +1,5 @@
 set(EVPIL_SRCS "main.c" "bench_mac.c" "bench_encoder.c" "protocol.c" "link.c"
-               "timing.c" "tasks.c" "control.c")
+               "timing.c" "tasks.c" "control.c" "features.c")
 
 # The actor's weights are generated from a trained policy by
 # scripts/verify_actor.py --export. Compiling the inference code only when
