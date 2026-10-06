@@ -1,0 +1,414 @@
+{
+ "provenance": "saved board measurements only; no simulation",
+ "inputs": [
+  "docs/week10-pil-campaign.json",
+  "docs/week10-pil-campaign-repeat.json",
+  "docs/week11-pil-corrected-rule.json"
+ ],
+ "stats": {
+  "cells": 16,
+  "repeat_vs_first": {
+   "mean_pct": -0.024308143195579668,
+   "mean_abs_pct": 0.16409810076740555,
+   "worst_abs_pct": 0.5699974310944156
+  },
+  "corrected_vs_repeat": {
+   "mean_pct": 0.07075456927056606,
+   "mean_abs_pct": 0.17160977861795795,
+   "worst_abs_pct": 0.45962515701203355,
+   "mean_ci95_pct": [
+    -0.027942910963356174,
+    0.17065873494814965
+   ],
+   "cells_higher": 11
+  }
+ },
+ "moved": false,
+ "conclusion": "Across 16 valid cells the corrected rule arm differs from the repeat campaign by +0.07% on average (95% CI -0.03 to +0.17), 0.17% in size, 0.46% at worst, higher in 11 cells. The two week-10 campaigns, which differ by nothing but the day, differ by 0.16% in size and 0.57% at worst. The interval contains zero and the worst cell is within the spread already seen between identical campaigns: the correction did not move the rule arm.",
+ "rows": [
+  {
+   "scenario": "driving_condition",
+   "level": "urban",
+   "first_wh_per_km": 168.11376320649092,
+   "repeat_wh_per_km": 168.1142840308247,
+   "corrected_wh_per_km": 168.13351529702965,
+   "repeat_vs_first_pct": 0.00030980469645225384,
+   "corrected_vs_repeat_pct": 0.011439400474388961,
+   "rmse_mps": [
+    0.011810973837311197,
+    0.011217514375394363,
+    0.013138004502137134
+   ],
+   "peak_current_a": [
+    117.91045388729391,
+    118.03261827645963,
+    118.26035298101027
+   ],
+   "dropped_frames": [
+    10,
+    6,
+    8
+   ]
+  },
+  {
+   "scenario": "driving_condition",
+   "level": "highway",
+   "first_wh_per_km": 154.00529431821482,
+   "repeat_wh_per_km": 153.95383484866215,
+   "corrected_wh_per_km": 153.9605020994651,
+   "repeat_vs_first_pct": -0.033414091236594334,
+   "corrected_vs_repeat_pct": 0.0043306818628296995,
+   "rmse_mps": [
+    0.009239286187320407,
+    0.0030730267316196893,
+    0.0036306565305256333
+   ],
+   "peak_current_a": [
+    104.07717512296468,
+    96.85651520451576,
+    96.88751877916295
+   ],
+   "dropped_frames": [
+    35,
+    1,
+    4
+   ]
+  },
+  {
+   "scenario": "road_grade",
+   "level": "uphill",
+   "first_wh_per_km": 305.1377780940108,
+   "repeat_wh_per_km": 304.98669299507293,
+   "corrected_wh_per_km": 305.2622642020138,
+   "repeat_vs_first_pct": -0.049513731102579506,
+   "corrected_vs_repeat_pct": 0.09035515754298729,
+   "rmse_mps": [
+    0.032399334826452096,
+    0.01599802521927769,
+    0.03900167655447763
+   ],
+   "peak_current_a": [
+    337.79225225792885,
+    328.93554923487807,
+    340.02591862347373
+   ],
+   "dropped_frames": [
+    10,
+    4,
+    12
+   ]
+  },
+  {
+   "scenario": "road_grade",
+   "level": "flat",
+   "first_wh_per_km": 191.1552624017668,
+   "repeat_wh_per_km": 190.95369231568705,
+   "corrected_wh_per_km": 190.7483608759976,
+   "repeat_vs_first_pct": -0.10544835833821153,
+   "corrected_vs_repeat_pct": -0.10752944192877756,
+   "rmse_mps": [
+    0.03227292943271516,
+    0.027720852175914502,
+    0.014971982830430778
+   ],
+   "peak_current_a": [
+    302.581569233311,
+    283.9653325487079,
+    283.47719757544036
+   ],
+   "dropped_frames": [
+    9,
+    10,
+    4
+   ]
+  },
+  {
+   "scenario": "road_grade",
+   "level": "downhill",
+   "first_wh_per_km": 79.66592281415592,
+   "repeat_wh_per_km": 79.21182910065757,
+   "corrected_wh_per_km": 79.30093250282104,
+   "repeat_vs_first_pct": -0.5699974310944156,
+   "corrected_vs_repeat_pct": 0.11248749482888343,
+   "rmse_mps": [
+    0.01831450357728607,
+    0.007036768007180558,
+    0.010078279372453824
+   ],
+   "peak_current_a": [
+    245.65584379805355,
+    238.07255633873413,
+    239.7226855993838
+   ],
+   "dropped_frames": [
+    5,
+    0,
+    2
+   ]
+  },
+  {
+   "scenario": "sensor_noise",
+   "level": "floor",
+   "first_wh_per_km": 191.0397496175722,
+   "repeat_wh_per_km": 190.82655872580779,
+   "corrected_wh_per_km": 190.7547341530781,
+   "repeat_vs_first_pct": -0.1115950435399915,
+   "corrected_vs_repeat_pct": -0.037638666865491555,
+   "rmse_mps": [
+    0.028951850932662553,
+    0.01857384664392488,
+    0.020514068803519313
+   ],
+   "peak_current_a": [
+    306.1966120306413,
+    289.17450254804254,
+    286.82679332386647
+   ],
+   "dropped_frames": [
+    10,
+    4,
+    13
+   ]
+  },
+  {
+   "scenario": "sensor_noise",
+   "level": "elevated",
+   "first_wh_per_km": 192.2243820937105,
+   "repeat_wh_per_km": 191.50233081570892,
+   "corrected_wh_per_km": 191.33003255321043,
+   "repeat_vs_first_pct": -0.3756293921390097,
+   "corrected_vs_repeat_pct": -0.08997188794757083,
+   "rmse_mps": [
+    0.04648424114440097,
+    0.02192163336202659,
+    0.014476359123334042
+   ],
+   "peak_current_a": [
+    337.2617233762723,
+    330.3052695258085,
+    329.96150630004047
+   ],
+   "dropped_frames": [
+    15,
+    6,
+    3
+   ]
+  },
+  {
+   "scenario": "sensor_noise",
+   "level": "severe",
+   "first_wh_per_km": 200.6496825520918,
+   "repeat_wh_per_km": 200.6313394408661,
+   "corrected_wh_per_km": 201.55349154978654,
+   "repeat_vs_first_pct": -0.009141859081163162,
+   "corrected_vs_repeat_pct": 0.45962515701203355,
+   "rmse_mps": [
+    0.03275943972575656,
+    0.03228616538979744,
+    0.05477599556353592
+   ],
+   "peak_current_a": [
+    341.1500017425064,
+    341.1494181549964,
+    341.2009006681962
+   ],
+   "dropped_frames": [
+    5,
+    6,
+    14
+   ]
+  },
+  {
+   "scenario": "comm_delay",
+   "level": "none",
+   "first_wh_per_km": 190.88411713618206,
+   "repeat_wh_per_km": 191.16987558430205,
+   "corrected_wh_per_km": 190.72873899963767,
+   "repeat_vs_first_pct": 0.14970257997741765,
+   "corrected_vs_repeat_pct": -0.23075632775093613,
+   "rmse_mps": [
+    0.02154477095269796,
+    0.04015552585537396,
+    0.014420481487986313
+   ],
+   "peak_current_a": [
+    293.5120380835323,
+    285.1407222823412,
+    284.9799723244149
+   ],
+   "dropped_frames": [
+    5,
+    35,
+    4
+   ]
+  },
+  {
+   "scenario": "driver_aggression",
+   "level": "normal",
+   "first_wh_per_km": 190.94832941018578,
+   "repeat_wh_per_km": 191.64550655351186,
+   "corrected_wh_per_km": 190.99210010988492,
+   "repeat_vs_first_pct": 0.365112983957272,
+   "corrected_vs_repeat_pct": -0.3409453502863591,
+   "rmse_mps": [
+    0.023993846160252,
+    0.04824985432115716,
+    0.027631544425493645
+   ],
+   "peak_current_a": [
+    295.230166979557,
+    329.3524469505608,
+    301.65155897209223
+   ],
+   "dropped_frames": [
+    7,
+    18,
+    10
+   ]
+  },
+  {
+   "scenario": "driver_aggression",
+   "level": "brisk",
+   "first_wh_per_km": 196.82520844805723,
+   "repeat_wh_per_km": 196.45301282522857,
+   "corrected_wh_per_km": 197.16218558034166,
+   "repeat_vs_first_pct": -0.18909957000090571,
+   "corrected_vs_repeat_pct": 0.36098848519263704,
+   "rmse_mps": [
+    0.0451133760112048,
+    0.030615074687577626,
+    0.04498429549793351
+   ],
+   "peak_current_a": [
+    335.53593745225015,
+    326.2265102129891,
+    336.42883336516417
+   ],
+   "dropped_frames": [
+    10,
+    6,
+    10
+   ]
+  },
+  {
+   "scenario": "driver_aggression",
+   "level": "aggressive",
+   "first_wh_per_km": 203.25544003229427,
+   "repeat_wh_per_km": 204.28821262442364,
+   "corrected_wh_per_km": 204.46487803654298,
+   "repeat_vs_first_pct": 0.5081155967905593,
+   "corrected_vs_repeat_pct": 0.08647851476586421,
+   "rmse_mps": [
+    0.07532653507504082,
+    0.11038781520266731,
+    0.09810439400653824
+   ],
+   "peak_current_a": [
+    338.47366611378084,
+    338.5336830336776,
+    338.52546025571024
+   ],
+   "dropped_frames": [
+    3,
+    18,
+    10
+   ]
+  },
+  {
+   "scenario": "driving_condition",
+   "level": "aggressive_mixed",
+   "first_wh_per_km": 190.79075168550662,
+   "repeat_wh_per_km": 190.73436962287005,
+   "corrected_wh_per_km": 191.40966477909822,
+   "repeat_vs_first_pct": -0.0295517797055056,
+   "corrected_vs_repeat_pct": 0.35405006321798105,
+   "rmse_mps": [
+    0.01630212844897483,
+    0.01611347381141763,
+    0.04360680985166178
+   ],
+   "peak_current_a": [
+    284.29401975704917,
+    280.99118837964926,
+    312.27556793496956
+   ],
+   "dropped_frames": [
+    4,
+    5,
+    0
+   ]
+  },
+  {
+   "scenario": "battery_state",
+   "level": "high",
+   "first_wh_per_km": 190.65825454985304,
+   "repeat_wh_per_km": 190.59848757870603,
+   "corrected_wh_per_km": 190.930037717944,
+   "repeat_vs_first_pct": -0.03134769658315051,
+   "corrected_vs_repeat_pct": 0.17395213542870103,
+   "rmse_mps": [
+    0.0107361200035335,
+    0.0070367650568915144,
+    0.026333426539134206
+   ],
+   "peak_current_a": [
+    275.8458596965871,
+    272.38588043524584,
+    285.76673161989356
+   ],
+   "dropped_frames": [
+    2,
+    0,
+    10
+   ]
+  },
+  {
+   "scenario": "battery_state",
+   "level": "medium",
+   "first_wh_per_km": 190.6119178114788,
+   "repeat_wh_per_km": 190.7931491357399,
+   "corrected_wh_per_km": 191.00027373614463,
+   "repeat_vs_first_pct": 0.0950786951529059,
+   "corrected_vs_repeat_pct": 0.10855976817982782,
+   "rmse_mps": [
+    0.009641824688874027,
+    0.0179667891760927,
+    0.026533583898966887
+   ],
+   "peak_current_a": [
+    296.42028312135807,
+    298.4244524712375,
+    308.9829601864201
+   ],
+   "dropped_frames": [
+    2,
+    0,
+    8
+   ]
+  },
+  {
+   "scenario": "battery_state",
+   "level": "low",
+   "first_wh_per_km": 190.47272972566975,
+   "repeat_wh_per_km": 190.46794695755514,
+   "corrected_wh_per_km": 190.8044046328878,
+   "repeat_vs_first_pct": -0.0025109988823546203,
+   "corrected_vs_repeat_pct": 0.17664792460205803,
+   "rmse_mps": [
+    0.014623400334092557,
+    0.013715014863808252,
+    0.020637032073665244
+   ],
+   "peak_current_a": [
+    311.316647717117,
+    311.31636218749424,
+    312.9899102514086
+   ],
+   "dropped_frames": [
+    3,
+    3,
+    6
+   ]
+  }
+ ]
+}
