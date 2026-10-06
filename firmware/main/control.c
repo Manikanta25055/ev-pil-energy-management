@@ -352,14 +352,18 @@ float control_fault_kalman_step(const vehicle_t *v, fault_kalman_t *f,
         f->quiet = quiet ? f->quiet + 1 : 0;
         if (f->quiet >= FAULT_CLEAR_COUNT) {
             f->flagged = false;
-            f->n_gap = 0;
             /* The sensor has agreed with the dead-reckoned speed, within the
-               band, for half a second: take its reading as the new starting
-               point for both. Dead reckoning drifts while a fault lasts, and
-               carrying that drift past the fault makes the mean test raise
-               the flag again on a healthy sensor. The filter keeps the
-               unknown acceleration it held before the fault. */
-            v_dr = v_meas_mps;
+               band, for half a second: move the dead-reckoned speed onto it.
+               Dead reckoning drifts while a fault lasts, and carrying that
+               drift past the fault makes the mean test raise the flag again
+               on a healthy sensor. The move is the mean gap over the window,
+               not this one sample's: at ten times the noise floor a single
+               reading is 0.2 m/s out. The filter keeps the unknown
+               acceleration it held before the fault. */
+            float mean_gap = 0.0f;
+            for (int i = 0; i < f->n_gap; i++) mean_gap += f->gap[i];
+            v_dr += mean_gap / (float) f->n_gap;
+            f->n_gap = 0;
             if (f->good.valid) {
                 k->x_mps = f->good.x_mps;   k->p = f->good.p;
                 k->d_mps2 = f->good.d_mps2; k->p_vd = f->good.p_vd;

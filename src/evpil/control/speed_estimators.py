@@ -491,14 +491,16 @@ class KinematicFaultKalman(KalmanSpeed):
             self._quiet = self._quiet + 1 if quiet else 0
             if self._quiet >= s.clear_count:
                 self.flagged = False
+                # The sensor has agreed with the dead-reckoned speed, within
+                # the band, for half a second. Move the dead-reckoned speed
+                # onto it. Dead reckoning drifts while a fault lasts, and
+                # carrying that drift past the fault makes the mean test
+                # raise the flag again on a healthy sensor. The move is the
+                # mean gap over the window, not this one sample's: at ten
+                # times the noise floor a single reading is 0.2 m/s out.
+                v_dr += sum(self._gap) / len(self._gap)
                 self._gap.clear()
                 self._pull.clear()
-                # The sensor has agreed with the dead-reckoned speed, within
-                # the band, for half a second. Take its reading as the new
-                # starting point for both. Dead reckoning drifts while a
-                # fault lasts, and carrying that drift past the fault makes
-                # the mean test raise the flag again on a healthy sensor.
-                v_dr = v_meas_mps
                 # The filter keeps the unknown acceleration it held before
                 # the fault.
                 if self._good is not None:
