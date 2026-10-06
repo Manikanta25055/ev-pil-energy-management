@@ -3360,6 +3360,12 @@ def correction_section(doc: Document, corr, pilc) -> None:
               "the repository history by scripts/run_plant_correction.py.",
          size=9, italic=True, colour=MUTED)
 
+    figure(doc, DOCS / "figures" / "plant-correction.png",
+           "One fixed power ceiling on US06, before the fix in orange and "
+           "after it in blue. Before, a lower ceiling reduced the energy "
+           "billed and left tracking and distance untouched. After, it costs "
+           "both. The horizontal axis is not to scale. SIMULATED.")
+
     lo = min((r for (pl, c, a), r in rows_by.items()
               if pl == "before" and a.startswith("ceiling-")),
              key=lambda r: r["equivalent_wh_per_km"])
