@@ -3037,12 +3037,10 @@ def a4_sweep_section(doc: Document, pairs) -> None:
          size=9, italic=True, colour=MUTED)
 
     figure(doc, DOCS / "figures" / "week9-a4-arduino-sweep.png",
-           "The failure handling across outage lengths of one to five "
-           "seconds. Blue is the shipped firmware, orange has the handling "
-           "removed. The lines only join the measured points; nothing between "
-           "them was measured. The figure predates the 0.2, 0.5 and 10 second "
-           "rows and does not show them; the table above is the complete "
-           "sweep.")
+           "The failure handling across outage lengths of 0.2 to 10 "
+           "seconds, on a log axis. Blue is the shipped firmware, orange has "
+           "the handling removed. The lines only join the measured points; "
+           "nothing between them was measured.")
 
     # Where the worst case changes hands, read from the data rather than typed,
     # so adding an outage length cannot leave a stale bracket in the prose.

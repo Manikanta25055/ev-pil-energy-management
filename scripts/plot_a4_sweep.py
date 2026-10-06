@@ -24,10 +24,12 @@ import matplotlib.pyplot as plt
 
 ON_COLOUR = "#2f6f9f"
 OFF_COLOUR = "#c26a2f"
-DURATIONS = (1, 2, 3, 4, 5)
+# File-name tags, so 0.2 s reads week9-a4-arduino-on-0.2s.json.
+DURATIONS = ("0.2", "0.5", "1", "2", "3", "4", "5", "10")
+SECONDS = [float(s) for s in DURATIONS]
 
 
-def load_pair(docs: Path, s: int):
+def load_pair(docs: Path, s: str):
     on = json.loads((docs / f"week9-a4-arduino-on-{s}s.json").read_text())
     off = json.loads((docs / f"week9-a4-arduino-off-{s}s.json").read_text())
     onsets_on = [r["onset_s"] for r in on["blackouts"]]
@@ -61,9 +63,14 @@ def main() -> int:
         for idx, colour, label in ((0, ON_COLOUR, "handling on (shipped)"),
                                    (1, OFF_COLOUR, "handling off (A4)")):
             ys = [p[idx][key][stat] for p in pairs]
-            ax.plot(DURATIONS, ys, "o-", color=colour, label=label)
-        ax.set_xticks(DURATIONS)
-        ax.set_xlabel("outage length, s")
+            ax.plot(SECONDS, ys, "o-", color=colour, label=label)
+        # 0.2 s to 10 s spans a factor of fifty; a linear axis would pile the
+        # short outages on top of each other.
+        ax.set_xscale("log")
+        ax.set_xticks(SECONDS)
+        ax.set_xticklabels(DURATIONS)
+        ax.minorticks_off()
+        ax.set_xlabel("outage length, s (log scale)")
         ax.set_ylabel(ylabel)
         ax.set_title(title, fontsize=10)
         ax.grid(alpha=0.25)
