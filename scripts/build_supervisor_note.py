@@ -86,8 +86,8 @@ def build_note(sac, campaign=None, a4=None, robustness=None):
                 "the new sweep separately from historical measurements.")
     doc.add_heading("Robustness work and remaining decision", level=1)
     text = ("The proposed speed-loop decision transformer was dropped. The "
-            "classical filter and sensor-fault detector remain on the "
-            "unmerged feature/decision-model branch. ")
+            "classical filter and sensor-fault detector are merged into the "
+            "code base and switched off by default. ")
     if robustness:
         v = robustness["verdict"]
         text += (f"SIMULATED B6: {v['named faults run']} named faults, "
@@ -99,8 +99,8 @@ def build_note(sac, campaign=None, a4=None, robustness=None):
              "unchecked. The detector has lingering flags and weak small-offset "
              "recovery. Only the earlier one-state Kalman filter has a C port. "
              "B5 and B6 need firmware implementation and parity checks before "
-             "board testing. No board result is claimed. Merging and measuring "
-             "this arm remains a separate decision.")
+             "board testing. No board result is claimed. Measuring this arm "
+             "on the board remains a separate decision.")
     doc.add_paragraph(text)
     doc.add_paragraph("Draft for review; this script does not send the note.")
     return doc

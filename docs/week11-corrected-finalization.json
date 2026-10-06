@@ -1,0 +1,90 @@
+{
+  "summary": {
+    "runs": 36,
+    "valid_settings": 16,
+    "excluded_settings": 2,
+    "excluded": [
+      [
+        "comm_delay",
+        "one_period"
+      ],
+      [
+        "comm_delay",
+        "three_periods"
+      ]
+    ],
+    "actor_less": 1,
+    "actor_more": 15,
+    "ties": 0,
+    "mean_gap_pct": 0.9350353901060898,
+    "ctrl_late": 0,
+    "steps": 2282832
+  },
+  "source_sha256": {
+    "scripts/build_report.py": "7bbbdd1edddf9dec189367178f55240498118dda0c8f2e95e5a4155447a1a6f4",
+    "scripts/plot_pil.py": "185ec85fe016ee0b4ada86b94f471335869b7f4603c98c50705fb9b6e2ca1447",
+    "scripts/plot_a4_sweep.py": "af031753d28cde63392c5616cfd01681f0fc64a67440de0c7fff498ee53dc3f6",
+    "scripts/build_supervisor_note.py": "fef78356fd4e2b94f3ce5e1ae41305243f75a0ac0aadf605c4bf4c084f4ed2d6",
+    "scripts/corrected_campaign.py": "d4d7de860634f275abfdae43aa8351bdde7708ef5602bd7aaaf509c6012bf45b",
+    "scripts/finalize_corrected_campaign.py": "973a99b82c005cc4c5c121d6b347bc403f368ba26814b074158ccf4b91101deb",
+    "scripts/arduino_build.sh": "ef08b440aec31b53e29276294933a5e98210f13574323f35dfa351c9b509d226",
+    "tests/test_corrected_finalization.py": "71ceb65749c559346d7d8b53b5c803ac909c77243a7f0c33b5cbe314eb861ccc",
+    "AGENTS.md": "ba7eb298a78f1442a3f332e5a4f8f31cf59524dfbf2d1ebc29d0f4fee7993789",
+    "src/evpil/plant/plant.py": "462e34a5b33a3d228a25c6f276815520a6fcd4a5d66d3042b0ec63d87ebe7bf4",
+    "firmware/main/sac_actor_weights.h": "98baa704cf5d9e64c25079d7169190c9853de72982a955c0895d613e6d4db246"
+  },
+  "measurement_sha256": {
+    "docs/week11-pil-corrected.json": "4a0e1b6809a42acd5b0c46f1c155607fb9d96c9f512ae06f9b3623f4e8e251ac",
+    "docs/week11-sac-corrected.json": "e2f53ae928b9d59c012223ce63ffbe9b2a5ebfa63f221973fd1e03df2345cd12",
+    "docs/week11-a4-on-0.2s.json": "ef96ee5c2f6e1c178a1f005d0c033cf02de646ff5ad7b548f14c03d44377cdac",
+    "docs/week11-a4-off-0.2s.json": "9d164ec00d94df4100657be85e3e59b433c97c7bcad2779cd704b93d8137f7cc",
+    "docs/week11-a4-on-0.5s.json": "a5c7cdac606c866a85ba5338938e6c2d2c4621e188b2d1d1dd490cc67be4c532",
+    "docs/week11-a4-off-0.5s.json": "e022629b8e84a70dbdb7b0ec099013b2b1153c8abf01893a6b23501cab41bc28",
+    "docs/week11-a4-on-1s.json": "febefc496134a90496e9e6b6de54fbdc2b1502ea67fb0611d5295bab0f370f9b",
+    "docs/week11-a4-off-1s.json": "efd942a6650ae9a80e2a0582f8ee6afa3198d06347290026382136cc27ef2807",
+    "docs/week11-a4-on-2s.json": "a184289d73165244777eb864332d48eb08da03f81f579ca932ae3b5f2ae3d954",
+    "docs/week11-a4-off-2s.json": "3378e03e10381994018a032aa1b53c6f8fa6a23892bbe44fb41ba89db2051579",
+    "docs/week11-a4-on-3s.json": "2cff5b9ca707796a5a75d702ab1e6760e52665d2286bb49e41d5383ea54f9d6a",
+    "docs/week11-a4-off-3s.json": "9914d3d2406cb50b63ec345eced70d8598a9c17158014676f392e3a9c3a44bc8",
+    "docs/week11-a4-on-4s.json": "7b28ca690800c83a047ac77fc3e4fee1b806304bd04697361dedfee9a81a61ed",
+    "docs/week11-a4-off-4s.json": "37a92c7adf7c25f0f08bd9945fc5efa59cad482d14e127187deb3fe274a8e72b",
+    "docs/week11-a4-on-5s.json": "e5bba376ab8f5c1f4d494fee84975f4a2f94e2867c2dd1ba2d3a66b7afc9090c",
+    "docs/week11-a4-off-5s.json": "e6eb87f69819dee1af7fc9b71efbff6652922ce2bbe72488f399b0e923aca660",
+    "docs/week11-a4-on-10s.json": "7c02bf700dffa909f5a60936596d0b3bb872761d66eadf445c7e36b1e04d1356",
+    "docs/week11-a4-off-10s.json": "830313bfc8551c4ba791aa0add6614d91a485f186be291d1d3a875f7166656d9"
+  },
+  "output_sha256": {
+    "reports/EV-PIL-status-report.docx": "440a86f5342b3111b372bb1b303a72da8ce0df92718fa07d1282938ed6b4ccbe",
+    "reports/supervisor-correction-note.docx": "e52afbc5e1dbf28ea14839ab59d864504854d1b39f81df4443d8ca611f10fd49",
+    "docs/figures/pil-energy-corrected.png": "7eb1e4e983916bbff1c549c302eb1e6422f65fb0327e7c0e704117c850e6114d",
+    "docs/figures/week11-a4-corrected-sweep.png": "714be369109ed5331aa881736b2c657db3bcb533d8d6b99465ef0ff3cc5cd7a0"
+  },
+  "full_tests_passed": true,
+  "full_tests": "538 passed on the merged tree, 2026-10-07",
+  "normal_actor_firmware_restored": true,
+  "simulation_only_robustness_sha256": {
+    "docs/week11-fault-arms-b6.json": "1cea5c2028d7f2beaa3a13bae98931f039228bb9bfce0d9408d15c4d61d17763"
+  },
+  "visual_review_pending": false,
+  "visual_review": {
+    "when": "2026-10-07T02:27:38+05:30",
+    "by": "Claude Code, night run of 2026-10-07",
+    "renderer": "Microsoft Word export to PDF, pages rasterised with PyMuPDF. The finisher's LibreOffice renderer is not installed on this machine.",
+    "render_directory": "/private/tmp/evpil-corrected-review/word",
+    "pages": {
+      "EV-PIL-status-report": 66,
+      "supervisor-correction-note": 2
+    },
+    "how": "every page of both documents viewed: the report as nine contact sheets of eight pages, the note at full size; text spans checked for size and fonts from the PDF",
+    "found": [
+      "no overlapping or clipped text, tables or figures on any page",
+      "no text span under 8 pt; report body Times New Roman, headings Calibri, note Calibri throughout",
+      "new tables reconciled with docs/week11-pil-corrected.json and the sixteen A4 files",
+      "both documents were rebuilt after the merge so that they no longer call the branch unmerged, and reviewed again"
+    ],
+    "not_fixed": [
+      "text inside the figures is below 8 pt at the printed width, in the new figures as in every earlier one: they are drawn 13 in wide and placed at 6.4 in. Pre-existing convention across the report, left alone"
+    ]
+  },
+  "note": "The finisher stopped at its render step; this manifest was written by hand to its schema after the review."
+}

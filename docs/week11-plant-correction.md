@@ -100,11 +100,100 @@ campaigns, since the actor's ceiling bound in them. The sensor-noise
 observation (rules degrade with noise, 191 to 201 Wh/km) is on the rule arm,
 whose ceiling did not bind, and is re-checked in the corrected campaign.
 
-## 6. What is being re-run
+## 6. What was re-run
 
 1. Five seeds of SAC per arm retrained on the corrected plant:
-   `docs/week11-sac-corrected.json`, actors in `data/actors-corrected/`.
-2. The 36-run PIL campaign on the board against the corrected plant:
-   `docs/week11-pil-corrected-{rule,actor}.json`.
+   `docs/week11-sac-corrected.json`.
+2. The 36-run PIL campaign on the board against the corrected plant, and the
+   A4 sweep: section 7.
 
-Results are appended below when they exist.
+## 7. The campaign on the corrected plant, MEASURED
+
+**Run 2026-10-06 to 2026-10-07** on the board, Arduino build,
+`-DFAULT_INJECT=0 -DFALLBACK_ENABLED=1`. Data: `docs/week11-pil-corrected.json`
+(36 runs; the two arms are also kept separately as `-rule.json` and
+`-actor.json`). The learned arm is the actor retrained on the corrected plant:
+five seeds per arm, 154.86 +- 0.51 Wh/km on HWFET for the
+no-forecast arm against 153.90 for the rules, seed 3 chosen on validation
+(`docs/week11-sac-corrected.json`).
+
+2,282,832 control steps, 0 late.
+
+| Setting | Rules, Wh/km | Learned, Wh/km | Learned vs rules | Rules: tracking RMSE, m/s | Learned: tracking RMSE, m/s |
+|---|---|---|---|---|---|
+| driving_condition / urban | 168.13 | 169.30 | +0.70% | 0.0131 | 0.0156 |
+| driving_condition / highway | 153.96 | 154.40 | +0.29% | 0.0036 | 0.0035 |
+| road_grade / uphill | 305.26 | 305.21 | -0.02% | 0.0390 | 0.2366 |
+| road_grade / flat | 190.75 | 191.43 | +0.36% | 0.0150 | 0.2287 |
+| road_grade / downhill | 79.30 | 83.83 | +5.71% | 0.0101 | 0.1931 |
+| sensor_noise / floor | 190.75 | 191.81 | +0.55% | 0.0205 | 0.2295 |
+| sensor_noise / elevated | 191.33 | 192.90 | +0.82% | 0.0145 | 0.2175 |
+| sensor_noise / severe | 201.55 | 210.53 | +4.45% | 0.0548 | 0.1921 |
+| comm_delay / none | 190.73 | 191.76 | +0.54% | 0.0144 | 0.2299 |
+| comm_delay / one period | 349.52 | 378.26 | +8.22% (excluded) | 31.4772 | 25.6688 |
+| comm_delay / three periods | 359.78 | 339.20 | -5.72% (excluded) | 43.3592 | 30.3715 |
+| driver_aggression / normal | 190.99 | 191.98 | +0.52% | 0.0276 | 0.2281 |
+| driver_aggression / brisk | 197.16 | 197.38 | +0.11% | 0.0450 | 0.3306 |
+| driver_aggression / aggressive | 204.46 | 204.75 | +0.14% | 0.0981 | 0.5042 |
+| driving_condition / aggressive mixed | 191.41 | 191.48 | +0.03% | 0.0436 | 0.2262 |
+| battery_state / high | 190.93 | 191.37 | +0.23% | 0.0263 | 0.2332 |
+| battery_state / medium | 191.00 | 191.63 | +0.33% | 0.0265 | 0.1955 |
+| battery_state / low | 190.80 | 191.20 | +0.21% | 0.0206 | 0.1678 |
+
+**The learned controller uses less energy than the rule manager in
+1 of the 16 valid settings, and +0.94% on average.** The week-10 campaign
+reported less in 14 of 16 and 8.28% on average. The one setting it wins
+(uphill, -0.02%) is smaller than the gap between two identical campaigns.
+
+It also follows the cycle less well. On every US06-based setting its tracking
+error is about 0.2 m/s where the rules hold 0.02 to 0.05, and 0.50 against
+0.10 under aggressive driving. The ceiling it sets now costs it speed, which
+is what the ceiling should always have cost.
+
+The two link-delay settings are excluded for the reason given in
+`docs/week10-pil-campaign.md` section 6.5: neither controller follows the
+cycle in them, in any campaign.
+
+Four rule cells were first taken while other jobs were loading the laptop
+(21 to 54 dropped frames). They were run again on a quiet machine and the
+first takes are kept, unmerged, in `docs/week11-pil-corrected-rule-disturbed.json`.
+
+### The link-outage sweep (ablation A4) again
+
+Same eight lengths and eight paired onsets as `docs/week9-a4.md` sections 10
+and 11, with the retrained actor in the loop. Data:
+`docs/week11-a4-{on,off}-{len}s.json`. Peak speed error in m/s.
+
+| Outage | Handling on, median | Handling off, median | Handling on, worst | Handling off, worst |
+|---|---|---|---|---|
+| 0.2 s | 0.060 | 0.059 | 0.228 | 0.182 |
+| 0.5 s | 0.171 | 0.103 | 0.571 | 0.202 |
+| 1 s | 0.353 | 0.157 | 1.341 | 0.370 |
+| 2 s | 0.674 | 0.496 | 3.203 | 1.486 |
+| 3 s | 0.915 | 0.812 | 5.189 | 1.408 |
+| 4 s | 1.211 | 1.548 | 6.670 | 3.727 |
+| 5 s | 1.638 | 1.440 | 7.396 | 7.971 |
+| 10 s | 3.715 | 5.328 | 13.275 | 18.187 |
+
+The worst case still changes hands between 4 s and 5 s, and the 10 s row is
+still the handling's strongest. These files are a separate campaign from the
+week-9 ones, on a different plant and a different actor, and are not pooled
+with them.
+
+## 8. Why the rule arm moved
+
+It did not. Early in the corrected campaign a few US06 cells of the rule arm
+read 0.1 to 0.3% above the repeat campaign, and that was noted as something to
+look at, since the correction should not touch a controller whose ceiling does
+not bind.
+
+`scripts/check_rule_arm.py` compares the three campaigns that ran the same 18
+rule cells with the same seeds (`docs/week11-rule-arm-check.json`). Across the
+16 valid cells the corrected arm differs from the repeat campaign by
++0.07% on average, with a 95% interval of -0.03 to +0.17, and 0.46% at
+worst. The two week-10 campaigns, which differ by nothing but the day, differ
+by 0.16% in size and 0.57% at worst. The interval contains zero and the
+worst cell is inside the spread between identical campaigns.
+
+The early impression came from four cells, three of which were the disturbed
+ones.

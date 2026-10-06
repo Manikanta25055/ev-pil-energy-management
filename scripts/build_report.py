@@ -3730,11 +3730,10 @@ def remaining_section(doc: Document, pilc=None, a4_corrected=None) -> None:
               + " Corrected-model link-outage sweep: "
               + ("complete." if a4_corrected else "pending.")
               + " The proposed speed-loop decision transformer was dropped. "
-              "The classical filter and detector remain on the separate "
-              "feature/decision-model branch, with simulation evidence only. "
+              "The classical filter and detector are merged into the code "
+              "base, switched off by default, with simulation evidence only. "
               "B5 and B6 still need a C port and parity checks before board testing. "
-              "Merging that branch and measuring it on the board requires "
-              "a separate decision.")
+              "Measuring them on the board requires a separate decision.")
     para(doc, "The following week-by-week plan records the earlier project "
               "schedule. Current correction status is stated above.",
          italic=True, colour=MUTED)

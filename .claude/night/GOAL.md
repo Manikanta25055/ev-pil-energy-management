@@ -1,165 +1,126 @@
-# Night Protocol anchor — EV PIL, final measurements and report
+# Night Protocol anchor — EV PIL, close out the corrected campaign
 
-> **AMENDED 2026-09-21 23:19 by the operator, in chat, after the first
-> objective completed.** The original objective is met: criteria 1-6 and 8
-> passed, and criterion 7 was finished by the operator sending the drafted
-> email. The new instruction is: *"now log p_limit_w and repeat the campaign"*.
->
-> This amendment does one thing the original anchor forbade in terms — it
-> opens `firmware/` — and it is recorded here rather than assumed, because
-> "Any edit to `firmware/` source" was the first line of OUT OF SCOPE and the
-> single thing I flagged as most likely to tempt a run off course. The
-> operator has now asked for exactly it. See OBJECTIVE 2 below.
+Written 2026-10-07 00:58 IST. Deadline: 07:00 IST the same morning.
+The previous anchor is kept as `.claude/night/GOAL-2026-09-21.md`.
 
-Written 2026-09-21. Board present and confirmed on the native USB-Serial/JTAG
-connector: VID 0x303A, "USB JTAG_serial debug unit", MAC 1C:DB:D4:46:24:E8,
-`/dev/cu.usbmodem101`. Every board script defaults to `/dev/cu.usbmodem1101`,
-so **pass `--port /dev/cu.usbmodem101` on every run**.
+Two agents share this repository tonight. The board chain
+(`.claude/night/chain_after_rule.sh`, PID 76070) is mine. The finisher
+(`scripts/finalize_corrected_campaign.py`, PID 86802) is the Codex agent's and
+starts when the chain exits. The criteria below are about outcomes and do not
+care which agent produced them. Read `.claude/night/finalize-corrected-status.json`
+before every increment.
 
 ## OBJECTIVE
-
-Measure the two outstanding on-board campaigns (the week-10 PIL campaign and
-ablation A4's three untested outage lengths), regenerate the status report from
-the measurement files, and email that report to swathi.tangi@manipal.edu.
+The corrected-plant work is closed: every measurement is taken, reported,
+reviewed, tested and committed locally, with no job running and no loose end
+recorded, so that the model research in `docs/2026-10-07-model-advancement-research.md`
+can start from a settled baseline.
 
 ## ACCEPTANCE
+All commands run from the repository root, `/Users/manikantagonugondla/Desktop/EV Drives Improvement`.
 
-1. **The board is the native-port S3 before any campaign step.**
-   VERIFY: `ioreg -p IOUSB -l -w 0 | grep -c '"USB Product Name" = "USB JTAG_serial debug unit"'`
-   EXPECT: prints `1`, exit 0. If it prints `0`, stop and record a HALT; do not
-   substitute a simulated board.
+1. The corrected campaign is complete and clean — VERIFY:
+   `python3 -c "import json;r=json.load(open('docs/week11-pil-corrected.json'))['runs'];k={(x['scenario'],x['level'],x['controller']) for x in r};assert len(r)==len(k)==36;assert sum(x['controller']=='rule' for x in r)==18;assert all(x['ctrl_late']==0 for x in r);assert all((x['actor_steps']>0)==(x['controller']=='actor') for x in r);assert not [x for x in r if x['tracking_rmse_mps']<1.0 and x['dropped_frames']>16];print('OK campaign')"`
+   — EXPECT: prints `OK campaign`, exit 0.
 
-2. **The PIL campaign is run on the board and recorded: 6 scenario axes x 2
-   controllers x 3 seeds = 36 runs.** Controllers are `rule` (the rule-based
-   EMS) and `actor` (the deployed SAC policy,
-   `data/actors/sac-without-forecast-seed3.npz`). Scenario axes are exactly the
-   six in spec section 6.5: `driving_condition`, `road_grade`, `battery_state`,
-   `sensor_noise`, `comm_delay`, `driver_aggression`.
-   VERIFY:
-   ```
-   python3 -c "import json;d=json.load(open('docs/week10-pil-campaign.json'));r=d['runs'];assert len(r)==36,len(r);assert {x['scenario'] for x in r}=={'driving_condition','road_grade','battery_state','sensor_noise','comm_delay','driver_aggression'};assert {x['controller'] for x in r}=={'rule','actor'};assert {x['seed'] for x in r}=={0,1,2};assert all(x['port']=='/dev/cu.usbmodem101' for x in r);assert all(isinstance(x['ctrl_late'],int) and isinstance(x['dropped_frames'],int) and x['steps']>0 for x in r);print('OK')"
-   ```
-   EXPECT: prints `OK`, exit 0.
-   Note: this asserts the runs were taken on the board and recorded, **not**
-   that any result came out a particular way. A campaign that records a bad
-   number still satisfies this criterion; a campaign that fabricates a good one
-   does not.
+2. The A4 sweep on the corrected plant is complete and paired — VERIFY:
+   `python3 -c "import json;L=['0.2','0.5','1','2','3','4','5','10'];[(lambda a,b:(a['n_blackouts']==8 and [x['onset_s'] for x in a['blackouts']]==[x['onset_s'] for x in b['blackouts']]) or (_ for _ in ()).throw(AssertionError(s)))(json.load(open(f'docs/week11-a4-on-{s}s.json')),json.load(open(f'docs/week11-a4-off-{s}s.json'))) for s in L];print('OK a4')"`
+   — EXPECT: prints `OK a4`, exit 0.
 
-3. **Ablation A4's three untested outage lengths are measured on the same
-   Arduino build, both handling modes, 8 onsets each.** The prediction's 0.2 s,
-   0.5 s and 10 s rows are the only untested ones.
-   VERIFY:
-   ```
-   python3 -c "import json;ms=[('on',True),('off',False)];ds=['0.2','0.5','10'];[ (lambda p,d,fe: (lambda j: (j['n_blackouts']==8 and j['fallback_enabled']==fe and abs(j['blackout_s']-float(d))<1e-9 and j['port']=='/dev/cu.usbmodem101') or (_ for _ in ()).throw(AssertionError(p)))(json.load(open(p))))(f'docs/week9-a4-arduino-{m}-{d}s.json',d,fe) for m,fe in ms for d in ds];print('OK')"
-   ```
-   EXPECT: prints `OK`, exit 0.
+3. The report and the supervisor note are rebuilt from the final data — VERIFY:
+   `test reports/EV-PIL-status-report.docx -nt docs/week11-pil-corrected.json && test reports/supervisor-correction-note.docx -nt docs/week11-pil-corrected.json && echo OK`
+   — EXPECT: prints `OK`.
 
-4. **The whole test suite passes and has not shrunk.** 421 tests passed at
-   commit 065c1af; new campaign code adds tests, it does not remove any.
-   VERIFY: `PYTHONPATH="src:." python3 -m pytest tests -q`
-   EXPECT: exit 0, and the summary line reports at least `421 passed`.
+4. Both documents have been looked at page by page and the manifest says so — VERIFY:
+   `python3 -c "import json;d=json.load(open('docs/week11-corrected-finalization.json'));assert d['visual_review_pending'] is False;print('OK review')"`
+   — EXPECT: prints `OK review`, exit 0.
 
-5. **The report regenerates from the measurement files and carries both new
-   campaigns.** Its numbers must come from the JSON, never typed in.
-   VERIFY:
-   ```
-   PYTHONPATH="src:." python3 scripts/build_report.py && python3 -c "from docx import Document;d=Document('reports/EV-PIL-status-report.docx');t='\n'.join(p.text for p in d.paragraphs)+'\n'.join(c.text for tb in d.tables for rw in tb.rows for c in rw.cells);assert 'PIL campaign' in t;assert '0.2 s' in t and '10 s' in t;print('OK')"
-   ```
-   EXPECT: both commands exit 0, second prints `OK`.
+5. The correction note carries the board result — VERIFY:
+   `grep -c "^## 7. The campaign on the corrected plant, MEASURED" docs/week11-plant-correction.md`
+   — EXPECT: `1`.
 
-6. **The report's campaign figures match the measurement file.** A hardcoded
-   number is the failure this criterion exists to catch.
-   VERIFY: `PYTHONPATH="src:." python3 -m pytest tests/test_report_pil_parity.py -q`
-   EXPECT: exit 0. (This test is to be written; it re-reads
-   `docs/week10-pil-campaign.json` and asserts every campaign number rendered
-   into the docx equals the value in the JSON to the printed precision.)
+6. The rule-arm shift against the earlier campaign is explained from data, not left as a remark — VERIFY:
+   `python3 -c "import json;d=json.load(open('docs/week11-rule-arm-check.json'));assert d['conclusion'] and d['rows'];print('OK rule-arm')" && grep -c "^## 8. Why the rule arm moved" docs/week11-plant-correction.md`
+   — EXPECT: prints `OK rule-arm` then `1`.
 
-7. **The report is emailed to the supervisor, with the .docx attached, and a
-   receipt is written.** The user authorised this send explicitly and by name in
-   the handoff: to `swathi.tangi@manipal.edu`, from `mgonugondlamanikanta@gmail.com`.
-   That authorisation covers **this one message to this one recipient** and
-   nothing else. Send it only after criteria 1-6 all pass.
-   VERIFY:
-   ```
-   python3 -c "import json;r=json.load(open('.claude/night/mail-receipt.json'));assert r['to']=='swathi.tangi@manipal.edu';assert r['from']=='mgonugondlamanikanta@gmail.com';assert r['attachment']=='reports/EV-PIL-status-report.docx';assert r['message_id'];print('OK')"
-   ```
-   EXPECT: prints `OK`, exit 0. The receipt is written from the value the Gmail
-   send tool returns; if the send fails, write no receipt and record a HALT.
+7. The full test suite passes — VERIFY:
+   `PYTHONPATH="src:." python3 -m pytest tests -q`
+   — EXPECT: exit 0, last line reports passed and no failed or error.
 
-8. **Nothing outside the blast radius was modified, and the work is committed.**
-   VERIFY:
-   ```
-   git status --porcelain && git diff --name-only 065c1af..HEAD | grep -vE '^(scripts/run_pil_campaign\.py|scripts/plot_pil\.py|scripts/build_report\.py|src/evpil/control/scenarios\.py|docs/week10-pil-campaign\.(json|csv|md)|docs/week9-a4-arduino-[0-9a-z.\-]+\.json|docs/week9-a4\.md|docs/hardware-pending\.md|docs/figures/pil-[a-z0-9\-]+\.(png|svg)|docs/superpowers/specs/2026-08-30-ev-pil-energy-management-design\.md|tests/.*|reports/EV-PIL-status-report\.docx|\.claude/night/.*)$' | wc -l | tr -d ' '
-   ```
-   EXPECT: `git status --porcelain` prints nothing (clean tree), and the count
-   prints `0`.
+8. Nothing is left running — VERIFY:
+   `pgrep -f "run_pil_campaign|run_arm.sh|chain_after_rule|rerun_disturbed|corrected_a4|run_a4_closedloop|finalize_corrected_campaign" ; echo "rc=$?"`
+   — EXPECT: last line `rc=1`.
+
+9. Everything is committed locally and the tree is clean, apart from the operator's own research file — VERIFY:
+   `git status --porcelain | grep -v "docs/2026-10-07-model-advancement-research.md" | wc -l | tr -d ' '`
+   — EXPECT: `0`.
+
+10. The handoff says the work is closed — VERIFY:
+    `grep -c "^Corrected campaign: closed" .remember/remember.md`
+    — EXPECT: `1`.
+
+11. Project memory records the measured result — VERIFY:
+    `grep -c "week11-pil-corrected.json" "$HOME/.claude/projects/-Users-manikantagonugondla-Desktop-EV-Drives-Improvement/memory/ev-pil-gate-status.md"`
+    — EXPECT: `1` or more.
+
+12. The Kalman branch is merged, or the reason it could not be is written down
+    — VERIFY:
+    `(git merge-base --is-ancestor feature/decision-model HEAD || test -s .claude/night/MERGE-BLOCKED.md) && echo OK`
+    — EXPECT: prints `OK`. If merged, criterion 7 must pass on the merged tree.
+
+> **AMENDED 2026-10-07 00:58 by the operator, in chat:** "you can merge the
+> kalman branch if there are no issues". Criterion 12 and the merge clause
+> below record that. "No issues" is taken to mean all four of: the merge has no
+> conflicts; the full suite passes on the merged tree; the firmware defaults
+> are unchanged (`SPEED_FILTER_ALPHA 1.0f`, `SPEED_KALMAN 0`); and it happens
+> only after the board chain and the finisher have both exited, because the
+> chain builds from `firmware/main/` and the finisher hashes its sources. If
+> any of the four fails, the merge is aborted and `MERGE-BLOCKED.md` says which.
 
 ## BLAST RADIUS
+May be created or modified:
 
-Only these paths may be created or modified:
+- `docs/week11-*.json`, `docs/week11-*.csv`, `docs/week11-plant-correction.md`
+- `docs/figures/pil-energy-corrected.png`, `docs/figures/week11-a4-corrected-sweep.png`
+- `reports/EV-PIL-status-report.docx`, `reports/supervisor-correction-note.docx`
+- `scripts/build_report.py`, `scripts/plot_a4_sweep.py`, `scripts/plot_pil.py`,
+  `scripts/build_supervisor_note.py`, `scripts/corrected_campaign.py`,
+  `scripts/finalize_corrected_campaign.py`, and one new read-only analysis
+  script `scripts/check_rule_arm.py`
+- `tests/test_corrected_finalization.py`
+- `AGENTS.md` (commit as written; no edits)
+- `.claude/night/*`, `.remember/*`
+- `~/.claude/projects/-Users-manikantagonugondla-Desktop-EV-Drives-Improvement/memory/*`
 
-```
-scripts/run_pil_campaign.py          (new)
-scripts/plot_pil.py                  (new)
-scripts/build_report.py              (add the two new sections only)
-src/evpil/control/scenarios.py       (new)
-docs/week10-pil-campaign.json
-docs/week10-pil-campaign.csv
-docs/week10-pil-campaign.md
-docs/week9-a4-arduino-{on,off}-{0.2,0.5,10}s.json
-docs/week9-a4.md                     (append the new outage rows)
-docs/hardware-pending.md             (close item 3)
-docs/figures/pil-*.png|svg
-docs/superpowers/specs/2026-08-30-ev-pil-energy-management-design.md
-                                     (open-items and week-10 rows only)
-tests/**                             (add tests; do not weaken or delete any)
-reports/EV-PIL-status-report.docx    (regenerated, never hand-edited)
-.claude/night/**                     (log, receipt, state)
-```
+The four finisher-hashed sources (`scripts/build_report.py`,
+`scripts/corrected_campaign.py`, `scripts/finalize_corrected_campaign.py`,
+`tests/test_corrected_finalization.py`) may be edited only after the finisher
+has exited or been stopped by whoever owns it.
 
-Rebuilding and flashing the firmware **with existing build switches**
-(`-DFALLBACK_ENABLED=0|1`, `-DFAULT_INJECT=0|1|2`, `-DCTRL_PIPELINED=0`) via
-`scripts/arduino_build.sh` is permitted and expected. Editing any file under
-`firmware/` is not.
+By `git merge feature/decision-model` only, never by hand edit: whatever that
+branch carries under `src/evpil/control/`, `firmware/main/`,
+`firmware/host_test/`, `tests/control/`, `scripts/`, `docs/` and `.gitignore`.
+
+Board actions allowed: flashing and running the images the chain already
+builds, and re-running a campaign or A4 cell that failed or was disturbed.
 
 ## OUT OF SCOPE
-
-Decline these even when they look correct, small, or adjacent:
-
-- **Any edit to `firmware/` source.** Every gate on this project was measured
-  against the shipped Arduino image. Changing a line there invalidates G1, G3,
-  G5, A4 and week 10 at once, and the A4 sweep explicitly may not mix builds.
-- **Removing `infer_task`'s dummy busy-loop.** It looks like dead weight
-  standing in for a forecaster that no longer ships. It is the vehicle for
-  `-DFAULT_INJECT=1`, which is how the overrun path and A4 are triggered.
-- **The AD3 supply-current campaign.** The Arduino core links the radios in and
-  supply current was never re-measured. The Analog Discovery 3 is not confirmed
-  attached; do not improvise a substitute measurement.
-- **The deferred ESP-IDF G3 repeats.** The user deferred them; the toolchain
-  comparison stays open. Do not build the IDF image to close it.
-- **Reopening G2, or restating G3's or G4's criterion.** The one permitted
-  criterion revision was spent at G2. Report G2 as FAIL.
-- **Re-running anything already measured** to get a cleaner number, and
-  **re-running a campaign that produced an unwelcome result.** One run per
-  configuration; record what it gives.
-- **Retrofitting the A4 corrections into `predict_a4.py` or its figure.** They
-  are kept unmodified on purpose; corrections live in the measured note.
-- **Any refactor of the existing scripts, `src/evpil/**` beyond the new
-  `scenarios.py`, or the test suite.**
-- **`data/**`, the two third-party PDFs, and git history.** History was rewritten
-  on 2026-09-11 to strip those PDFs; do not commit them and do not rewrite.
-- **Any second email, CC, reply, or follow-up.** One message, one recipient.
-
-## STANDING FACTS THE RUN MUST NOT RE-DERIVE
-
-- G2 FAILS (1 of 7 trips, TripB08 at 2.45 pp against 2 pp). G3 FAILS its
-  zero-dropped-frame criterion. G1 and G4 pass.
-- The deployed actor is **0.51% worse than the rule manager on energy**. The
-  report must never imply the actor is recommended.
-- Deployment cost is two numbers: 825 us cold start, ~0.123 ms steady state.
-  Quote both, and never an accuracy number without its on-device cost.
-- A4's crossover is bracketed between 4 and 5 s. **Do not quote a crossover
-  duration inside that interval**, whatever the new 0.2/0.5/10 s rows show.
-- `rtt_max_us` is not a round trip in the pipelined loop. Do not call it one.
-- Rank controllers on energy with shed cabin heat charged back, never on raw
-  Wh/km.
+- Anything in `docs/2026-10-07-model-advancement-research.md`: reading it to
+  plan is fine, acting on it is tomorrow's work. No new model, no training, no
+  new experiment.
+- `src/` and `firmware/`. If the rule-arm check finds a defect in the plant or
+  the firmware, record it in the note and the handoff and stop there.
+- On `feature/decision-model`: no rebase, no new commits, no port of B5 or B6
+  to C, no board run of the Kalman arms, no resolving a merge conflict by
+  editing. Merging it as it stands is in scope (criterion 12).
+- Retraining SAC, choosing a different seed, re-tuning any arm.
+- Rebuilding the `comm_delay` axis with a delivery queue.
+- `git push`, sending or drafting the supervisor email in Gmail, opening a PR.
+- Deleting or overwriting `docs/week11-pil-corrected-rule-disturbed.json` or
+  any week-10 measurement file.
+- Starting a second board job, a second finisher, or killing the Codex
+  agent's finisher or wake-up watcher because it is slow.
+- Side compute while a board cell is running: no multi-process sweeps, no
+  cross-compiles, no full test suite until the board is idle.
+- Unrelated fixes met along the way, including the report's three pre-existing
+  MED prose findings and any test that was already failing.
