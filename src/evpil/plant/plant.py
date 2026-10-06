@@ -16,7 +16,7 @@ from evpil.plant.battery import (
     terminal_voltage_v,
 )
 from evpil.plant.longitudinal import road_load
-from evpil.plant.motor import clamp_torque, electrical_power_w
+from evpil.plant.motor import clamp_torque, efficiency, electrical_power_w
 from evpil.plant.params import VehicleParams
 from evpil.plant.regen import split_braking
 
@@ -40,6 +40,32 @@ class PlantOutput:
     p_regen_w: float
     p_friction_w: float
     p_aux_w: float
+
+
+def _torque_for_power(motor, omega_radps: float, p_avail_w: float,
+                      torque_hi_nm: float) -> float:
+    """Largest driving torque in [0, torque_hi_nm] the motor can make from
+    `p_avail_w` of electrical power at this speed.
+
+    Electrical power is torque * omega / eta(torque, omega), and eta comes off
+    a table, so there is no closed-form inverse. Efficiency moves slowly with
+    torque, so iterating torque = p * eta / omega settles in a few passes; the
+    last line guarantees the answer never draws more than was available.
+    """
+    if p_avail_w <= 0.0 or omega_radps <= 0.0:
+        return 0.0
+    torque = torque_hi_nm
+    for _ in range(30):
+        nxt = min(torque_hi_nm,
+                  p_avail_w * efficiency(motor, torque, omega_radps) / omega_radps)
+        if abs(nxt - torque) <= 1e-9 * max(1.0, torque_hi_nm):
+            torque = nxt
+            break
+        torque = nxt
+    over = electrical_power_w(motor, torque, omega_radps)
+    if over > p_avail_w:
+        torque *= p_avail_w / over
+    return torque
 
 
 class Plant:
@@ -81,6 +107,41 @@ class Plant:
         omega = (state.v_mps / p.wheel_radius_m) * p.gear_ratio
         torque = clamp_torque(p.motor, torque_nm, omega)
 
+        p_elec_w = electrical_power_w(p.motor, torque, omega)
+
+        if p_elec_w < 0.0:
+            p_regen_w, p_friction_w = split_braking(
+                p_elec_w, regen_blend,
+                regen_params=p.regen, batt_params=p.battery,
+                batt_state=state.battery, v_term_v=emf_v(p.battery, state.battery),
+            )
+            p_machine_w = p_regen_w
+        else:
+            p_regen_w, p_friction_w = 0.0, 0.0
+            p_machine_w = p_elec_w
+
+        p_aux = aux_power_w(p.aux, t_ambient_c) if p_aux_w is None else p_aux_w
+        p_request_w = p_machine_w + p_aux
+        p_batt_w = min(p_request_w, p_limit_w)
+
+        # Exact solve, so p_limit_w is genuinely binding. Clamping afterwards
+        # only ever reduces |i| on the lower root, so it cannot push power back
+        # above the limit.
+        i_raw = current_for_power(p.battery, state.battery, p_batt_w)
+        i_batt = clamp_current(p.battery, state.battery, i_raw)
+
+        v_term = terminal_voltage_v(p.battery, state.battery, i_batt)
+        p_batt_actual = v_term * i_batt
+
+        # What the pack did not deliver, the motor did not get. Capping the
+        # bill and leaving the torque alone let a controller lower the limit
+        # and be charged less for the same drive, which is energy from nowhere
+        # and was the whole of the week-10 "actor uses less energy" result.
+        # The auxiliary load is served first; traction takes what is left.
+        if p_elec_w > 0.0 and p_batt_actual < p_request_w * (1.0 - 1e-9):
+            torque = _torque_for_power(
+                p.motor, omega, max(0.0, p_batt_actual - p_aux), torque)
+
         # Drivetrain losses always reduce power in its direction of flow.
         if torque >= 0.0:
             f_wheel = torque * p.gear_ratio * p.drivetrain_eta / p.wheel_radius_m
@@ -97,30 +158,6 @@ class Plant:
         a_mps2 = (f_wheel - f_resist) / (p.mass_kg * (1.0 + p.rot_mass_factor))
 
         p_mech_w = torque * omega
-        p_elec_w = electrical_power_w(p.motor, torque, omega)
-
-        if p_elec_w < 0.0:
-            p_regen_w, p_friction_w = split_braking(
-                p_elec_w, regen_blend,
-                regen_params=p.regen, batt_params=p.battery,
-                batt_state=state.battery, v_term_v=emf_v(p.battery, state.battery),
-            )
-            p_machine_w = p_regen_w
-        else:
-            p_regen_w, p_friction_w = 0.0, 0.0
-            p_machine_w = p_elec_w
-
-        p_aux = aux_power_w(p.aux, t_ambient_c) if p_aux_w is None else p_aux_w
-        p_batt_w = min(p_machine_w + p_aux, p_limit_w)
-
-        # Exact solve, so p_limit_w is genuinely binding. Clamping afterwards
-        # only ever reduces |i| on the lower root, so it cannot push power back
-        # above the limit.
-        i_raw = current_for_power(p.battery, state.battery, p_batt_w)
-        i_batt = clamp_current(p.battery, state.battery, i_raw)
-
-        v_term = terminal_voltage_v(p.battery, state.battery, i_batt)
-        p_batt_actual = v_term * i_batt
 
         batt_next = battery_step(p.battery, state.battery, i_batt, dt_s)
 

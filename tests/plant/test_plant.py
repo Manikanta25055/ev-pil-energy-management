@@ -130,6 +130,63 @@ def test_discharge_power_limit_is_enforced():
     assert out.v_batt_v * out.i_batt_a == pytest.approx(out.p_batt_w, rel=1e-9)
 
 
+def _cruising(plant, torque_nm=200.0, steps=100):
+    st = plant.reset(soc0=0.8, t_ambient_c=21.0, t_batt_c=25.0)
+    for _ in range(steps):
+        st = plant.step(st, torque_nm=torque_nm, regen_blend=0.0, p_limit_w=1e6,
+                        grade_rad=0.0, t_ambient_c=21.0, dt_s=0.1).state
+    return st
+
+
+def test_a_binding_power_limit_takes_torque_away():
+    # The limit used to cap only the power that was billed. The vehicle kept
+    # the full torque, so a controller could lower the limit and be charged
+    # less for the same drive: a 5 kW ceiling drove US06 on 8 Wh/km.
+    plant = Plant(VP)
+    st = _cruising(plant)
+    kw = dict(torque_nm=200.0, regen_blend=0.0, grade_rad=0.0,
+              t_ambient_c=21.0, dt_s=0.1)
+    free = plant.step(st, p_limit_w=1e6, **kw)
+    held = plant.step(st, p_limit_w=20000.0, **kw)
+    assert held.a_mps2 < free.a_mps2
+    assert held.p_mech_w < free.p_mech_w
+
+
+@pytest.mark.parametrize("p_limit_w", [5000.0, 20000.0, 40000.0, 80000.0, 1e6])
+def test_traction_never_exceeds_what_the_battery_supplied(p_limit_w):
+    plant = Plant(VP)
+    st = _cruising(plant)
+    out = plant.step(st, torque_nm=200.0, regen_blend=0.0, p_limit_w=p_limit_w,
+                     grade_rad=0.0, t_ambient_c=21.0, dt_s=0.1)
+    # Mechanical power out, over the motor's efficiency, plus the auxiliary
+    # load, is what the pack has to have delivered.
+    assert out.p_mech_w / 0.90 + out.p_aux_w <= out.p_batt_w * (1 + 1e-6) + 1e-6
+
+
+def test_a_binding_current_limit_takes_torque_away_too():
+    # The pack's current clamp is the same hole by another door.
+    weak = BatteryParams(
+        capacity_ah=60.0, ocv_soc_points=(0.0, 0.5, 1.0),
+        ocv_volts=(300.0, 350.0, 400.0), r0_ohm=0.05, r1_ohm=0.01,
+        c1_farad=2000.0, i_discharge_max_a=50.0, i_charge_max_a=150.0,
+        soc_min=0.05, soc_max=0.98)
+    import dataclasses
+    plant = Plant(dataclasses.replace(VP, battery=weak))
+    st = _cruising(Plant(VP))
+    out = plant.step(st, torque_nm=200.0, regen_blend=0.0, p_limit_w=1e6,
+                     grade_rad=0.0, t_ambient_c=21.0, dt_s=0.1)
+    assert out.i_batt_a == pytest.approx(50.0)
+    assert out.p_mech_w / 0.90 + out.p_aux_w <= out.p_batt_w * (1 + 1e-6) + 1e-6
+
+
+def test_a_limit_that_does_not_bind_changes_nothing():
+    plant = Plant(VP)
+    st = _cruising(plant, torque_nm=50.0)
+    kw = dict(torque_nm=50.0, regen_blend=0.0, grade_rad=0.0,
+              t_ambient_c=21.0, dt_s=0.1)
+    assert plant.step(st, p_limit_w=1e6, **kw) == plant.step(st, p_limit_w=1e5, **kw)
+
+
 def test_climbing_needs_more_energy_than_the_flat():
     plant = Plant(VP)
     base = plant.reset(soc0=0.8, t_ambient_c=21.0, t_batt_c=25.0)
