@@ -41,6 +41,20 @@ int main(void)
                st.integral_nm);
     }
 
+    /* A ramp with a deterministic disturbance on it, through each alpha the
+       decision table uses plus two that must behave as no filter. */
+    printf("# filt: alpha step v_meas v_out\n");
+    const float alphas[] = {1.0f, 0.3f, 0.1f, 0.03f, 0.0f, 1.5f};
+    for (unsigned i = 0; i < sizeof alphas / sizeof *alphas; i++) {
+        speed_filter_t f = {0};
+        for (int n = 0; n < 120; n++) {
+            float v = 20.0f + 0.05f * (float) n
+                      + 0.4f * (float) ((n * 37) % 11 - 5) / 5.0f;
+            printf("filt %.6f %d %.6f %.6f\n", alphas[i], n, v,
+                   control_speed_filter_step(&f, v, alphas[i]));
+        }
+    }
+
     printf("# rule: soc v blend p_limit derate\n");
     const float socs[] = {0.05f, 0.07f, 0.12f, 0.20f, 0.50f, 0.85f, 0.90f,
                           0.94f, 0.99f};

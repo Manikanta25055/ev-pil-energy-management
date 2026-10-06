@@ -23,6 +23,7 @@ import pytest
 from evpil.control.pid import PidState, feedforward_torque_nm, pid_step
 from evpil.control.rule_ems import RuleParams, rule_action
 from evpil.control.sim import DEFAULT_GAINS
+from evpil.control.speed_filter import SpeedFilterState, speed_filter_step
 from evpil.plant.motor import clamp_torque
 
 HOST_TEST = Path("firmware/host_test")
@@ -45,7 +46,7 @@ def dump():
                          capture_output=True, text=True).stdout
 
     rows: dict[str, list[list[float]]] = {"ff": [], "lim": [], "pid": [],
-                                          "rule": []}
+                                          "filt": [], "rule": []}
     for line in out.splitlines():
         if line.startswith("#"):
             continue
@@ -85,6 +86,36 @@ def test_the_c_pid_matches_the_python_one_step_for_step(params, dump):
             f"torque at step {int(n)}"
         assert got_int == pytest.approx(st.integral_nm, rel=REL, abs=ABS), \
             f"integrator at step {int(n)}"
+
+
+def test_the_c_speed_filter_matches_the_python_one_step_for_step(dump):
+    assert len(dump["filt"]) == 6 * 120
+    st = SpeedFilterState()
+    for alpha, n, v, got in dump["filt"]:
+        if n == 0:
+            st = SpeedFilterState()
+        # Python refuses an alpha outside (0, 1]; the firmware cannot raise
+        # and falls back to no filter. Both are checked: the refusal in
+        # test_speed_filter.py, the fallback here.
+        st, want = speed_filter_step(st, v, alpha if 0.0 < alpha <= 1.0 else 1.0)
+        assert got == pytest.approx(want, rel=REL, abs=ABS), \
+            f"filter at alpha={alpha} step {int(n)}"
+
+
+def test_the_c_speed_filter_at_alpha_one_returns_its_input_exactly(dump):
+    rows = [r for r in dump["filt"] if r[0] == 1.0]
+    assert rows and all(v == got for _, _, v, got in rows)
+
+
+def test_the_firmware_defaults_to_no_speed_filter():
+    """Every gate and campaign so far was measured on the unfiltered loop. A
+    default that drifted would change all of them without a rebuild flag
+    anywhere saying so."""
+    text = Path("firmware/main/tasks.h").read_text()
+    assert "#define SPEED_FILTER_ALPHA 1.0f" in text
+    tasks = Path("firmware/main/tasks.c").read_text()
+    assert "s_speed_alpha = SPEED_FILTER_ALPHA" in tasks
+    assert "control_speed_filter_step(&s_speed_filt, v_meas" in tasks
 
 
 def test_the_c_rule_manager_matches_the_python_one(params, dump):

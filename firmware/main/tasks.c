@@ -60,6 +60,10 @@ static float s_torque_cmd  = 0.0f;
    "the task is gone". */
 static volatile float    s_regen_blend = 0.5f;
 static volatile float    s_p_limit_w   = 50000.0f;
+/* Written by the outer loop once something there decides it; until then it is
+   the build's constant. */
+static volatile float    s_speed_alpha = SPEED_FILTER_ALPHA;
+static speed_filter_t    s_speed_filt;
 static volatile float    s_aux_derate  = 0.0f;
 /* Accumulators for the ceiling the energy manager actually applied. Kept out
    of diag_stats_t because the sum has to be 64-bit and the frame is not: a
@@ -223,8 +227,10 @@ static void ctrl_task(void *arg)
 #endif
         {
             float ff = control_feedforward_nm(&k_vehicle, v_ref, a_ref, grade);
+            float v_ctl = control_speed_filter_step(&s_speed_filt, v_meas,
+                                                    s_speed_alpha);
             s_torque_cmd = control_pid_step(&k_pid_gains, &s_pid, v_ref,
-                                            v_meas, ff, t_lim,
+                                            v_ctl, ff, t_lim,
                                             CTRL_PERIOD_MS * 1e-3f, NULL);
         }
 

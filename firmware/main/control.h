@@ -29,6 +29,13 @@ typedef struct {
     float torque_max_nm, speed_max_radps, power_max_w;
 } vehicle_t;
 
+/* Low-pass on measured speed ahead of the speed loop, mirroring
+   evpil.control.speed_filter. Zero-initialise it. */
+typedef struct {
+    float y_mps;
+    bool  primed;
+} speed_filter_t;
+
 typedef struct {
     float regen_blend;
     float p_limit_w;
@@ -49,6 +56,13 @@ float control_pid_step(const pid_gains_t *g, pid_state_t *st,
                        float v_ref_mps, float v_meas_mps,
                        float torque_ff_nm, float torque_limit_nm,
                        float dt_s, bool *saturated);
+
+/* Returns the speed to control on and advances `f` in place. `alpha` is in
+   (0, 1]; 1 is no filter and returns the measurement exactly. A value outside
+   that range is treated as 1, because the control task has no one to raise an
+   error to and an unfiltered loop is the behaviour that was measured. */
+float control_speed_filter_step(speed_filter_t *f, float v_meas_mps,
+                                float alpha);
 
 /* The rule-based energy manager. Deterministic, memoryless and cheap enough to
    run inside the 10 ms control task, which is what makes it usable as the

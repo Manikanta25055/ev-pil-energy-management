@@ -22,6 +22,7 @@ from evpil.control.pid import (
     PidGains, PidState, feedforward_torque_nm, pid_step,
 )
 from evpil.control.rule_ems import EmsAction
+from evpil.control.speed_filter import SpeedFilterState, speed_filter_step
 from evpil.plant.auxiliary import aux_power_w
 from evpil.plant.motor import clamp_torque
 from evpil.plant.params import VehicleParams
@@ -130,6 +131,7 @@ def simulate(
     speed_noise_mps: float = 0.0,
     delay_steps: int = 0,
     seed: int = 0,
+    speed_filter_alpha: float = 1.0,
 ) -> Result:
     """Run one cycle closed-loop and return its control metrics.
 
@@ -137,6 +139,10 @@ def simulate(
     communication-delay scenarios of spec 6.5, injected here so that the host
     study and the device study perturb the same quantities. A delay of one
     outer step is what the pipelined firmware loop already carries.
+
+    `speed_filter_alpha` low-passes the measured speed before the speed loop
+    sees it (`evpil.control.speed_filter`). The default of 1.0 is no filter
+    and leaves every result bit for bit as it was.
     """
     rng = np.random.default_rng(seed)
     # The feedforward may be computed from a deliberately wrong vehicle. With
@@ -165,6 +171,7 @@ def simulate(
         "v", "torque", "p_batt", "i_batt", "soc", "p_regen", "p_aux",
         "blend", "p_limit", "derate")}
     delay_buf: list[float] = [0.0] * max(0, delay_steps)
+    v_filt = SpeedFilterState()
 
     err_sq = 0.0
     err_max = 0.0
@@ -182,6 +189,7 @@ def simulate(
         if delay_steps > 0:
             delay_buf.append(v_meas)
             v_meas = delay_buf.pop(0)
+        v_filt, v_meas = speed_filter_step(v_filt, v_meas, speed_filter_alpha)
 
         grade = float(cycle.grade_rad[k])
 

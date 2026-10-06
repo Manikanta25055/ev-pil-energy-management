@@ -23,6 +23,15 @@
 #ifndef CTRL_PIPELINED
 #define CTRL_PIPELINED 1
 #endif
+/* Low-pass coefficient on measured speed ahead of the speed loop. 1.0 is no
+   filter, which is the loop every gate and campaign before October 2026 was
+   measured on. A noisy speed measurement makes the loop chase the noise with
+   torque; see docs/superpowers/specs/2026-10-06-decision-model-design.md.
+
+     ./scripts/arduino_build.sh -DSPEED_FILTER_ALPHA=0.30f   the fixed-filter arm */
+#ifndef SPEED_FILTER_ALPHA
+#define SPEED_FILTER_ALPHA 1.0f
+#endif
 #define INFER_PERIOD_MS  100
 #define EMS_PERIOD_MS    100
 #define DIAG_PERIOD_MS   500

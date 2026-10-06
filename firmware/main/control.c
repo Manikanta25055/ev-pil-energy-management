@@ -103,6 +103,23 @@ float control_pid_step(const pid_gains_t *g, pid_state_t *st,
     return torque;
 }
 
+/* --- speed filter, mirroring evpil.control.speed_filter ------------------ */
+
+float control_speed_filter_step(speed_filter_t *f, float v_meas_mps,
+                                float alpha)
+{
+    /* The comparison is written so that a NaN alpha also lands here. The
+       first sample is taken as it comes: starting from zero would hand the
+       loop a step equal to the vehicle's speed. */
+    if (!(alpha > 0.0f && alpha < 1.0f) || !f->primed) {
+        f->y_mps = v_meas_mps;
+    } else {
+        f->y_mps += alpha * (v_meas_mps - f->y_mps);
+    }
+    f->primed = true;
+    return f->y_mps;
+}
+
 /* --- rule-based energy manager, mirroring evpil.control.rule_ems --------- */
 
 #define SOC_REGEN_TAPER_START  0.85f
