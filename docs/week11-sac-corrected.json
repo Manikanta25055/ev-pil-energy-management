@@ -1,0 +1,717 @@
+{
+  "steps": 200000,
+  "seeds": 5,
+  "net_arch": [
+    64,
+    64
+  ],
+  "cycle": "hwfet",
+  "test_cycle_sealed": "us06",
+  "soc0": 0.8,
+  "t_ambient_c": 12.0,
+  "actor_cost": {
+    "layer_sizes": [
+      8,
+      64,
+      64,
+      3
+    ],
+    "n_params": 4931,
+    "macs": 4800,
+    "dtype": "float32",
+    "footprint_kb": 19.26171875,
+    "estimated_latency_ms": 0.16096579476861167,
+    "fits_footprint": true,
+    "fits_latency_estimate": true
+  },
+  "baseline": {
+    "cycle": "hwfet",
+    "tracking_rmse_mps": 0.00027055358261394015,
+    "tracking_max_mps": 0.0044704000000001035,
+    "energy_wh": 2540.3837114879498,
+    "distance_km": 16.5065505134784,
+    "wh_per_km": 153.90155013996434,
+    "soc_start": 0.8,
+    "soc_end": 0.6900837139195471,
+    "peak_current_a": 90.93983209699422,
+    "regen_wh": 137.98836613082648,
+    "aux_shed_wh": 0.0,
+    "equivalent_wh": 2540.3837114879498,
+    "equivalent_wh_per_km": 153.90155013996434
+  },
+  "summary": {
+    "with-forecast": {
+      "mean": 155.11926994389455,
+      "std": 0.8199001523309267,
+      "ci95": [
+        154.50756352008514,
+        155.73097636770396
+      ],
+      "per_seed": [
+        154.77318238512555,
+        155.89280635058776,
+        154.0783062482372,
+        154.83484033370024,
+        156.01721440182203
+      ],
+      "gap_to_rule_pct_mean": 0.791232968623628,
+      "aux_shed_wh_mean": 43.7806757300263
+    },
+    "without-forecast": {
+      "mean": 154.85705764761036,
+      "std": 0.5135242261008666,
+      "ci95": [
+        154.4802520939712,
+        155.28114101856713
+      ],
+      "per_seed": [
+        154.679339693846,
+        154.8241396689053,
+        155.63407524336142,
+        154.21469358450582,
+        154.93304004743314
+      ],
+      "gap_to_rule_pct_mean": 0.6208563245639974,
+      "aux_shed_wh_mean": 68.90101681968899
+    }
+  },
+  "a3": {
+    "diff_mean_wh_per_km": 0.2622122962842184,
+    "ci95": [
+      -0.6978579879408471,
+      0.9820642297261373
+    ],
+    "per_seed_diff": [
+      0.09384269127954781,
+      1.0686666816824584,
+      -1.5557689951242253,
+      0.6201467491944186,
+      1.0841743543888924
+    ],
+    "null": true
+  },
+  "rows": [
+    {
+      "arm": "with-forecast",
+      "seed": 0,
+      "cycle": "hwfet",
+      "steps": 200000,
+      "wall_s": 523.3930509090424,
+      "tracking_rmse_mps": 0.00027055358261394015,
+      "tracking_max_mps": 0.0044704000000001035,
+      "energy_wh": 2527.9543507540584,
+      "distance_km": 16.5065505134784,
+      "wh_per_km": 153.1485544899197,
+      "soc_start": 0.8,
+      "soc_end": 0.6906298867515965,
+      "peak_current_a": 90.93838430934898,
+      "regen_wh": 123.6007244468695,
+      "aux_shed_wh": 26.81700241782147,
+      "equivalent_wh": 2554.77135317188,
+      "equivalent_wh_per_km": 154.77318238512555,
+      "gap_to_rule_pct": 0.5663570278327427
+    },
+    {
+      "arm": "with-forecast",
+      "seed": 1,
+      "cycle": "hwfet",
+      "steps": 200000,
+      "wall_s": 533.9497609138489,
+      "tracking_rmse_mps": 0.00027055358261394015,
+      "tracking_max_mps": 0.0044704000000001035,
+      "energy_wh": 2519.139315061707,
+      "distance_km": 16.5065505134784,
+      "wh_per_km": 152.61452191387338,
+      "soc_start": 0.8,
+      "soc_end": 0.6910200716133232,
+      "peak_current_a": 90.16638141967567,
+      "regen_wh": 105.1195949048348,
+      "aux_shed_wh": 54.113167652176045,
+      "equivalent_wh": 2573.2524827138827,
+      "equivalent_wh_per_km": 155.89280635058776,
+      "gap_to_rule_pct": 1.2938506524544322
+    },
+    {
+      "arm": "with-forecast",
+      "seed": 2,
+      "cycle": "hwfet",
+      "steps": 200000,
+      "wall_s": 509.399827003479,
+      "tracking_rmse_mps": 0.00027055358261394015,
+      "tracking_max_mps": 0.0044704000000001035,
+      "energy_wh": 2531.64456576884,
+      "distance_km": 16.5065505134784,
+      "wh_per_km": 153.37211513099783,
+      "soc_start": 0.8,
+      "soc_end": 0.6904672409620322,
+      "peak_current_a": 89.86603322947872,
+      "regen_wh": 135.07073250098068,
+      "aux_shed_wh": 11.656779348881692,
+      "equivalent_wh": 2543.3013451177217,
+      "equivalent_wh_per_km": 154.0783062482372,
+      "gap_to_rule_pct": 0.11485011561749414
+    },
+    {
+      "arm": "with-forecast",
+      "seed": 3,
+      "cycle": "hwfet",
+      "steps": 200000,
+      "wall_s": 486.24165892601013,
+      "tracking_rmse_mps": 0.00027055358261394015,
+      "tracking_max_mps": 0.0044704000000001035,
+      "energy_wh": 2503.6233872291473,
+      "distance_km": 16.5065505134784,
+      "wh_per_km": 151.67453582653852,
+      "soc_start": 0.8,
+      "soc_end": 0.6916990971022339,
+      "peak_current_a": 90.60332849851743,
+      "regen_wh": 122.58296440413882,
+      "aux_shed_wh": 52.165725985438456,
+      "equivalent_wh": 2555.7891132145855,
+      "equivalent_wh_per_km": 154.83484033370024,
+      "gap_to_rule_pct": 0.6064202685984215
+    },
+    {
+      "arm": "with-forecast",
+      "seed": 4,
+      "cycle": "hwfet",
+      "steps": 200000,
+      "wall_s": 484.2725582122803,
+      "tracking_rmse_mps": 0.00027055358261394015,
+      "tracking_max_mps": 0.0044704000000001035,
+      "energy_wh": 2501.155327250051,
+      "distance_km": 16.5065505134784,
+      "wh_per_km": 151.5250157934413,
+      "soc_start": 0.8,
+      "soc_end": 0.6918088393273335,
+      "peak_current_a": 90.15155935530225,
+      "regen_wh": 103.06604712287276,
+      "aux_shed_wh": 74.15070324581384,
+      "equivalent_wh": 2575.306030495865,
+      "equivalent_wh_per_km": 156.01721440182203,
+      "gap_to_rule_pct": 1.3746867786150492
+    },
+    {
+      "arm": "without-forecast",
+      "seed": 0,
+      "cycle": "hwfet",
+      "steps": 200000,
+      "wall_s": 525.0907161235809,
+      "tracking_rmse_mps": 0.00027055358261394015,
+      "tracking_max_mps": 0.0044704000000001035,
+      "energy_wh": 2482.538995181322,
+      "distance_km": 16.5065505134784,
+      "wh_per_km": 150.39720098722074,
+      "soc_start": 0.8,
+      "soc_end": 0.6926227265496164,
+      "peak_current_a": 89.57476385723017,
+      "regen_wh": 125.14974357076132,
+      "aux_shed_wh": 70.68333886663076,
+      "equivalent_wh": 2553.222334047953,
+      "equivalent_wh_per_km": 154.679339693846,
+      "gap_to_rule_pct": 0.5053812344153147
+    },
+    {
+      "arm": "without-forecast",
+      "seed": 1,
+      "cycle": "hwfet",
+      "steps": 200000,
+      "wall_s": 2830.6239721775055,
+      "tracking_rmse_mps": 0.00027055358261394015,
+      "tracking_max_mps": 0.0044704000000001035,
+      "energy_wh": 2476.6059106400135,
+      "distance_km": 16.5065505134784,
+      "wh_per_km": 150.03776280318198,
+      "soc_start": 0.8,
+      "soc_end": 0.6928836505975652,
+      "peak_current_a": 89.5784156406733,
+      "regen_wh": 122.7595954681185,
+      "aux_shed_wh": 79.00657151060648,
+      "equivalent_wh": 2555.61248215062,
+      "equivalent_wh_per_km": 154.8241396689053,
+      "gap_to_rule_pct": 0.5994673400637777
+    },
+    {
+      "arm": "without-forecast",
+      "seed": 2,
+      "cycle": "hwfet",
+      "steps": 200000,
+      "wall_s": 2506.8870491981506,
+      "tracking_rmse_mps": 0.00027055358261394015,
+      "tracking_max_mps": 0.0044704000000001035,
+      "energy_wh": 2504.9467826808973,
+      "distance_km": 16.5065505134784,
+      "wh_per_km": 151.75470978236712,
+      "soc_start": 0.8,
+      "soc_end": 0.6916424887476671,
+      "peak_current_a": 90.80248976860514,
+      "regen_wh": 109.39035299565708,
+      "aux_shed_wh": 64.034941942146,
+      "equivalent_wh": 2568.981724623043,
+      "equivalent_wh_per_km": 155.63407524336142,
+      "gap_to_rule_pct": 1.1257359668057012
+    },
+    {
+      "arm": "without-forecast",
+      "seed": 3,
+      "cycle": "hwfet",
+      "steps": 200000,
+      "wall_s": 524.4707729816437,
+      "tracking_rmse_mps": 0.00027055358261394015,
+      "tracking_max_mps": 0.0044704000000001035,
+      "energy_wh": 2478.302385183412,
+      "distance_km": 16.5065505134784,
+      "wh_per_km": 150.1405386400846,
+      "soc_start": 0.8,
+      "soc_end": 0.6928059154432632,
+      "peak_current_a": 90.75444622516893,
+      "regen_wh": 132.81944804550466,
+      "aux_shed_wh": 67.25024438982662,
+      "equivalent_wh": 2545.5526295732384,
+      "equivalent_wh_per_km": 154.21469358450582,
+      "gap_to_rule_pct": 0.20346997431585218
+    },
+    {
+      "arm": "without-forecast",
+      "seed": 4,
+      "cycle": "hwfet",
+      "steps": 200000,
+      "wall_s": 487.0089249610901,
+      "tracking_rmse_mps": 0.00027055358261394015,
+      "tracking_max_mps": 0.0044704000000001035,
+      "energy_wh": 2493.880064360492,
+      "distance_km": 16.5065505134784,
+      "wh_per_km": 151.08426574795976,
+      "soc_start": 0.8,
+      "soc_end": 0.6921266184339007,
+      "peak_current_a": 89.62460806253401,
+      "regen_wh": 120.96202586897353,
+      "aux_shed_wh": 63.52998738923507,
+      "equivalent_wh": 2557.410051749727,
+      "equivalent_wh_per_km": 154.93304004743314,
+      "gap_to_rule_pct": 0.6702271072193413
+    }
+  ],
+  "curves": {
+    "with-forecast-seed0": [
+      {
+        "steps": 25000,
+        "equivalent_wh_per_km": 154.26597584899918,
+        "wh_per_km": 153.80022787193943
+      },
+      {
+        "steps": 50000,
+        "equivalent_wh_per_km": 154.02154749410303,
+        "wh_per_km": 151.3510907593569
+      },
+      {
+        "steps": 75000,
+        "equivalent_wh_per_km": 154.5179009856357,
+        "wh_per_km": 151.83234940522829
+      },
+      {
+        "steps": 100000,
+        "equivalent_wh_per_km": 154.56873328392194,
+        "wh_per_km": 151.44450793805146
+      },
+      {
+        "steps": 125000,
+        "equivalent_wh_per_km": 155.08299251168089,
+        "wh_per_km": 151.80348110905908
+      },
+      {
+        "steps": 150000,
+        "equivalent_wh_per_km": 155.05416613810152,
+        "wh_per_km": 151.82543659318935
+      },
+      {
+        "steps": 175000,
+        "equivalent_wh_per_km": 154.2211084914867,
+        "wh_per_km": 152.7510044064319
+      },
+      {
+        "steps": 200000,
+        "equivalent_wh_per_km": 154.77318238512555,
+        "wh_per_km": 153.1485544899197
+      }
+    ],
+    "with-forecast-seed1": [
+      {
+        "steps": 25000,
+        "equivalent_wh_per_km": 154.57740718792797,
+        "wh_per_km": 151.74285850292995
+      },
+      {
+        "steps": 50000,
+        "equivalent_wh_per_km": 155.2899426336399,
+        "wh_per_km": 153.57392517681743
+      },
+      {
+        "steps": 75000,
+        "equivalent_wh_per_km": 154.60544712965228,
+        "wh_per_km": 151.89282140384054
+      },
+      {
+        "steps": 100000,
+        "equivalent_wh_per_km": 155.34928071558554,
+        "wh_per_km": 152.24300004463603
+      },
+      {
+        "steps": 125000,
+        "equivalent_wh_per_km": 155.45559080198112,
+        "wh_per_km": 153.38609533920916
+      },
+      {
+        "steps": 150000,
+        "equivalent_wh_per_km": 157.26160991724223,
+        "wh_per_km": 151.86500872439711
+      },
+      {
+        "steps": 175000,
+        "equivalent_wh_per_km": 157.12850390718393,
+        "wh_per_km": 153.74886697224275
+      },
+      {
+        "steps": 200000,
+        "equivalent_wh_per_km": 155.89280635058776,
+        "wh_per_km": 152.61452191387338
+      }
+    ],
+    "with-forecast-seed2": [
+      {
+        "steps": 25000,
+        "equivalent_wh_per_km": 155.23948784861133,
+        "wh_per_km": 150.90946905004432
+      },
+      {
+        "steps": 50000,
+        "equivalent_wh_per_km": 154.2395135144212,
+        "wh_per_km": 149.0628999636364
+      },
+      {
+        "steps": 75000,
+        "equivalent_wh_per_km": 154.1722163829807,
+        "wh_per_km": 151.0943389144037
+      },
+      {
+        "steps": 100000,
+        "equivalent_wh_per_km": 154.29145099937992,
+        "wh_per_km": 152.70451422165706
+      },
+      {
+        "steps": 125000,
+        "equivalent_wh_per_km": 154.04492359135338,
+        "wh_per_km": 152.52237155722256
+      },
+      {
+        "steps": 150000,
+        "equivalent_wh_per_km": 153.97079972760676,
+        "wh_per_km": 150.62418828565777
+      },
+      {
+        "steps": 175000,
+        "equivalent_wh_per_km": 154.17085952107112,
+        "wh_per_km": 152.54680720939135
+      },
+      {
+        "steps": 200000,
+        "equivalent_wh_per_km": 154.0783062482372,
+        "wh_per_km": 153.37211513099783
+      }
+    ],
+    "with-forecast-seed3": [
+      {
+        "steps": 25000,
+        "equivalent_wh_per_km": 154.67198961824118,
+        "wh_per_km": 154.01608449801026
+      },
+      {
+        "steps": 50000,
+        "equivalent_wh_per_km": 155.77145271966342,
+        "wh_per_km": 155.4310740491579
+      },
+      {
+        "steps": 75000,
+        "equivalent_wh_per_km": 154.67497823901004,
+        "wh_per_km": 153.3832505628872
+      },
+      {
+        "steps": 100000,
+        "equivalent_wh_per_km": 155.68028899005898,
+        "wh_per_km": 150.73528575349013
+      },
+      {
+        "steps": 125000,
+        "equivalent_wh_per_km": 154.98792338330736,
+        "wh_per_km": 150.78530009704963
+      },
+      {
+        "steps": 150000,
+        "equivalent_wh_per_km": 155.3868954573672,
+        "wh_per_km": 153.63554828124552
+      },
+      {
+        "steps": 175000,
+        "equivalent_wh_per_km": 154.6612265852398,
+        "wh_per_km": 149.99618127120038
+      },
+      {
+        "steps": 200000,
+        "equivalent_wh_per_km": 154.83484033370024,
+        "wh_per_km": 151.67453582653852
+      }
+    ],
+    "with-forecast-seed4": [
+      {
+        "steps": 25000,
+        "equivalent_wh_per_km": 156.04090421941203,
+        "wh_per_km": 152.08131009586333
+      },
+      {
+        "steps": 50000,
+        "equivalent_wh_per_km": 154.70976971003878,
+        "wh_per_km": 150.82836492424752
+      },
+      {
+        "steps": 75000,
+        "equivalent_wh_per_km": 154.73991937787298,
+        "wh_per_km": 151.1676311823275
+      },
+      {
+        "steps": 100000,
+        "equivalent_wh_per_km": 155.00447058848656,
+        "wh_per_km": 151.6691345714394
+      },
+      {
+        "steps": 125000,
+        "equivalent_wh_per_km": 155.92512216642808,
+        "wh_per_km": 150.644345572018
+      },
+      {
+        "steps": 150000,
+        "equivalent_wh_per_km": 156.62910894527326,
+        "wh_per_km": 151.02767868766537
+      },
+      {
+        "steps": 175000,
+        "equivalent_wh_per_km": 156.33756443766606,
+        "wh_per_km": 151.05328535490509
+      },
+      {
+        "steps": 200000,
+        "equivalent_wh_per_km": 156.01721440182203,
+        "wh_per_km": 151.5250157934413
+      }
+    ],
+    "without-forecast-seed0": [
+      {
+        "steps": 25000,
+        "equivalent_wh_per_km": 156.9038100871785,
+        "wh_per_km": 151.3573201476811
+      },
+      {
+        "steps": 50000,
+        "equivalent_wh_per_km": 157.54848641203904,
+        "wh_per_km": 156.63867378591135
+      },
+      {
+        "steps": 75000,
+        "equivalent_wh_per_km": 156.82156076295007,
+        "wh_per_km": 154.40217917211712
+      },
+      {
+        "steps": 100000,
+        "equivalent_wh_per_km": 155.6559723555591,
+        "wh_per_km": 150.0816755098211
+      },
+      {
+        "steps": 125000,
+        "equivalent_wh_per_km": 154.92532936389725,
+        "wh_per_km": 150.5008796156869
+      },
+      {
+        "steps": 150000,
+        "equivalent_wh_per_km": 154.92187909039097,
+        "wh_per_km": 150.3660878884373
+      },
+      {
+        "steps": 175000,
+        "equivalent_wh_per_km": 154.3660784579688,
+        "wh_per_km": 149.6238953717021
+      },
+      {
+        "steps": 200000,
+        "equivalent_wh_per_km": 154.679339693846,
+        "wh_per_km": 150.39720098722074
+      }
+    ],
+    "without-forecast-seed1": [
+      {
+        "steps": 25000,
+        "equivalent_wh_per_km": 155.52693725889233,
+        "wh_per_km": 154.54788403386266
+      },
+      {
+        "steps": 50000,
+        "equivalent_wh_per_km": 155.737082947429,
+        "wh_per_km": 154.52825565723435
+      },
+      {
+        "steps": 75000,
+        "equivalent_wh_per_km": 157.18953912661757,
+        "wh_per_km": 156.4890210713405
+      },
+      {
+        "steps": 100000,
+        "equivalent_wh_per_km": 155.03456378867813,
+        "wh_per_km": 152.74046465144033
+      },
+      {
+        "steps": 125000,
+        "equivalent_wh_per_km": 154.69053901962693,
+        "wh_per_km": 153.32895344002714
+      },
+      {
+        "steps": 150000,
+        "equivalent_wh_per_km": 155.54051566441146,
+        "wh_per_km": 154.29907428266483
+      },
+      {
+        "steps": 175000,
+        "equivalent_wh_per_km": 154.82351159287109,
+        "wh_per_km": 152.39515177076808
+      },
+      {
+        "steps": 200000,
+        "equivalent_wh_per_km": 154.8241396689053,
+        "wh_per_km": 150.03776280318198
+      }
+    ],
+    "without-forecast-seed2": [
+      {
+        "steps": 25000,
+        "equivalent_wh_per_km": 155.3271001896982,
+        "wh_per_km": 150.216534800278
+      },
+      {
+        "steps": 50000,
+        "equivalent_wh_per_km": 154.1933001293207,
+        "wh_per_km": 150.00319952215497
+      },
+      {
+        "steps": 75000,
+        "equivalent_wh_per_km": 157.32970995722712,
+        "wh_per_km": 156.55291095741205
+      },
+      {
+        "steps": 100000,
+        "equivalent_wh_per_km": 155.39593044323254,
+        "wh_per_km": 153.13129048887984
+      },
+      {
+        "steps": 125000,
+        "equivalent_wh_per_km": 156.4534452188639,
+        "wh_per_km": 153.18446687638163
+      },
+      {
+        "steps": 150000,
+        "equivalent_wh_per_km": 154.23745747685106,
+        "wh_per_km": 150.47465014413396
+      },
+      {
+        "steps": 175000,
+        "equivalent_wh_per_km": 154.4381877068279,
+        "wh_per_km": 151.06671345602862
+      },
+      {
+        "steps": 200000,
+        "equivalent_wh_per_km": 155.63407524336142,
+        "wh_per_km": 151.75470978236712
+      }
+    ],
+    "without-forecast-seed3": [
+      {
+        "steps": 25000,
+        "equivalent_wh_per_km": 155.60193053650318,
+        "wh_per_km": 153.6264963910863
+      },
+      {
+        "steps": 50000,
+        "equivalent_wh_per_km": 155.44958859931802,
+        "wh_per_km": 151.85364709235955
+      },
+      {
+        "steps": 75000,
+        "equivalent_wh_per_km": 155.28706021933039,
+        "wh_per_km": 150.69831808450724
+      },
+      {
+        "steps": 100000,
+        "equivalent_wh_per_km": 157.55035037575436,
+        "wh_per_km": 153.4840063884827
+      },
+      {
+        "steps": 125000,
+        "equivalent_wh_per_km": 157.05343534369163,
+        "wh_per_km": 152.3661218452828
+      },
+      {
+        "steps": 150000,
+        "equivalent_wh_per_km": 156.51480244642528,
+        "wh_per_km": 153.49427052754723
+      },
+      {
+        "steps": 175000,
+        "equivalent_wh_per_km": 154.84787424141413,
+        "wh_per_km": 150.5343922673018
+      },
+      {
+        "steps": 200000,
+        "equivalent_wh_per_km": 154.21469358450582,
+        "wh_per_km": 150.1405386400846
+      }
+    ],
+    "without-forecast-seed4": [
+      {
+        "steps": 25000,
+        "equivalent_wh_per_km": 155.30182511921703,
+        "wh_per_km": 153.05677725439332
+      },
+      {
+        "steps": 50000,
+        "equivalent_wh_per_km": 155.12240081450815,
+        "wh_per_km": 152.0361256638465
+      },
+      {
+        "steps": 75000,
+        "equivalent_wh_per_km": 154.39696195534793,
+        "wh_per_km": 150.5583896962508
+      },
+      {
+        "steps": 100000,
+        "equivalent_wh_per_km": 155.55856406759375,
+        "wh_per_km": 152.4955261982697
+      },
+      {
+        "steps": 125000,
+        "equivalent_wh_per_km": 153.96019627986374,
+        "wh_per_km": 148.5389349840879
+      },
+      {
+        "steps": 150000,
+        "equivalent_wh_per_km": 154.04243878995968,
+        "wh_per_km": 152.28039303032185
+      },
+      {
+        "steps": 175000,
+        "equivalent_wh_per_km": 153.95773198227525,
+        "wh_per_km": 148.53596028307263
+      },
+      {
+        "steps": 200000,
+        "equivalent_wh_per_km": 154.93304004743314,
+        "wh_per_km": 151.08426574795976
+      }
+    ]
+  }
+}

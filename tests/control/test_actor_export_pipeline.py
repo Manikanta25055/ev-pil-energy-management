@@ -33,7 +33,10 @@ from evpil.control.actor import Actor, write_c_header
 
 # The deployed policy. Changing this line changes what the firmware runs, which
 # is why it is one line and not a search path.
-ACTOR = Path("data/actors/sac-without-forecast-seed3.npz")
+# Since 2026-10-06 this is the actor retrained on the corrected plant
+# (docs/week11-plant-correction.md). The one in data/actors/ learned to lower
+# a power ceiling that cost it nothing.
+ACTOR = Path("data/actors-corrected/sac-without-forecast-seed3.npz")
 HEADER = Path("firmware/main/sac_actor_weights.h")
 PARAMS = Path("data/i3_params.json")
 
