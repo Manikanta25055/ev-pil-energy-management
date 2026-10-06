@@ -30,7 +30,7 @@ from evpil.control.cycles import Cycle, load_cycle
 from evpil.control.rule_ems import RuleParams, rule_action
 from evpil.control.sim import simulate
 from evpil.control.speed_estimators import (
-    FaultTolerantKalman, KalmanSpeed, SpeedFault,
+    FaultTolerantKalman, KalmanSpeed, KinematicFaultKalman, SpeedFault,
 )
 from scripts.identify_params import params_from_json
 
@@ -61,6 +61,9 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--tuned", default="docs/week11-speed-arms-tuned.json")
     ap.add_argument("--out-json", default="docs/week11-fault-arms.json")
+    ap.add_argument("--kinematic", action="store_true",
+                    help="B6: detect from speed against measured acceleration; "
+                         "faults are then also run on a car 10%% heavier")
     ap.add_argument("--disturbance", action="store_true",
                     help="give both arms the unknown-acceleration state (B5)")
     args = ap.parse_args()
@@ -68,7 +71,15 @@ def main() -> int:
     nominal = params_from_json("data/i3_params.json")
     tuned = json.loads(Path(args.tuned).read_text())
     q = tuned["b3a"]["q_mps"]
-    q_d = tuned["b5"]["q_d_mps2"] if args.disturbance else 0.0
+    q_d = tuned["b5"]["q_d_mps2"] if (args.disturbance or args.kinematic) else 0.0
+    A_FLOOR = 0.05          # NOISE_SIGMA["a_mps2"] in evpil.control.scenarios
+
+    def detector():
+        if args.kinematic:
+            return KinematicFaultKalman(nominal, q_mps=q, q_d_mps2=q_d)
+        return FaultTolerantKalman(nominal, q_mps=q, q_d_mps2=q_d)
+
+    masses = (1.0, 1.1) if args.kinematic else (1.0,)
     rules = RuleParams()
     policy = lambda o: rule_action(rules, soc_frac=o.soc_frac, v_mps=o.v_mps)
     us06 = load_cycle("us06")
@@ -76,6 +87,8 @@ def main() -> int:
 
     fault_rows = []
     for label, kind, mag, named in FAULTS:
+      for mass in masses:
+        plant_f = replace(nominal, mass_kg=nominal.mass_kg * mass)
         for mult in (1.0, 10.0):
             for k, onset in enumerate(ONSETS_S):
                 n = int((onset + FAULT_S + TAIL_S) / us06.dt_s)
@@ -86,13 +99,13 @@ def main() -> int:
                 a = int(onset / cyc.dt_s)
                 b = min(n, int((onset + FAULT_S) / cyc.dt_s))
                 row = {"fault": label, "named": named, "noise_x": mult,
-                       "onset_s": onset}
+                       "onset_s": onset, "mass": mass}
                 for arm in ("B4", "B3a"):
-                    est = (FaultTolerantKalman(nominal, q_mps=q, q_d_mps2=q_d)
-                           if arm == "B4"
+                    est = (detector() if arm == "B4"
                            else KalmanSpeed(nominal, q_mps=q, r_mps=FLOOR,
                                             adaptive=True, q_d_mps2=q_d))
-                    r = simulate(nominal, cyc, policy,
+                    r = simulate(plant_f, cyc, policy, ff_params=nominal,
+                                 accel_noise_mps2=mult * A_FLOOR,
                                  speed_noise_mps=mult * FLOOR, seed=k,
                                  speed_estimator=est, keep_trace=True,
                                  speed_fault=SpeedFault(kind, onset, mag,
@@ -108,10 +121,10 @@ def main() -> int:
                         row["flag_dropped_after"] = not est.flag_history[-1]
                         row["v_ref_at_onset_mps"] = float(cyc.v_ref_mps[a])
                 fault_rows.append(row)
-            sub = [r for r in fault_rows
-                   if r["fault"] == label and r["noise_x"] == mult]
+            sub = [r for r in fault_rows if r["fault"] == label
+                   and r["noise_x"] == mult and r["mass"] == mass]
             d = [r["delay_s"] for r in sub]
-            print(f"{label:12s} {mult:4.0f}x  delays "
+            print(f"{label:12s} m{mass:.1f} {mult:4.0f}x  delays "
                   f"{[None if x is None else round(x, 2) for x in d]}  "
                   f"peak err B4 {max(r['B4_peak_err_mps'] for r in sub):.2f} "
                   f"B3a {max(r['B3a_peak_err_mps'] for r in sub):.2f}  "
@@ -128,8 +141,10 @@ def main() -> int:
             noise = mult * FLOOR
         plant = replace(nominal, mass_kg=nominal.mass_kg * mass)
         for seed in SEEDS:
-            est = FaultTolerantKalman(nominal, q_mps=q, q_d_mps2=q_d)
+            est = detector()
             r = simulate(plant, cyc, policy, ff_params=nominal,
+                         accel_noise_mps2=(10 * A_FLOOR if mult == 10.0
+                                           else A_FLOOR),
                          speed_noise_mps=noise, seed=seed, speed_estimator=est)
             clean_rows.append({
                 "scenario": label, "seed": seed, "hours": n * cyc.dt_s / 3600.0,
@@ -169,6 +184,10 @@ def main() -> int:
         sum(r["false_alarms"] for r in heavy) / sum(r["hours"] for r in heavy))
     verdict["tracking RMSE, car 10% heavier, m/s"] = float(
         np.mean([r["tracking_rmse_mps"] for r in heavy]))
+    verdict["worst peak tracking error through a named fault, m/s"] = max(
+        r["B4_peak_err_mps"] for r in named)
+    verdict["named faults where the flag never dropped after the sensor came back"] = sum(
+        not r["flag_dropped_after"] for r in named)
     verdict["meets both fault criteria"] = bool(
         verdict["every named fault flagged within 0.5 s"]
         and verdict["fewer than one false alarm per hour"])

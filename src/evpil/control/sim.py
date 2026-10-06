@@ -134,6 +134,7 @@ def simulate(
     speed_filter_alpha: float = 1.0,
     speed_estimator=None,
     speed_fault=None,
+    accel_noise_mps2: float = 0.0,
 ) -> Result:
     """Run one cycle closed-loop and return its control metrics.
 
@@ -155,10 +156,15 @@ def simulate(
     dropped, offset or drifting speed reading, applied after the noise and
     before anything in the controller sees it.
 
+    `accel_noise_mps2` is white noise on the acceleration handed to the speed
+    estimator. It draws from its own generator, so turning it on does not
+    change the speed noise of a run with the same seed.
+
     `speed_noise_mps` may also be an array with one value per step, for a
     noise level that changes during the cycle.
     """
     rng = np.random.default_rng(seed)
+    rng_a = np.random.default_rng([seed, 1])
     # The feedforward may be computed from a deliberately wrong vehicle. With
     # `ff_params` left as the plant's own parameters the nominal model is
     # exact and the feedback term has almost nothing to do, which is why the
@@ -214,9 +220,12 @@ def simulate(
             v_meas = speed_fault.apply(k * dt, v_meas)
         grade = float(cycle.grade_rad[k])
         if speed_estimator is not None:
+            a_sens = a_meas + (rng_a.normal(0.0, accel_noise_mps2)
+                               if accel_noise_mps2 > 0.0 else 0.0)
             v_meas = float(speed_estimator.step(
                 v_meas_mps=v_meas, torque_prev_nm=torque_prev,
-                grade_rad=grade if ff_knows_grade else 0.0, dt_s=dt))
+                grade_rad=grade if ff_knows_grade else 0.0, dt_s=dt,
+                a_meas_mps2=a_sens))
         else:
             v_filt, v_meas = speed_filter_step(v_filt, v_meas,
                                                speed_filter_alpha)

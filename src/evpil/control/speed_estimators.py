@@ -32,13 +32,15 @@ from evpil.plant.params import VehicleParams
 
 class SpeedEstimator(Protocol):
     def step(self, *, v_meas_mps: float, torque_prev_nm: float,
-             grade_rad: float, dt_s: float) -> float: ...
+             grade_rad: float, dt_s: float,
+             a_meas_mps2: float = 0.0) -> float: ...
 
 
 class PassThrough:
     """B0."""
 
-    def step(self, *, v_meas_mps, torque_prev_nm, grade_rad, dt_s) -> float:
+    def step(self, *, v_meas_mps, torque_prev_nm, grade_rad, dt_s,
+             a_meas_mps2=0.0) -> float:
         return v_meas_mps
 
 
@@ -49,7 +51,8 @@ class FixedFilter:
         self.alpha = alpha
         self._st = SpeedFilterState()
 
-    def step(self, *, v_meas_mps, torque_prev_nm, grade_rad, dt_s) -> float:
+    def step(self, *, v_meas_mps, torque_prev_nm, grade_rad, dt_s,
+             a_meas_mps2=0.0) -> float:
         self._st, y = speed_filter_step(self._st, v_meas_mps, self.alpha)
         return y
 
@@ -127,7 +130,8 @@ class VarianceThreshold:
             r -= 1
         return r
 
-    def step(self, *, v_meas_mps, torque_prev_nm, grade_rad, dt_s) -> float:
+    def step(self, *, v_meas_mps, torque_prev_nm, grade_rad, dt_s,
+             a_meas_mps2=0.0) -> float:
         self._meter.push(v_meas_mps)
         if self._meter.new_block:
             want = self._wanted(self._meter.sigma_mps)
@@ -236,7 +240,8 @@ class KalmanSpeed:
     def _restore(self, snap: tuple) -> None:
         self._x, self._P, self._d, self._Pvd, self._Pdd = snap
 
-    def step(self, *, v_meas_mps, torque_prev_nm, grade_rad, dt_s) -> float:
+    def step(self, *, v_meas_mps, torque_prev_nm, grade_rad, dt_s,
+             a_meas_mps2=0.0) -> float:
         if self._meter is not None:
             self._meter.push(v_meas_mps)
             if self._meter.new_block:
@@ -329,7 +334,8 @@ class FaultTolerantKalman(KalmanSpeed):
                 return True
         return False
 
-    def step(self, *, v_meas_mps, torque_prev_nm, grade_rad, dt_s) -> float:
+    def step(self, *, v_meas_mps, torque_prev_nm, grade_rad, dt_s,
+             a_meas_mps2=0.0) -> float:
         self._k += 1
         if self._x is None:
             self._x = v_meas_mps
@@ -384,6 +390,135 @@ class FaultTolerantKalman(KalmanSpeed):
         self._meter.push(v_meas_mps)
         if self._meter.new_block:
             self.r2 = max(self._meter.sigma_mps ** 2, self.r_floor2)
+        return self._correct(x_pred, P_pred, v_meas_mps)
+
+
+class KinematicFaultKalman(KalmanSpeed):
+    """B6: the two-state Kalman estimate (B5) with a fault detector that does
+    not ask the vehicle model anything.
+
+    B4 compared the speed reading with what the model expected, so a car
+    heavier than the model looked like a faulty sensor. B5 let the filter
+    learn what the model had wrong, and then a small sensor offset looked
+    like a heavier car. To one speed channel the two are the same signal.
+
+    The acceleration measurement separates them. Speed that changes without
+    the acceleration to account for it is a sensor fault whatever the car
+    weighs. So this keeps a second speed, dead-reckoned from the measured
+    acceleration and pulled gently toward the reading (time constant
+    `tau_s`), and tests the gap between the reading and that:
+
+      an offset appears   the gap jumps to the offset, then fades over tau_s
+      a drift             the gap settles at drift rate times tau_s
+      a heavier car       no gap: speed and acceleration still agree
+
+    The gross and frozen tests are B4's. While the flag is up the estimate is
+    the dead-reckoned speed, which needs no model either.
+
+    What this leans on instead of the model is the accelerometer. In this
+    simulation that is the vehicle's longitudinal acceleration with white
+    noise. A real one also reads gravity along a slope and carries a bias,
+    and neither is modelled here.
+    """
+
+    def __init__(self, params: VehicleParams, *, q_mps: float,
+                 q_d_mps2: float, tau_s: float = 2.0,
+                 settings: FaultSettings = FaultSettings(),
+                 r_floor_mps: float = 0.005) -> None:
+        super().__init__(params, q_mps=q_mps, r_mps=0.02, adaptive=True,
+                         r_floor_mps=r_floor_mps, q_d_mps2=q_d_mps2)
+        self.s = settings
+        self.tau_s = tau_s
+        self._v_dr: float | None = None
+        self._gap: list[float] = []
+        self._dr_past: list[float] = []
+        self._gross = 0
+        self._same = 0
+        self._last: float | None = None
+        self._quiet = 0
+        self._k = 0
+        self._good: tuple | None = None
+        self.flagged = False
+        self.alarm_steps: list[int] = []
+        self.flag_history: list[bool] = []
+
+    def step(self, *, v_meas_mps, torque_prev_nm, grade_rad, dt_s,
+             a_meas_mps2=0.0) -> float:
+        s = self.s
+        self._k += 1
+        if self._x is None:
+            self._x = self._v_dr = self._last = v_meas_mps
+            self.flag_history.append(False)
+            return self._x
+
+        # Dead reckoning, before this sample is allowed to pull on it.
+        v_dr = self._v_dr + a_meas_mps2 * dt_s
+        gap = v_meas_mps - v_dr
+        scale = math.sqrt(self.r2)
+
+        self._gross = self._gross + 1 if abs(gap) > max(
+            s.gross_mps, 8.0 * scale) else 0
+        self._same = self._same + 1 if v_meas_mps == self._last else 0
+        self._last = v_meas_mps
+        self._gap.append(gap)
+        if len(self._gap) > s.window:
+            self._gap.pop(0)
+        self._dr_past.append(self._v_dr)
+        if len(self._dr_past) > s.window + 1:
+            self._dr_past.pop(0)
+
+        fault_now = self._gross >= s.gross_count
+        fault_now |= self._same >= s.frozen_count and self._meter.sigma_mps > 1e-4
+        if len(self._gap) == s.window:
+            n = s.window
+            m = sum(self._gap) / n
+            var = sum((g - m) ** 2 for g in self._gap) / (n - 1)
+            fault_now |= abs(m) > s.t_limit * math.sqrt(max(var, self.r2) / n)
+
+        if not self.flagged and fault_now:
+            self.flagged = True
+            self._quiet = 0
+            self.alarm_steps.append(self._k - 1)
+            # Undo the pull the faulty samples had on the dead-reckoned speed
+            # while the test was making up its mind: go back to where it
+            # stood a window ago and bring it forward on acceleration alone.
+            # The acceleration over that stretch is recovered from the gaps.
+            v_dr = self._dr_past[0] + (v_dr - self._dr_past[0]) - sum(
+                g * dt_s / self.tau_s for g in self._gap[:-1])
+        elif self.flagged:
+            band = max(s.clear_band_mps, 4.0 * scale)
+            quiet = (abs(gap) < band and self._same < s.frozen_count
+                     and self._gross == 0)
+            self._quiet = self._quiet + 1 if quiet else 0
+            if self._quiet >= s.clear_count:
+                self.flagged = False
+                self._gap.clear()
+                # Start the filter again from the dead-reckoned speed, with
+                # the unknown acceleration it held before the fault.
+                if self._good is not None:
+                    self._restore(self._good)
+                self._x, self._P = v_dr, self.r2
+        self.flag_history.append(self.flagged)
+
+        if self.flagged:
+            self._v_dr = v_dr
+            return v_dr
+
+        suspect = abs(gap) > max(s.gross_mps, 8.0 * scale)
+        if suspect:
+            self._v_dr = v_dr
+            x_pred, P_pred = self._predict(torque_prev_nm, grade_rad, dt_s)
+            return self._coast(x_pred, P_pred)
+
+        self._v_dr = v_dr + (dt_s / self.tau_s) * gap
+        self._meter.push(v_meas_mps)
+        if self._meter.new_block:
+            self.r2 = max(self._meter.sigma_mps ** 2, self.r_floor2)
+            # A state believed clean, to come back to after a fault. Taken
+            # once a block, so it is at least a block old when a flag goes up.
+            self._good_next, self._good = self._snapshot(), getattr(
+                self, "_good_next", None)
+        x_pred, P_pred = self._predict(torque_prev_nm, grade_rad, dt_s)
         return self._correct(x_pred, P_pred, v_meas_mps)
 
 

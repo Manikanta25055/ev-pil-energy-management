@@ -223,3 +223,40 @@ def test_a_heavier_car_no_longer_looks_like_a_faulty_sensor(params):
                  speed_estimator=aware)
     assert len(aware.alarm_steps) == 0
     assert r.tracking_rmse_mps < 0.1
+
+
+# --- the model-free detector -----------------------------------------------
+
+from evpil.control.speed_estimators import KinematicFaultKalman
+
+
+def drive6(params, fault, *, mass=1.0, noise=0.02, seed=0):
+    c = short_cycle()
+    plant = _replace(params, mass_kg=params.mass_kg * mass)
+    est = KinematicFaultKalman(params, q_mps=0.002, q_d_mps2=0.02)
+    r = simulate(plant, c, POL, ff_params=params, speed_noise_mps=noise,
+                 accel_noise_mps2=0.05 * noise / 0.02, seed=seed,
+                 speed_estimator=est, speed_fault=fault)
+    return est, r
+
+
+@pytest.mark.parametrize("mass", [1.0, 1.1])
+def test_b6_raises_no_flag_on_a_healthy_sensor_whatever_the_car_weighs(params, mass):
+    for seed in range(3):
+        est, r = drive6(params, None, mass=mass, seed=seed)
+        assert est.alarm_steps == []
+        assert r.tracking_rmse_mps < 0.1
+
+
+@pytest.mark.parametrize("mass", [1.0, 1.1])
+@pytest.mark.parametrize("kind,mag", [("dropout", 0.0), ("stuck", 0.0),
+                                      ("bias", 0.5), ("bias", -0.5),
+                                      ("bias", 3.0)])
+def test_b6_flags_each_fault_in_time_on_either_car(params, kind, mag, mass):
+    onset = 12.0
+    est, r = drive6(params, SpeedFault(kind, onset, mag, duration_s=3.0),
+                    mass=mass)
+    assert est.alarm_steps, "never flagged"
+    assert 0.0 <= est.alarm_steps[0] * 0.01 - onset <= 0.5
+    # Catching it has to be worth something: the car stays on the cycle.
+    assert r.tracking_max_mps < 0.5
