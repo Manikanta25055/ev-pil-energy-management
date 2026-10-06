@@ -10,6 +10,9 @@ the criteria of section 7.3, which were written before this script was.
   B2   a variance threshold picking the filter from a table
   B3   a Kalman filter with a fixed noise assumption
   B3a  the same filter with the noise measured from the speed jitter
+  B5   B3a with a second state for an acceleration the model does not know
+       about (a heavier car, a headwind); added after B3 and B3a were found
+       to lean on the model when the car was 10% heavier than it
 
 Nothing is chosen on the test cycle. `--tune` picks B2's table and the Kalman
 settings on the first 600 s of UDDS, a training cycle, with a seed the
@@ -83,6 +86,13 @@ def make_estimator(arm: str, params, tuned: dict):
     if arm == "B3a":
         return KalmanSpeed(params, q_mps=tuned["b3a"]["q_mps"],
                            r_mps=FLOOR, adaptive=True)
+    if arm == "B5":
+        return KalmanSpeed(params, q_mps=tuned["b5"]["q_mps"], r_mps=FLOOR,
+                           adaptive=True, q_d_mps2=tuned["b5"]["q_d_mps2"])
+    if arm.startswith("kfd:"):                     # kfd:q:q_d, adaptive
+        _, q, qd = arm.split(":")
+        return KalmanSpeed(params, q_mps=float(q), r_mps=FLOOR, adaptive=True,
+                           q_d_mps2=float(qd))
     if arm.startswith("alpha="):
         return FixedFilter(float(arm.split("=")[1]))
     if arm.startswith("kf:"):                      # kf:q:r or kf:q:adaptive
@@ -251,6 +261,49 @@ def tune(workers: int, out_path: Path) -> None:
     print(f"wrote {out_path}")
 
 
+def tune_disturbance(workers: int, out_path: Path) -> None:
+    """Choose how fast B5's unknown acceleration may wander. Same cycle and
+    seed as the rest of the tuning; added to the same file."""
+    tuned = json.loads(out_path.read_text())
+    q = tuned["b3a"]["q_mps"]
+    base = dict(cycle="udds", steps=TUNE_STEPS, seed=TUNE_SEED, grade=0.0,
+                scenario="tune")
+    qds = (0.002, 0.005, 0.02, 0.08)
+    cases = ((1.0, 1.0), (10.0, 1.0), (25.0, 1.0), (1.0, 1.1), (10.0, 1.1))
+    jobs = [dict(base, arm=f"kfd:{q}:{qd}", noise=m, mass=mass)
+            for qd in qds for m, mass in cases]
+    jobs += [dict(base, arm="alpha=1.0", noise=1.0, mass=1.0)]
+    print(f"tuning the disturbance state: {len(jobs)} runs")
+    res = run_all(jobs, workers)
+
+    def get(arm, noise, mass):
+        return next(r for r in res if r["arm"] == arm and r["noise"] == noise
+                    and r["mass"] == mass)
+
+    limit = get("alpha=1.0", 1.0, 1.0)["tracking_rmse_mps"] + 0.005
+    rows = []
+    for qd in qds:
+        arm = f"kfd:{q}:{qd}"
+        clean = get(arm, 1.0, 1.0)["tracking_rmse_mps"]
+        heavy = max(get(arm, 1.0, 1.1)["tracking_rmse_mps"],
+                    get(arm, 10.0, 1.1)["tracking_rmse_mps"])
+        energy = sum(get(arm, m, 1.0)["equivalent_wh_per_km"]
+                     for m in (1.0, 10.0, 25.0))
+        rows.append((qd, clean, heavy, energy, clean <= limit))
+        print(f"  q_d {qd:6.3f}  clean rmse {clean:.4f}  heavy rmse (worse of "
+              f"floor, 10x) {heavy:.4f}  energy sum {energy:.2f}  "
+              f"{'ok' if clean <= limit else 'no'}")
+    ok = [r for r in rows if r[4]] or rows
+    best_e = min(r[3] for r in ok)
+    # Least tracking error on the heavy car, among those that give up no more
+    # than 0.2% of the energy the best of them reaches.
+    pick = min((r for r in ok if r[3] <= best_e * 1.002), key=lambda r: r[2])
+    tuned["b5"] = {"q_mps": q, "q_d_mps2": pick[0]}
+    tuned["b5_runs"] = res
+    out_path.write_text(json.dumps(tuned, indent=1))
+    print(f"B5: q {q}, q_d {pick[0]}.  wrote {out_path}")
+
+
 # --------------------------------------------------------------------------
 # evaluation
 # --------------------------------------------------------------------------
@@ -267,14 +320,29 @@ def boot_ci(diffs, n=10000, seed=0):
     return float(np.percentile(d, 2.5)), float(np.percentile(d, 97.5))
 
 
-def evaluate(workers: int, tuned_path: Path, out_path: Path) -> None:
+def evaluate(workers: int, tuned_path: Path, out_path: Path,
+             only: tuple[str, ...] | None = None) -> None:
+    """`only` runs just those arms and keeps every other arm's runs from the
+    file already written, so adding an arm does not mean repeating the rest."""
+    global ARMS
     tuned = json.loads(tuned_path.read_text())
-    tuned_small = {k: tuned[k] for k in ("b2", "b3", "b3a")}
+    tuned_small = {k: tuned[k] for k in ("b2", "b3", "b3a", "b5") if k in tuned}
+    run_arms = only or ARMS
     jobs = [dict(scenario=s, cycle=c, noise=nz, mass=m, grade=g, arm=arm,
                  seed=seed, tuned=tuned_small)
-            for s, c, nz, m, g in SCENARIOS for arm in ARMS for seed in SEEDS]
+            for s, c, nz, m, g in SCENARIOS for arm in run_arms
+            for seed in SEEDS]
     print(f"stage 1: {len(jobs)} runs")
     res = run_all(jobs, workers)
+    if only:
+        kept = [r for r in json.loads(out_path.read_text())["runs"]
+                if r["arm"] not in only]
+        res = kept + res
+        seen = []
+        for r in res:
+            if r["arm"] not in seen:
+                seen.append(r["arm"])
+        ARMS = tuple(seen)
 
     cell: dict[tuple, list[dict]] = {}
     for r in res:
@@ -376,14 +444,20 @@ def evaluate(workers: int, tuned_path: Path, out_path: Path) -> None:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--tune", action="store_true")
+    ap.add_argument("--tune-disturbance", action="store_true")
+    ap.add_argument("--arms", nargs="+", default=None,
+                    help="run only these arms and merge into the output file")
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--tuned", default="docs/week11-speed-arms-tuned.json")
     ap.add_argument("--out-json", default="docs/week11-speed-arms.json")
     args = ap.parse_args()
     if args.tune:
         tune(args.workers, Path(args.tuned))
+    elif args.tune_disturbance:
+        tune_disturbance(args.workers, Path(args.tuned))
     else:
-        evaluate(args.workers, Path(args.tuned), Path(args.out_json))
+        evaluate(args.workers, Path(args.tuned), Path(args.out_json),
+                 tuple(args.arms) if args.arms else None)
     return 0
 
 

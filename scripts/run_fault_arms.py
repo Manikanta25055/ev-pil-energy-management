@@ -61,10 +61,14 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--tuned", default="docs/week11-speed-arms-tuned.json")
     ap.add_argument("--out-json", default="docs/week11-fault-arms.json")
+    ap.add_argument("--disturbance", action="store_true",
+                    help="give both arms the unknown-acceleration state (B5)")
     args = ap.parse_args()
 
     nominal = params_from_json("data/i3_params.json")
-    q = json.loads(Path(args.tuned).read_text())["b3a"]["q_mps"]
+    tuned = json.loads(Path(args.tuned).read_text())
+    q = tuned["b3a"]["q_mps"]
+    q_d = tuned["b5"]["q_d_mps2"] if args.disturbance else 0.0
     rules = RuleParams()
     policy = lambda o: rule_action(rules, soc_frac=o.soc_frac, v_mps=o.v_mps)
     us06 = load_cycle("us06")
@@ -84,9 +88,10 @@ def main() -> int:
                 row = {"fault": label, "named": named, "noise_x": mult,
                        "onset_s": onset}
                 for arm in ("B4", "B3a"):
-                    est = (FaultTolerantKalman(nominal, q_mps=q) if arm == "B4"
+                    est = (FaultTolerantKalman(nominal, q_mps=q, q_d_mps2=q_d)
+                           if arm == "B4"
                            else KalmanSpeed(nominal, q_mps=q, r_mps=FLOOR,
-                                            adaptive=True))
+                                            adaptive=True, q_d_mps2=q_d))
                     r = simulate(nominal, cyc, policy,
                                  speed_noise_mps=mult * FLOOR, seed=k,
                                  speed_estimator=est, keep_trace=True,
@@ -123,7 +128,7 @@ def main() -> int:
             noise = mult * FLOOR
         plant = replace(nominal, mass_kg=nominal.mass_kg * mass)
         for seed in SEEDS:
-            est = FaultTolerantKalman(nominal, q_mps=q)
+            est = FaultTolerantKalman(nominal, q_mps=q, q_d_mps2=q_d)
             r = simulate(plant, cyc, policy, ff_params=nominal,
                          speed_noise_mps=noise, seed=seed, speed_estimator=est)
             clean_rows.append({
@@ -159,12 +164,17 @@ def main() -> int:
         "false alarms before any fault onset":
             sum(r["false_alarms_before"] for r in fault_rows),
     }
+    heavy = [r for r in clean_rows if "mass" in r["scenario"]]
+    verdict["false alarms per hour, car 10% heavier than the model"] = (
+        sum(r["false_alarms"] for r in heavy) / sum(r["hours"] for r in heavy))
+    verdict["tracking RMSE, car 10% heavier, m/s"] = float(
+        np.mean([r["tracking_rmse_mps"] for r in heavy]))
     verdict["meets both fault criteria"] = bool(
         verdict["every named fault flagged within 0.5 s"]
         and verdict["fewer than one false alarm per hour"])
     Path(args.out_json).write_text(json.dumps({
         "provenance": "SIMULATED on the laptop; no board involved",
-        "q_mps": q, "onsets_s": ONSETS_S, "fault_s": FAULT_S,
+        "q_mps": q, "q_d_mps2": q_d, "onsets_s": ONSETS_S, "fault_s": FAULT_S,
         "faults": fault_rows, "clean": clean_rows, "verdict": verdict,
     }, indent=1))
     print()

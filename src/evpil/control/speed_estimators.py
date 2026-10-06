@@ -162,9 +162,23 @@ class KalmanSpeed:
     """
 
     def __init__(self, params: VehicleParams, *, q_mps: float, r_mps: float,
-                 adaptive: bool = False, r_floor_mps: float = 0.005) -> None:
+                 adaptive: bool = False, r_floor_mps: float = 0.005,
+                 q_d_mps2: float = 0.0) -> None:
         self.p = params
         self.q2 = q_mps * q_mps
+        # Second state, off by default: an acceleration the model does not
+        # know about, estimated alongside the speed. A car heavier than the
+        # model, a headwind or an unmodelled slope all look like one, and
+        # without it the estimate leans toward a model that is wrong in the
+        # same direction for seconds at a time. `q_d_mps2` is how fast that
+        # acceleration is allowed to wander per step; zero removes the state
+        # and leaves the one-state filter exactly as it was.
+        self.qd2 = q_d_mps2 * q_d_mps2
+        self._d = 0.0
+        self._Pvd = 0.0
+        self._Pdd = 0.0
+        self._pred_vd = 0.0
+        self._pred_dd = 0.0
         self.r2 = r_mps * r_mps
         self.adaptive = adaptive
         self.r_floor2 = r_floor_mps * r_floor_mps
@@ -189,13 +203,38 @@ class KalmanSpeed:
             rot_mass_factor=p.rot_mass_factor)
         f_resist = load.rolling_n + load.aero_n + load.grade_n
         a = (f_wheel - f_resist) / (p.mass_kg * (1.0 + p.rot_mass_factor))
-        return v + a * dt_s, self._P + self.q2
+        # Covariance of [speed, unknown acceleration] carried forward one
+        # step. With the second state off every extra term is exactly zero.
+        self._pred_vd = self._Pvd + dt_s * self._Pdd
+        self._pred_dd = self._Pdd + self.qd2
+        P_vv = (self._P + 2.0 * dt_s * self._Pvd + dt_s * dt_s * self._Pdd
+                + self.q2)
+        return v + (a + self._d) * dt_s, P_vv
+
+    def _coast(self, x_pred: float, P_pred: float) -> float:
+        """Take the prediction as the estimate, with no measurement."""
+        self._x, self._P = x_pred, P_pred
+        self._Pvd, self._Pdd = self._pred_vd, self._pred_dd
+        return self._x
 
     def _correct(self, x_pred: float, P_pred: float, v_meas_mps: float) -> float:
-        k = P_pred / (P_pred + self.r2)
-        self._x = x_pred + k * (v_meas_mps - x_pred)
+        nu = v_meas_mps - x_pred
+        S = P_pred + self.r2
+        k = P_pred / S
+        self._x = x_pred + k * nu
         self._P = (1.0 - k) * P_pred
+        if self.qd2 > 0.0:
+            kd = self._pred_vd / S
+            self._d += kd * nu
+            self._Pvd = (1.0 - k) * self._pred_vd
+            self._Pdd = self._pred_dd - kd * self._pred_vd
         return self._x
+
+    def _snapshot(self) -> tuple:
+        return (self._x, self._P, self._d, self._Pvd, self._Pdd)
+
+    def _restore(self, snap: tuple) -> None:
+        self._x, self._P, self._d, self._Pvd, self._Pdd = snap
 
     def step(self, *, v_meas_mps, torque_prev_nm, grade_rad, dt_s) -> float:
         if self._meter is not None:
@@ -248,9 +287,9 @@ class FaultTolerantKalman(KalmanSpeed):
 
     def __init__(self, params: VehicleParams, *, q_mps: float,
                  settings: FaultSettings = FaultSettings(),
-                 r_floor_mps: float = 0.005) -> None:
+                 r_floor_mps: float = 0.005, q_d_mps2: float = 0.0) -> None:
         super().__init__(params, q_mps=q_mps, r_mps=0.02, adaptive=True,
-                         r_floor_mps=r_floor_mps)
+                         r_floor_mps=r_floor_mps, q_d_mps2=q_d_mps2)
         self.s = settings
         self._innov: list[float] = []
         self._gross = 0
@@ -260,7 +299,7 @@ class FaultTolerantKalman(KalmanSpeed):
         self._k = 0
         # Enough history to undo what a fault did to the estimate before it
         # was caught: the estimate as it stood, and the inputs since.
-        self._past: list[tuple[float, float, float, float, float]] = []
+        self._past: list[tuple[tuple, float, float, float]] = []
         self.flagged = False
         self.alarm_steps: list[int] = []        # step index of each new flag
         self.flag_history: list[bool] = []
@@ -298,7 +337,7 @@ class FaultTolerantKalman(KalmanSpeed):
             self.flag_history.append(False)
             return self._x
 
-        self._past.append((self._x, self._P, torque_prev_nm, grade_rad, dt_s))
+        self._past.append((self._snapshot(), torque_prev_nm, grade_rad, dt_s))
         if len(self._past) > self.s.window + 1:
             self._past.pop(0)
 
@@ -316,9 +355,9 @@ class FaultTolerantKalman(KalmanSpeed):
                 # The samples that tripped the test were being blended in
                 # while it made up its mind. Go back to the estimate from
                 # before the window and bring it forward on the model alone.
-                self._x, self._P = self._past[0][0], self._past[0][1]
-                for _, _, tq, g, dt in self._past:
-                    self._x, self._P = self._predict(tq, g, dt)
+                self._restore(self._past[0][0])
+                for _, tq, g, dt in self._past:
+                    self._coast(*self._predict(tq, g, dt))
                 self.flag_history.append(True)
                 return self._x
         else:
@@ -339,8 +378,7 @@ class FaultTolerantKalman(KalmanSpeed):
             # Model only. A single wild sample is not blended in even before
             # the flag goes up. The uncertainty keeps growing, so the first
             # good measurement after the flag clears is taken almost whole.
-            self._x, self._P = x_pred, P_pred
-            return self._x
+            return self._coast(x_pred, P_pred)
 
         # The noise level is only learned from samples believed to be good.
         self._meter.push(v_meas_mps)

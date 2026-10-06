@@ -187,3 +187,39 @@ def test_the_flag_drops_again_when_the_sensor_comes_back(params):
     est, _ = drive(params, SpeedFault("dropout", 12.0, duration_s=2.0))
     assert est.flag_history[1300] is True
     assert est.flag_history[-1] is False
+
+
+# --- the disturbance state -------------------------------------------------
+
+from dataclasses import replace as _replace
+
+
+def test_the_disturbance_state_off_is_the_one_state_filter_exactly(params):
+    a = KalmanSpeed(params, q_mps=0.002, r_mps=0.06)
+    b = KalmanSpeed(params, q_mps=0.002, r_mps=0.06, q_d_mps2=0.0)
+    for v in noisy_ramp(0.1):
+        assert a.step(v_meas_mps=float(v), **KW) == b.step(v_meas_mps=float(v), **KW)
+
+
+def test_the_disturbance_state_learns_what_the_model_has_wrong(params):
+    # The same clean ramp the one-state filter falls behind on: the model says
+    # coast, the car accelerates at 2 m/s^2. The second state should end up
+    # holding most of that difference, and the estimate should stop lagging.
+    truth = noisy_ramp(0.02, n=1500, seed=1)
+    one = KalmanSpeed(params, q_mps=0.0005, r_mps=0.06)
+    two = KalmanSpeed(params, q_mps=0.0005, r_mps=0.06, q_d_mps2=0.02)
+    for v in truth:
+        e1 = one.step(v_meas_mps=float(v), **KW) - v
+        e2 = two.step(v_meas_mps=float(v), **KW) - v
+    assert two._d > 1.5
+    assert abs(e2) < 0.3 * abs(e1)
+
+
+def test_a_heavier_car_no_longer_looks_like_a_faulty_sensor(params):
+    c = short_cycle()
+    heavy = _replace(params, mass_kg=params.mass_kg * 1.1)
+    aware = FaultTolerantKalman(params, q_mps=0.002, q_d_mps2=0.02)
+    r = simulate(heavy, c, POL, ff_params=params, speed_noise_mps=0.02,
+                 speed_estimator=aware)
+    assert len(aware.alarm_steps) == 0
+    assert r.tracking_rmse_mps < 0.1
