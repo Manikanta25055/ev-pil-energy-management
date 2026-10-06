@@ -130,3 +130,60 @@ def test_no_estimator_can_lower_the_bill_without_following_the_cycle(params):
         r = simulate(params, c, POL, speed_estimator=est)
         if r.energy_wh < base.energy_wh * 0.995:
             assert r.tracking_rmse_mps > 10 * base.tracking_rmse_mps
+
+
+# --- the fault detector ----------------------------------------------------
+
+from evpil.control.speed_estimators import FaultTolerantKalman, SpeedFault
+
+
+def drive(params, fault, *, noise=0.02, seed=0, n=3000, noise_after=None):
+    c = short_cycle(n=n)
+    est = FaultTolerantKalman(params, q_mps=0.002)
+    sig = noise
+    if noise_after is not None:
+        sig = np.where(np.arange(n) * c.dt_s < 12.0, noise, noise_after)
+    r = simulate(params, c, POL, speed_noise_mps=sig, seed=seed,
+                 speed_estimator=est, speed_fault=fault)
+    return est, r
+
+
+def test_clean_driving_raises_no_flag(params):
+    for seed in range(3):
+        est, _ = drive(params, None, seed=seed)
+        assert est.alarm_steps == []
+
+
+def test_a_tenfold_rise_in_noise_is_not_a_fault(params):
+    est, _ = drive(params, None, noise_after=0.2)
+    assert est.alarm_steps == []
+
+
+@pytest.mark.parametrize("kind,mag", [("dropout", 0.0), ("stuck", 0.0),
+                                      ("bias", 0.5), ("bias", -3.0)])
+def test_each_fault_is_flagged_within_half_a_second(params, kind, mag):
+    onset = 12.0
+    est, _ = drive(params, SpeedFault(kind, onset, mag))
+    assert est.alarm_steps, "never flagged"
+    delay = est.alarm_steps[0] * 0.01 - onset
+    assert 0.0 <= delay <= 0.5
+
+
+def test_the_flag_keeps_the_loop_on_the_model_through_a_dropout(params):
+    # Without the detector a reading of zero at 20 m/s is a 20 m/s error and
+    # the loop floors the torque. With it the car hardly notices.
+    c = short_cycle()
+    fault = lambda: SpeedFault("dropout", 12.0, duration_s=3.0)
+    bare = simulate(params, c, POL, speed_noise_mps=0.02,
+                    speed_estimator=KalmanSpeed(params, q_mps=0.002,
+                                                r_mps=0.02, adaptive=True),
+                    speed_fault=fault())
+    est, kept = drive(params, fault())
+    assert kept.tracking_max_mps < 0.5
+    assert bare.tracking_max_mps > 5 * kept.tracking_max_mps
+
+
+def test_the_flag_drops_again_when_the_sensor_comes_back(params):
+    est, _ = drive(params, SpeedFault("dropout", 12.0, duration_s=2.0))
+    assert est.flag_history[1300] is True
+    assert est.flag_history[-1] is False

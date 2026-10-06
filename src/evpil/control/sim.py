@@ -133,6 +133,7 @@ def simulate(
     seed: int = 0,
     speed_filter_alpha: float = 1.0,
     speed_estimator=None,
+    speed_fault=None,
 ) -> Result:
     """Run one cycle closed-loop and return its control metrics.
 
@@ -149,6 +150,10 @@ def simulate(
     the `step` method of `evpil.control.speed_estimators.SpeedEstimator`. It
     is given the measurement, the torque commanded on the previous step and
     the grade, never the true speed. When it is passed the alpha is unused.
+
+    `speed_fault` is an `evpil.control.speed_estimators.SpeedFault`: a stuck,
+    dropped, offset or drifting speed reading, applied after the noise and
+    before anything in the controller sees it.
 
     `speed_noise_mps` may also be an array with one value per step, for a
     noise level that changes during the cycle.
@@ -205,6 +210,8 @@ def simulate(
         if delay_steps > 0:
             delay_buf.append(v_meas)
             v_meas = delay_buf.pop(0)
+        if speed_fault is not None:
+            v_meas = speed_fault.apply(k * dt, v_meas)
         grade = float(cycle.grade_rad[k])
         if speed_estimator is not None:
             v_meas = float(speed_estimator.step(
