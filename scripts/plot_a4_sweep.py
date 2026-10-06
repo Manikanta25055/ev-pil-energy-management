@@ -29,9 +29,9 @@ DURATIONS = ("0.2", "0.5", "1", "2", "3", "4", "5", "10")
 SECONDS = [float(s) for s in DURATIONS]
 
 
-def load_pair(docs: Path, s: str):
-    on = json.loads((docs / f"week9-a4-arduino-on-{s}s.json").read_text())
-    off = json.loads((docs / f"week9-a4-arduino-off-{s}s.json").read_text())
+def load_pair(docs: Path, s: str, prefix: str = "week9-a4-arduino"):
+    on = json.loads((docs / f"{prefix}-on-{s}s.json").read_text())
+    off = json.loads((docs / f"{prefix}-off-{s}s.json").read_text())
     onsets_on = [r["onset_s"] for r in on["blackouts"]]
     onsets_off = [r["onset_s"] for r in off["blackouts"]]
     if onsets_on != onsets_off:
@@ -45,10 +45,21 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--docs", default="docs")
     ap.add_argument("--out", default="docs/figures/week9-a4-arduino-sweep.png")
+    ap.add_argument("--prefix", default="week9-a4-arduino",
+                    choices=("week9-a4-arduino", "week11-a4"))
     args = ap.parse_args()
 
     docs = Path(args.docs)
-    pairs = [load_pair(docs, s) for s in DURATIONS]
+    if args.prefix == "week11-a4":
+        from scripts.corrected_campaign import load_corrected_a4
+        sweep = load_corrected_a4(docs)
+        if sweep is None:
+            raise SystemExit("corrected A4 sweep is incomplete")
+        pairs = [sweep[float(s)] for s in DURATIONS]
+        if args.out == "docs/figures/week9-a4-arduino-sweep.png":
+            raise SystemExit("use --out to preserve the historical A4 figure")
+    else:
+        pairs = [load_pair(docs, s, args.prefix) for s in DURATIONS]
 
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(13.0, 4.2))
 

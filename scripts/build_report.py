@@ -15,6 +15,7 @@ import json
 import math
 import os
 import re
+from datetime import date
 from pathlib import Path
 
 import numpy as np
@@ -232,7 +233,8 @@ def cover(doc: Document, date: str) -> None:
 
 def summary(doc: Document, ladder, tf, cost_rows, g3, a2, sac, onchip,
             a4=None, a4_on=None, a4_off=None, a4_on5=None,
-            a4_off5=None) -> None:
+            a4_off5=None, sac_corrected=None, pilc=None,
+            a4_corrected=None) -> None:
     h1(doc, "Summary")
 
     para(doc, "The project builds an energy-management controller for an "
@@ -241,6 +243,24 @@ def summary(doc: Document, ladder, tf, cost_rows, g3, a2, sac, onchip,
               "the simulation talk to each other over a serial cable in real "
               "time, so the controller has to meet real deadlines on real "
               "silicon rather than in a notebook.")
+
+    para(doc, "Current correction: the week-10 energy-gain claim is "
+              "withdrawn because a vehicle-model power ceiling reduced the "
+              "energy billed without reducing delivered torque. Section "
+              + ref("fix") + " separates the original evidence, the fix, "
+              "and new measurements.")
+    if sac_corrected:
+        learned = sac_corrected["summary"]["without-forecast"]
+        rule = sac_corrected["baseline"]["equivalent_wh_per_km"]
+        para(doc, f"Corrected-model retraining on validation: the no-forecast "
+                  f"learned arm averages {learned['mean']:.2f} watt-hours per "
+                  f"kilometre against {rule:.2f} for the rules. SIMULATED. "
+                  + ("The corrected board campaign is complete and tabulated "
+                     "in the correction section." if pilc else
+                     "The corrected board campaign is still pending; no "
+                     "board energy conclusion is inferred from this training result.")
+                  + (" The corrected A4 sweep is complete." if a4_corrected else
+                     " The corrected A4 sweep is also pending."))
 
     para(doc, "The work so far has produced a validated vehicle model, a "
               "forecasting model that beats every baseline we could find, "
@@ -2985,6 +3005,11 @@ def a4_sweep_section(doc: Document, pairs) -> None:
     """
     h1(doc, "Where the failure handling starts to pay, measured again",
        "a4sweep")
+    para(doc, "HISTORICAL MEASUREMENT. This sweep used the vehicle model "
+              "before the power-ceiling correction. Its energy and "
+              "current-limit interpretation is superseded; corrected-model "
+              "measurements, when complete, appear in section " + ref("fix")
+              + ".", size=10, italic=True, colour=MUTED)
 
     if not pairs:
         para(doc, "The outage-length sweep had not been run when this report "
@@ -3309,7 +3334,77 @@ def actor_onchip_section(doc: Document, sac, onchip) -> None:
               + ref("negatives") + " records it.")
 
 
-def correction_section(doc: Document, corr, pilc) -> None:
+def retraining_section(doc: Document, sac) -> None:
+    doc.add_heading("Retraining on the corrected vehicle model", level=2)
+    if not sac:
+        para(doc, "Corrected-model retraining results were not available when "
+                  "this report was generated.", italic=True, colour=MUTED)
+        return
+    baseline = sac["baseline"]["equivalent_wh_per_km"]
+    rows = [["Rule manager", f"{baseline:.2f}", "", "", ""]]
+    for arm in ("without-forecast", "with-forecast"):
+        r = sac["summary"][arm]
+        rows.append([arm.replace("-", " "), f"{r['mean']:.2f}",
+                     f"{r['std']:.2f}",
+                     f"{r['ci95'][0]:.2f} to {r['ci95'][1]:.2f}",
+                     f"{r['gap_to_rule_pct_mean']:+.2f}%"])
+    table(doc, ["Controller", "Mean, Wh/km", "Seed SD, Wh/km",
+                "95% interval, Wh/km", "Against rules"], rows)
+    para(doc, f"Table. SIMULATED on {sac['cycle'].upper()}, the validation "
+              f"cycle, with {sac['seeds']} training seeds per learned arm. "
+              "Shed cabin heat is charged back. These values come from "
+              "docs/week11-sac-corrected.json.", size=9, italic=True, colour=MUTED)
+    candidates = [r for r in sac["rows"] if r["arm"] == "without-forecast"]
+    chosen = min(candidates, key=lambda r: r["equivalent_wh_per_km"])
+    para(doc, f"The no-forecast seed selected on validation is seed "
+              f"{chosen['seed']}, at {chosen['equivalent_wh_per_km']:.2f} "
+              "watt-hours per kilometre. It was exported for the corrected "
+              "board campaign. Selection used validation rather than US06. "
+              "Exporting weights is not a board measurement.")
+    a3 = sac["a3"]
+    para(doc, f"The paired forecast difference is "
+              f"{a3['diff_mean_wh_per_km']:+.3f} watt-hours per kilometre, "
+              f"with a 95% interval from {a3['ci95'][0]:+.3f} to "
+              f"{a3['ci95'][1]:+.3f}. "
+              + ("The interval includes zero, so this retraining does not "
+                 "show a forecast benefit." if a3["null"] else
+                 "The interval excludes zero; its sign gives the direction "
+                 "of the measured forecast difference."))
+
+
+def corrected_a4_section(doc: Document, pairs) -> None:
+    doc.add_heading("Link outages on the corrected model", level=2)
+    if not pairs:
+        para(doc, "The corrected-model A4 sweep is pending. Historical "
+                  "week-9 points are not substituted for these measurements.",
+             italic=True, colour=MUTED)
+        return
+    rows = []
+    for s, (on, off) in pairs.items():
+        rows.append([f"{s:g}", f"{on['err_peak_mps']['median']:.3f}",
+                     f"{off['err_peak_mps']['median']:.3f}",
+                     f"{on['err_peak_mps']['worst']:.3f}",
+                     f"{off['err_peak_mps']['worst']:.3f}",
+                     str(on["delta"].get("ctrl_late", "unavailable")),
+                     str(off["delta"].get("ctrl_late", "unavailable"))])
+    table(doc, ["Outage, s", "Median on, m/s", "Median off, m/s",
+                "Worst on, m/s", "Worst off, m/s", "Late on", "Late off"], rows)
+    para(doc, "Table. MEASURED on the board with the retrained actor and "
+              "corrected host plant. Each duration has eight paired onsets. "
+              "Handling-on and handling-off files remain separate from the "
+              "historical sweep.", size=9, italic=True, colour=MUTED)
+    failed = [f"{s:g}s {'on' if i == 0 else 'off'}"
+              for s, pair in pairs.items() for i, d in enumerate(pair)
+              if d.get("verdict") is not True]
+    para(doc, "Counter checks: " + ("all sixteen files passed." if not failed else
+              "not passed in " + ", ".join(failed) + "."))
+    figure(doc, DOCS / "figures" / "week11-a4-corrected-sweep.png",
+           "Corrected-model A4 sweep from 0.2 to 10 seconds. MEASURED on "
+           "the board. Lines join measured points only.")
+
+
+def correction_section(doc: Document, corr, pilc, sac_corrected=None,
+                       a4_corrected=None) -> None:
     """The plant fault behind the week-10 energy result, and the re-measurement.
 
     Everything quantitative is read from the correction file and the corrected
@@ -3434,8 +3529,9 @@ def correction_section(doc: Document, corr, pilc) -> None:
            "Learned vs rules", "Rules: tracking, m/s",
            "Learned: tracking, m/s"],
           rows)
-    para(doc, "Table. The rule manager and the deployed learned controller, "
-              "before and after the fix. SIMULATED on the laptop.",
+    para(doc, "Table. The rule manager and the learned controller exported "
+              "before retraining, before and after the fix. SIMULATED on "
+              "the laptop. This snapshot is not the retrained policy.",
          size=9, italic=True, colour=MUTED)
 
     ar = rows_by.get(("after", "us06", "rule"))
@@ -3454,6 +3550,8 @@ def correction_section(doc: Document, corr, pilc) -> None:
                   f"and on a model that does not, the habit only costs it "
                   f"speed.")
 
+    retraining_section(doc, sac_corrected)
+    corrected_a4_section(doc, a4_corrected)
     doc.add_heading("What stands and what does not", level=2)
     bullets(doc, [
         "Withdrawn: the statement that the learned controller uses less "
@@ -3463,7 +3561,8 @@ def correction_section(doc: Document, corr, pilc) -> None:
         "energy bookkeeping.",
         "Unaffected: the offline optimum and the highway comparison of "
         "section " + ref("learned") + ". No ceiling bound in either.",
-        "To be re-measured: the learned-controller runs of the "
+        ("Re-measured above: " if a4_corrected else "To be re-measured: ")
+        + "the learned-controller runs of the "
         "failure-handling sweep in section " + ref("a4sweep") + ", where "
         "the ceiling also bound.",
     ])
@@ -3474,6 +3573,9 @@ def correction_section(doc: Document, corr, pilc) -> None:
                   "corrected model when this report was generated.",
              italic=True, colour=MUTED)
         return
+
+    from scripts.corrected_campaign import validate_campaign
+    campaign_summary = validate_campaign(pilc)
 
     cells = pil_cells(pilc)
     order = pil_order(pilc)
@@ -3514,6 +3616,18 @@ def correction_section(doc: Document, corr, pilc) -> None:
         para(doc, f"In the {n_valid} settings where both controllers "
                   f"followed the cycle to within one metre per second, the "
                   f"learned controller used less energy in {n_less}.")
+        para(doc, f"The mean paired energy difference across valid settings "
+                  f"is {campaign_summary['mean_gap_pct']:+.3f}%, learned "
+                  "against rules. Each setting has one run per controller; "
+                  "the settings are not repeated samples of one condition.")
+    para(doc, f"Excluded from energy aggregates: "
+              f"{campaign_summary['excluded_settings']} settings where one "
+              "controller's tracking RMSE reaches one metre per second. The "
+              "serialized link-delay axis measures host throughput rather "
+              "than independent link latency; its rows remain visible.")
+    figure(doc, DOCS / "figures" / "pil-energy-corrected.png",
+           "Corrected-model campaign: comparable energy beside tracking "
+           "error. MEASURED on the board, one run per cell.")
 
 
 def negatives_section(doc: Document) -> None:
@@ -3608,12 +3722,22 @@ def negatives_section(doc: Document) -> None:
               "was measured rather than argued.")
 
 
-def remaining_section(doc: Document) -> None:
+def remaining_section(doc: Document, pilc=None, a4_corrected=None) -> None:
     h1(doc, "What is left to do")
 
-    para(doc, "Phase 1 and Phase 2 are complete. The remaining work is the "
-              "controller, the on-chip deployment, and the measurement "
-              "campaign.")
+    para(doc, "Corrected-model campaign: "
+              + ("complete." if pilc else "pending.")
+              + " Corrected-model link-outage sweep: "
+              + ("complete." if a4_corrected else "pending.")
+              + " The proposed speed-loop decision transformer was dropped. "
+              "The classical filter and detector remain on the separate "
+              "feature/decision-model branch, with simulation evidence only. "
+              "B5 and B6 still need a C port and parity checks before board testing. "
+              "Merging that branch and measuring it on the board requires "
+              "a separate decision.")
+    para(doc, "The following week-by-week plan records the earlier project "
+              "schedule. Current correction status is stated above.",
+         italic=True, colour=MUTED)
 
     table(doc, ["Week", "Modelling work", "Hardware work", "Gate"], [
         ["6", "DONE: 8-bit costs 0.95% accuracy. DONE: the distilled "
@@ -3693,16 +3817,18 @@ def remaining_section(doc: Document) -> None:
 
     doc.add_heading("Open, and not waiting on anything", level=2)
     bullets(doc, [
-        "The measurement campaign in week 10. The board is attached, the "
-        "toolchain is settled and the deployed controller is on the chip, so "
-        "this is the next piece of work rather than a blocked one.",
+        ("The corrected campaign and outage sweep are complete; the next "
+         "step is review of the measured correction and paper framing."
+         if pilc and a4_corrected else
+         "Complete the corrected campaign and outage sweep, then review "
+         "their measured results and the supervisor correction note."),
         "The current drawn from the supply on the Arduino build. Only timing "
         "was re-measured after the port, and the radios cannot be left out of "
         "that build. Deferred on 11 September 2026, so the radio constraint "
         "is still supported by argument for current, not by measurement.",
-        "The exact outage length where the failure handling starts to pay. It "
-        "lies between four and five seconds, as fine as a whole-second sweep "
-        "resolves.",
+        "The historical four-to-five-second outage crossover is not a "
+        "conclusion about the corrected plant. Interpret the new sweep "
+        "from its own paired measurements.",
         "The stand-in workload in the forecaster's slot, which still runs "
         "although no forecaster ships. It is kept because the deadline-miss "
         "experiments were triggered through it.",
@@ -3794,7 +3920,7 @@ def reproduce_section(doc: Document) -> None:
               "stable-baselines3 and gymnasium. The test suite runs with "
               "python3 -m pytest and currently holds "
               + (f"{n} tests" if n else "its tests")
-              + ", all passing, including ones that drive the controller and "
+              + ", including ones that drive the controller and "
               "the learned policy in C and in Python through identical inputs "
               "and require them to agree, and ones that read the firmware's "
               "own compile-time switches back out of its headers so that the "
@@ -4413,7 +4539,7 @@ def pil_repeat_section(doc: Document, pil, pil2) -> None:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="reports/EV-PIL-status-report.docx")
-    ap.add_argument("--date", default="2 September 2026")
+    ap.add_argument("--date", default=date.today().strftime("%d %B %Y").lstrip("0"))
     args = ap.parse_args()
 
     ladder = load("forecast-ladder.json")
@@ -4444,6 +4570,9 @@ def main() -> int:
     pil2 = load("week10-pil-campaign-repeat.json")
     corr = load("week11-plant-correction.json")
     pilc = load("week11-pil-corrected.json")
+    sac_corrected = load("week11-sac-corrected.json")
+    from scripts.corrected_campaign import load_corrected_a4
+    a4_corrected = load_corrected_a4(DOCS)
 
     cost_path = DOCS / "forecast-deploy-cost.csv"
     cost_rows = None
@@ -4462,7 +4591,7 @@ def main() -> int:
     reset_counters()
     cover(doc, args.date)
     summary(doc, ladder, tf, cost_rows, g3, a2, sac, onchip, a4,
-            a4_on, a4_off, a4_on5, a4_off5)
+            a4_on, a4_off, a4_on5, a4_off5, sac_corrected, pilc, a4_corrected)
     background(doc)
     glossary_section(doc)
     charts_section(doc)
@@ -4489,10 +4618,10 @@ def main() -> int:
     a4_sweep_section(doc, a4_sweep)
     pil_campaign_section(doc, pil)
     pil_repeat_section(doc, pil, pil2)
-    correction_section(doc, corr, pilc)
+    correction_section(doc, corr, pilc, sac_corrected, a4_corrected)
     negatives_section(doc)
     changes_section(doc)
-    remaining_section(doc)
+    remaining_section(doc, pilc, a4_corrected)
     reproduce_section(doc)
 
     resolve_refs(doc)
@@ -4515,6 +4644,8 @@ def main() -> int:
                ("PIL repeat campaign", pil2),
                ("plant correction", corr),
                ("PIL campaign on the corrected plant", pilc),
+               ("SAC retraining on the corrected plant", sac_corrected),
+               ("A4 on the corrected plant", a4_corrected),
                ("on-chip deployment", fullstack),
                ("distillation", dis))
     have = [n for n, v in tracked if v]
