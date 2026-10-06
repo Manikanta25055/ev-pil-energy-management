@@ -149,6 +149,10 @@ it is now made at the widest scope available.
 
 ### 6.2 The energy result, which the campaign was not expecting
 
+> **WITHDRAWN 2026-10-06.** The energy result below is an artefact of a plant
+> bug: the power ceiling capped billed energy without limiting torque. See
+> `docs/week11-plant-correction.md`. The timing results are unaffected.
+
 | Setting | Rule, Wh/km | Actor, Wh/km | Actor vs rule |
 |---|---|---|---|
 | driving_condition / highway | 154.01 | 154.14 | +0.09% |

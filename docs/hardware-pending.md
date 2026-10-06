@@ -99,6 +99,10 @@ Nothing in this file is waiting on hardware any more.
 
 Two things came out of it that the plan did not anticipate.
 
+> **WITHDRAWN 2026-10-06.** The energy result below is an artefact of a plant
+> bug: the power ceiling capped billed energy without limiting torque. See
+> `docs/week11-plant-correction.md`. The timing results are unaffected.
+
 **The energy comparison reverses on the sealed cycle.** The learned controller
 uses less energy than the rule manager in 14 of the 16 valid settings, by 8.28%
 on average, and the two it loses are the gentlest cycles. Week 8's 0.51%

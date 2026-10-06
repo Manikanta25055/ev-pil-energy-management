@@ -110,3 +110,16 @@ def test_the_summary_carries_both_scales(params):
     d = simulate(params, c, fixed_policy(EmsAction(1.0, 3e5, 0.1))).summary()
     assert "wh_per_km" in d and "equivalent_wh_per_km" in d
     assert d["equivalent_wh_per_km"] > d["wh_per_km"]
+
+
+def test_a_starving_power_ceiling_costs_the_drive_not_just_the_bill(params):
+    # The guard against free energy. A ceiling far below what
+    # the cycle demands used to leave tracking untouched and, on US06, cut the
+    # bill by 95%. It may still lower Wh/km, by covering the cycle more slowly,
+    # but never for nothing: the vehicle has to fall behind.
+    cycle = short_cycle()
+    open_ = simulate(params, cycle, fixed_policy(EmsAction(1.0, 250e3, 0.0)))
+    held = simulate(params, cycle, fixed_policy(EmsAction(1.0, 20e3, 0.0)))
+    assert held.tracking_rmse_mps > 100 * open_.tracking_rmse_mps
+    assert held.distance_km < open_.distance_km
+    assert held.peak_current_a < open_.peak_current_a
