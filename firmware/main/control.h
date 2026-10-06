@@ -82,12 +82,18 @@ typedef struct {
 
 void control_jitter_push(jitter_meter_t *m, float v_meas_mps);
 
-/* One-state Kalman filter on speed, mirroring
-   evpil.control.speed_estimators.KalmanSpeed: predict from the torque
-   commanded on the previous step and the road load, correct with the
-   measurement. Start it with control_kalman_init. */
+/* Kalman filter on speed, mirroring evpil.control.speed_estimators.KalmanSpeed:
+   predict from the torque commanded on the step that produced this
+   measurement and the road load, correct with the measurement.
+
+   With `q_d_mps2` zero it has one state, the speed (arms B3 and B3a). With it
+   positive it carries a second: an acceleration the model does not know about
+   -- a car heavier than the model, a headwind -- learned alongside the speed
+   (arm B5). Start it with control_kalman_init. */
 typedef struct {
     float          x_mps, p, r2;
+    float          d_mps2, p_vd, p_dd;      /* second state and its covariance */
+    float          pred_vd, pred_dd;        /* carried from predict to correct */
     bool           primed;
     jitter_meter_t meter;
 } kalman_speed_t;
@@ -97,9 +103,57 @@ void control_kalman_init(kalman_speed_t *k, float r_mps);
 /* `adaptive` replaces the assumed measurement noise, once per block, with the
    level the jitter meter reads, never below `r_floor_mps`. */
 float control_kalman_step(const vehicle_t *v, kalman_speed_t *k,
-                          float q_mps, bool adaptive, float r_floor_mps,
-                          float v_meas_mps, float torque_prev_nm,
-                          float grade_rad, float dt_s);
+                          float q_mps, float q_d_mps2, bool adaptive,
+                          float r_floor_mps, float v_meas_mps,
+                          float torque_prev_nm, float grade_rad, float dt_s);
+
+/* One step on the model alone, for a control period in which no new
+   measurement arrived. */
+float control_kalman_coast(const vehicle_t *v, kalman_speed_t *k,
+                           float q_mps, float q_d_mps2,
+                           float torque_prev_nm, float grade_rad, float dt_s);
+
+/* Arm B6, mirroring evpil.control.speed_estimators.KinematicFaultKalman: the
+   two-state estimate plus a detector for a speed sensor that is stuck, has
+   dropped out, or has picked up an offset. The detector compares the reading
+   with a speed dead-reckoned from measured acceleration, so it does not
+   depend on the vehicle model and a heavier car does not trip it. While the
+   flag is up the estimate is the dead-reckoned speed. Zero-initialise, then
+   control_fault_kalman_init. */
+#define FAULT_WINDOW        20      /* gaps in the mean test: 200 ms */
+#define FAULT_T_LIMIT       8.0f    /* mean over its own standard error */
+#define FAULT_GROSS_MPS     1.0f    /* a jump no vehicle makes in 10 ms */
+#define FAULT_GROSS_COUNT   2
+#define FAULT_FROZEN_COUNT  10      /* identical samples in a row */
+#define FAULT_CLEAR_COUNT   50      /* quiet samples before the flag drops */
+#define FAULT_CLEAR_BAND_MPS 0.25f
+
+typedef struct {
+    float x_mps, p, d_mps2, p_vd, p_dd;
+    bool  valid;
+} kalman_snapshot_t;
+
+typedef struct {
+    kalman_speed_t    k;
+    float             v_dr;                     /* dead-reckoned speed */
+    float             gap[FAULT_WINDOW];        /* oldest first */
+    float             pull[FAULT_WINDOW];       /* what each sample moved v_dr by */
+    int               n_gap;
+    int               gross, same, quiet;
+    float             last;
+    kalman_snapshot_t good, good_next;
+    bool              flagged;
+    uint32_t          alarms;                   /* times the flag went up */
+    uint32_t          flag_steps;               /* steps spent flagged */
+} fault_kalman_t;
+
+void control_fault_kalman_init(fault_kalman_t *f);
+
+float control_fault_kalman_step(const vehicle_t *v, fault_kalman_t *f,
+                                float q_mps, float q_d_mps2, float r_floor_mps,
+                                float tau_s, float v_meas_mps, float a_meas_mps2,
+                                float torque_prev_nm, float grade_rad,
+                                float dt_s);
 
 /* The rule-based energy manager. Deterministic, memoryless and cheap enough to
    run inside the 10 ms control task, which is what makes it usable as the

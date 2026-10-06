@@ -256,7 +256,8 @@ def run_one(
             if key in ("boot_reason", "ctrl_wcet_us", "infer_wcet_us",
                        "rtt_max_us", "period_min_us", "period_max_us",
                        "actor_wcet_us", "stale_worst",
-                       "p_limit_min_w", "p_limit_mean_w", "p_limit_max_w"):
+                       "p_limit_min_w", "p_limit_mean_w", "p_limit_max_w",
+                       "speed_est_mode"):
                 delta[key] = int(diag_last[key])
             else:
                 delta[key] = int(diag_last[key]) - int(diag_first[key])
@@ -295,6 +296,10 @@ def run_one(
         "ctrl_late": int(delta.get("ctrl_late", -1)),
         "stale_steps": int(delta.get("stale_steps", -1)),
         "actor_steps": int(delta.get("actor_steps", -1)),
+        "speed_est_mode": int(delta.get("speed_est_mode", -1)),
+        "sensor_flag_steps": int(delta.get("sensor_flag_steps", -1)),
+        "sensor_alarms": int(delta.get("sensor_alarms", -1)),
+        "ctrl_wcet_us": int(delta.get("ctrl_wcet_us", -1)),
         "actor_wcet_us": int(delta.get("actor_wcet_us", -1)),
         "ems_fallback_steps": int(delta.get("ems_fallback_steps", -1)),
         "loop_count": int(delta.get("loop_count", -1)),
@@ -335,8 +340,27 @@ def check_arm(result: dict) -> None:
             f"learned policy filed under the rule manager.")
 
 
+def check_speed_estimator(result: dict, expected: int | None) -> None:
+    """Refuse to file a run under a speed estimator the board was not running.
+
+    Same reasoning as check_arm: the estimator is a compile-time choice, and
+    three images that differ only in it produce three tables that look alike.
+    The image reports its own SPEED_KALMAN in every DIAG frame.
+    """
+    if expected is None:
+        return
+    got = result["speed_est_mode"]
+    if got != expected:
+        raise SystemExit(
+            f"--speed-est {expected} but the board reported speed_est_mode="
+            f"{got}. The flashed image was built with a different "
+            f"-DSPEED_KALMAN; these runs would be filed under the wrong arm.")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
+    ap.add_argument("--speed-est", type=int, default=None,
+                    help="the SPEED_KALMAN the flashed image must report")
     ap.add_argument("--port", default="/dev/cu.usbmodem1101")
     ap.add_argument("--baud", type=int, default=921600)
     ap.add_argument("--params", default="data/i3_params.json")
@@ -410,6 +434,7 @@ def main() -> int:
                          max_steps=args.max_steps)
 
     check_arm(result)
+    check_speed_estimator(result, args.speed_est)
     results = [r for r in results if key_of(r) != key_of(result)]
     results.append(result)
 

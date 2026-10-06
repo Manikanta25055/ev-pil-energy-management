@@ -5,6 +5,7 @@
    It prints rather than asserts: the reference values live in Python, and
    duplicating them here would mean maintaining the same numbers twice and
    discovering a divergence only when someone updated both. */
+#include <stdint.h>
 #include <stdio.h>
 #include "control.h"
 
@@ -55,13 +56,14 @@ int main(void)
         }
     }
 
-    /* The Kalman estimate, fixed and adaptive, over one sequence: a launch,
-       a cruise, a braking phase on a grade, with a jitter on the measurement
-       that grows tenfold half way so the adaptive arm has something to adapt
-       to. The measurement is not a simulation of anything; parity only needs
-       both sides to see the same numbers. */
-    printf("# kf: mode step v_meas torque grade v_est sigma\n");
-    for (int mode = 0; mode < 2; mode++) {
+    /* The Kalman estimate over one sequence: a launch, a cruise, a braking
+       phase on a grade, with a jitter on the measurement that grows tenfold
+       half way so the adaptive arms have something to adapt to. Mode 0 is the
+       fixed filter (B3), 1 the adaptive one (B3a), 2 adds the second state
+       (B5). The measurement is not a simulation of anything; parity only
+       needs both sides to see the same numbers. */
+    printf("# kf: mode step v_meas torque grade v_est sigma d\n");
+    for (int mode = 0; mode < 3; mode++) {
         kalman_speed_t kf;
         control_kalman_init(&kf, mode ? 0.02f : 0.06f);
         for (int n = 0; n < 600; n++) {
@@ -74,10 +76,45 @@ int main(void)
             float tq = (n < 200) ? 180.0f : (n < 400) ? 35.0f : -120.0f;
             float grade = (n < 400) ? 0.0f : 0.03f;
             float est = control_kalman_step(&k_vehicle, &kf,
-                                            mode ? 0.002f : 0.0005f, mode,
-                                            0.005f, v, tq, grade, 0.01f);
-            printf("kf %d %d %.6f %.6f %.6f %.6f %.6f\n", mode, n, v, tq,
-                   grade, est, kf.meter.sigma_mps);
+                                            mode ? 0.002f : 0.0005f,
+                                            mode == 2 ? 0.02f : 0.0f,
+                                            mode != 0, 0.005f, v, tq, grade,
+                                            0.01f);
+            printf("kf %d %d %.9g %.9g %.9g %.9g %.9g %.9g\n", mode, n, v, tq,
+                   grade, est, kf.meter.sigma_mps, kf.d_mps2);
+        }
+    }
+
+    /* B6 through a drive with three sensor faults in it: an offset, a
+       dropout and a frozen reading, each followed by a healthy stretch long
+       enough for the flag to drop. The true speed follows the acceleration
+       exactly, so only the faults break the agreement between the two, and
+       both channels carry a pseudo-random jitter from a fixed generator. */
+    printf("# b6: step v_meas a_meas torque v_est flagged alarms v_dr\n");
+    {
+        fault_kalman_t fk;
+        control_fault_kalman_init(&fk);
+        float v_true = 20.0f, held = 0.0f;
+        uint32_t lcg = 12345u;
+        for (int n = 0; n < 1700; n++) {
+            float a_true = (n < 300) ? 1.5f : (n < 1100) ? 0.2f : -0.8f;
+            v_true += a_true * 0.01f;
+            lcg = lcg * 1664525u + 1013904223u;
+            float nv = ((float) (lcg >> 8) / 16777216.0f - 0.5f) * 0.08f;
+            lcg = lcg * 1664525u + 1013904223u;
+            float na = ((float) (lcg >> 8) / 16777216.0f - 0.5f) * 0.2f;
+            float v = v_true + nv;
+            if (n >= 400 && n < 600) v += 0.5f;             /* offset */
+            if (n >= 800 && n < 900) v = 0.0f;              /* dropout */
+            if (n == 1200) held = v;
+            if (n >= 1200 && n < 1350) v = held;            /* frozen */
+            float a = a_true + na;
+            float tq = 60.0f + 80.0f * a_true;
+            float est = control_fault_kalman_step(&k_vehicle, &fk, 0.002f,
+                                                  0.02f, 0.005f, 2.0f, v, a,
+                                                  tq, 0.0f, 0.01f);
+            printf("b6 %d %.9g %.9g %.9g %.9g %d %u %.9g\n", n, v, a, tq, est,
+                   fk.flagged ? 1 : 0, (unsigned) fk.alarms, fk.v_dr);
         }
     }
 

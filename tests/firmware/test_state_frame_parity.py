@@ -98,3 +98,18 @@ def test_the_power_ceiling_is_logged(field):
     """
     assert field in TASKS_H.read_text(), f"{field} missing from tasks.h"
     assert field in TASKS_C.read_text(), f"{field} never packed in tasks.c"
+
+
+@pytest.mark.parametrize("field", ["speed_est_mode", "sensor_flag_steps",
+                                   "sensor_alarms"])
+def test_the_speed_estimator_reports_itself(field):
+    """Three images that differ only in -DSPEED_KALMAN give three tables that
+    look alike. The mode in the frame is what lets a campaign cell prove which
+    one it ran, and the two detector counters are the false-alarm measurement.
+    """
+    assert field in TASKS_H.read_text(), f"{field} missing from tasks.h"
+    assert field in DIAG_FIELDS
+
+
+def test_the_estimator_mode_is_packed_from_the_build_switch():
+    assert "(uint32_t) SPEED_KALMAN" in TASKS_C.read_text()

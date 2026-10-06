@@ -64,9 +64,18 @@ static volatile float    s_p_limit_w   = 50000.0f;
    the build's constant. */
 static volatile float    s_speed_alpha = SPEED_FILTER_ALPHA;
 static speed_filter_t    s_speed_filt;
-#if SPEED_KALMAN
+#if SPEED_KALMAN == 4
+static fault_kalman_t    s_fault;
+#elif SPEED_KALMAN
 static kalman_speed_t    s_kalman;
+#endif
+#if SPEED_KALMAN
 static bool              s_kalman_ready;
+static float             s_v_ctl;           /* last estimate handed to the PID */
+/* The command before last. In the pipelined loop the state this step acts on
+   is the reply to the previous request, and the torque that moved the car
+   into that state was commanded one step earlier still. */
+static float             s_torque_prev2;
 #endif
 static volatile float    s_aux_derate  = 0.0f;
 /* Accumulators for the ceiling the energy manager actually applied. Kept out
@@ -190,6 +199,9 @@ static void ctrl_task(void *arg)
 
         xSemaphoreTake(s_state_mux, portMAX_DELAY);
         float v_meas = s_state.v_mps;
+#if SPEED_KALMAN == 4
+        float a_meas = s_state.a_mps2;
+#endif
         float v_ref  = s_state.v_ref_mps;
         float a_ref  = s_state.a_ref_mps2;
         float grade  = s_state.grade_rad;
@@ -232,18 +244,48 @@ static void ctrl_task(void *arg)
         {
             float ff = control_feedforward_nm(&k_vehicle, v_ref, a_ref, grade);
 #if SPEED_KALMAN
+            const float dt = CTRL_PERIOD_MS * 1e-3f;
+            /* The torque that produced the state now held. */
+#if CTRL_PIPELINED
+            float tq_meas = s_torque_prev2;
+#else
+            float tq_meas = s_torque_cmd;
+#endif
+            s_torque_prev2 = s_torque_cmd;
+            bool fresh = (stale_run == 0);
+#if SPEED_KALMAN == 4
             if (!s_kalman_ready) {
-                control_kalman_init(&s_kalman, SPEED_KALMAN == 2
-                                    ? KALMAN_ADAPT_R0_MPS : KALMAN_FIXED_R_MPS);
+                control_fault_kalman_init(&s_fault);
                 s_kalman_ready = true;
             }
-            /* s_torque_cmd still holds the previous step's command here,
-               which is the torque that moved the car to this measurement. */
-            float v_ctl = control_kalman_step(
-                &k_vehicle, &s_kalman,
-                SPEED_KALMAN == 2 ? KALMAN_ADAPT_Q_MPS : KALMAN_FIXED_Q_MPS,
-                SPEED_KALMAN == 2, KALMAN_R_FLOOR_MPS,
-                v_meas, s_torque_cmd, grade, CTRL_PERIOD_MS * 1e-3f);
+            /* No new measurement this period: hold the last estimate rather
+               than show the detector the same sample twice. */
+            if (fresh)
+                s_v_ctl = control_fault_kalman_step(
+                    &k_vehicle, &s_fault, KALMAN_ADAPT_Q_MPS, KALMAN_QD_MPS2,
+                    KALMAN_R_FLOOR_MPS, KALMAN_DR_TAU_S, v_meas, a_meas,
+                    tq_meas, grade, dt);
+            s_diag.sensor_flag_steps = s_fault.flag_steps;
+            s_diag.sensor_alarms = s_fault.alarms;
+#else
+            const float q = (SPEED_KALMAN == 1) ? KALMAN_FIXED_Q_MPS
+                                                : KALMAN_ADAPT_Q_MPS;
+            const float q_d = (SPEED_KALMAN == 3) ? KALMAN_QD_MPS2 : 0.0f;
+            if (!s_kalman_ready) {
+                control_kalman_init(&s_kalman, SPEED_KALMAN == 1
+                                    ? KALMAN_FIXED_R_MPS : KALMAN_ADAPT_R0_MPS);
+                s_kalman_ready = true;
+            }
+            /* No new measurement this period: run on the model alone. */
+            if (fresh)
+                s_v_ctl = control_kalman_step(
+                    &k_vehicle, &s_kalman, q, q_d, SPEED_KALMAN != 1,
+                    KALMAN_R_FLOOR_MPS, v_meas, tq_meas, grade, dt);
+            else
+                s_v_ctl = control_kalman_coast(&k_vehicle, &s_kalman, q, q_d,
+                                               tq_meas, grade, dt);
+#endif
+            float v_ctl = s_v_ctl;
 #else
             float v_ctl = control_speed_filter_step(&s_speed_filt, v_meas,
                                                     s_speed_alpha);
@@ -407,8 +449,8 @@ static void diag_task(void *arg)
 {
     (void) arg;
     TickType_t next = xTaskGetTickCount();
-    uint8_t tx[128];
-    uint8_t payload[21 * 4 + JITTER_N_BINS * 2];
+    uint8_t tx[160];
+    uint8_t payload[24 * 4 + JITTER_N_BINS * 2];
     uint32_t seq = 0;
 
     for (;;) {
@@ -426,7 +468,7 @@ static void diag_task(void *arg)
         uint32_t pl_min = s_p_limit_n ? s_diag.p_limit_min_w : 0u;
 
         /* Order must match evpil.protocol.DIAG_FIELDS. */
-        uint32_t u32[21] = {
+        uint32_t u32[24] = {
             s_diag.loop_count, s_diag.rx_timeouts, s_diag.rx_bad,
             s_diag.infer_deadline_misses, s_diag.ctrl_wcet_us,
             s_diag.infer_wcet_us, s_diag.rtt_max_us,
@@ -437,6 +479,8 @@ static void diag_task(void *arg)
             s_diag.boot_reason,
             s_diag.actor_steps, s_diag.actor_wcet_us,
             pl_min, s_diag.p_limit_mean_w, s_diag.p_limit_max_w,
+            (uint32_t) SPEED_KALMAN, s_diag.sensor_flag_steps,
+            s_diag.sensor_alarms,
         };
         memcpy(payload, u32, sizeof u32);
         memcpy(payload + sizeof u32, s_diag.jitter_hist,

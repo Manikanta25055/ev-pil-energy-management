@@ -431,7 +431,10 @@ class KinematicFaultKalman(KalmanSpeed):
         self.tau_s = tau_s
         self._v_dr: float | None = None
         self._gap: list[float] = []
-        self._dr_past: list[float] = []
+        # What each sample in the window actually moved the dead-reckoned
+        # speed by. Zero for a sample that was refused, so that undoing the
+        # window on a flag does not undo pulls that never happened.
+        self._pull: list[float] = []
         self._gross = 0
         self._same = 0
         self._last: float | None = None
@@ -461,11 +464,10 @@ class KinematicFaultKalman(KalmanSpeed):
         self._same = self._same + 1 if v_meas_mps == self._last else 0
         self._last = v_meas_mps
         self._gap.append(gap)
+        self._pull.append(0.0)
         if len(self._gap) > s.window:
             self._gap.pop(0)
-        self._dr_past.append(self._v_dr)
-        if len(self._dr_past) > s.window + 1:
-            self._dr_past.pop(0)
+            self._pull.pop(0)
 
         fault_now = self._gross >= s.gross_count
         fault_now |= self._same >= s.frozen_count and self._meter.sigma_mps > 1e-4
@@ -480,11 +482,8 @@ class KinematicFaultKalman(KalmanSpeed):
             self._quiet = 0
             self.alarm_steps.append(self._k - 1)
             # Undo the pull the faulty samples had on the dead-reckoned speed
-            # while the test was making up its mind: go back to where it
-            # stood a window ago and bring it forward on acceleration alone.
-            # The acceleration over that stretch is recovered from the gaps.
-            v_dr = self._dr_past[0] + (v_dr - self._dr_past[0]) - sum(
-                g * dt_s / self.tau_s for g in self._gap[:-1])
+            # while the test was making up its mind.
+            v_dr -= sum(self._pull[:-1])
         elif self.flagged:
             band = max(s.clear_band_mps, 4.0 * scale)
             quiet = (abs(gap) < band and self._same < s.frozen_count
@@ -493,8 +492,15 @@ class KinematicFaultKalman(KalmanSpeed):
             if self._quiet >= s.clear_count:
                 self.flagged = False
                 self._gap.clear()
-                # Start the filter again from the dead-reckoned speed, with
-                # the unknown acceleration it held before the fault.
+                self._pull.clear()
+                # The sensor has agreed with the dead-reckoned speed, within
+                # the band, for half a second. Take its reading as the new
+                # starting point for both. Dead reckoning drifts while a
+                # fault lasts, and carrying that drift past the fault makes
+                # the mean test raise the flag again on a healthy sensor.
+                v_dr = v_meas_mps
+                # The filter keeps the unknown acceleration it held before
+                # the fault.
                 if self._good is not None:
                     self._restore(self._good)
                 self._x, self._P = v_dr, self.r2
@@ -510,6 +516,8 @@ class KinematicFaultKalman(KalmanSpeed):
             x_pred, P_pred = self._predict(torque_prev_nm, grade_rad, dt_s)
             return self._coast(x_pred, P_pred)
 
+        if self._pull:      # empty on the step the flag has just dropped
+            self._pull[-1] = (dt_s / self.tau_s) * gap
         self._v_dr = v_dr + (dt_s / self.tau_s) * gap
         self._meter.push(v_meas_mps)
         if self._meter.new_block:

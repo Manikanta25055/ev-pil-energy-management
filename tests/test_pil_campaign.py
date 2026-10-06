@@ -185,3 +185,11 @@ def test_host_dropped_frames_are_read_from_the_link_property():
     # The campaign total folds the host's count in with the board's, the way
     # run_g3.py composes its dropped-frame figure.
     assert result["dropped_frames"] >= 4
+
+
+def test_a_run_on_the_wrong_speed_estimator_is_refused():
+    from scripts.run_pil_campaign import check_speed_estimator
+    check_speed_estimator({"speed_est_mode": 3}, 3)
+    check_speed_estimator({"speed_est_mode": 0}, None)
+    with pytest.raises(SystemExit, match="speed_est_mode=0"):
+        check_speed_estimator({"speed_est_mode": 0}, 4)

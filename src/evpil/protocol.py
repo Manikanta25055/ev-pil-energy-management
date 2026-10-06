@@ -189,6 +189,14 @@ DIAG_FIELDS: tuple[str, ...] = (
     # the claim directly: a manager that never limits should report a ceiling
     # pinned at its maximum for the whole run.
     "p_limit_min_w", "p_limit_mean_w", "p_limit_max_w",
+    # Speed-loop robustness arms, 2026-10-07. Which speed estimator the image
+    # was built with (firmware SPEED_KALMAN: 0 none, 3 the two-state Kalman
+    # estimate, 4 that plus the sensor-fault detector), because the arm is a
+    # compile-time choice and a campaign cell has to be able to prove which
+    # one it ran. Then what the detector did: control steps spent with the
+    # flag up, and how many times it went up. On a healthy sensor both should
+    # stay at zero, and that is a false-alarm measurement on real silicon.
+    "speed_est_mode", "sensor_flag_steps", "sensor_alarms",
 )
 
 _DIAG = struct.Struct(f"<{len(DIAG_FIELDS)}I{N_JITTER_BINS}H")

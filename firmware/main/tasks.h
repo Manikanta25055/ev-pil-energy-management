@@ -35,13 +35,18 @@
 /* What turns the measured speed into the speed the loop controls on.
 
    0  the first-order filter above (which at alpha 1.0 is nothing at all)
-   1  Kalman estimate with a fixed noise assumption
-   2  Kalman estimate that measures the noise from the speed jitter
+   1  Kalman estimate with a fixed noise assumption            (arm B3)
+   2  Kalman estimate that measures the noise from the jitter  (arm B3a)
+   3  as 2, with a second state for acceleration the model
+      does not know about                                      (arm B5)
+   4  as 3, with the speed-sensor fault detector on top        (arm B6)
 
-   The settings are the ones scripts/run_speed_arms.py --tune chose on a
-   training cycle (docs/week11-speed-arms-tuned.json), arms B3 and B3a.
+   The settings are the ones scripts/run_speed_arms.py chose on a training
+   cycle (docs/week11-speed-arms-tuned.json). The mode is reported in the
+   DIAG frame as `speed_est_mode`, so a run cannot be filed under an arm the
+   board was not running.
 
-     ./scripts/arduino_build.sh -DSPEED_KALMAN=2 */
+     ./scripts/arduino_build.sh -DSPEED_KALMAN=4 */
 #ifndef SPEED_KALMAN
 #define SPEED_KALMAN 0
 #endif
@@ -50,6 +55,8 @@
 #define KALMAN_ADAPT_Q_MPS     0.002f
 #define KALMAN_ADAPT_R0_MPS    0.02f
 #define KALMAN_R_FLOOR_MPS     0.005f
+#define KALMAN_QD_MPS2         0.02f
+#define KALMAN_DR_TAU_S        2.0f
 #define INFER_PERIOD_MS  100
 #define EMS_PERIOD_MS    100
 #define DIAG_PERIOD_MS   500
@@ -173,6 +180,13 @@ typedef struct {
     uint32_t p_limit_min_w;
     uint32_t p_limit_mean_w;
     uint32_t p_limit_max_w;
+    /* The speed estimator this image was built with (SPEED_KALMAN), and what
+       its fault detector did: control steps spent with the flag up, and the
+       number of times it went up. Both stay 0 in every mode but 4. Keep in
+       step with evpil.protocol.DIAG_FIELDS. */
+    uint32_t speed_est_mode;
+    uint32_t sensor_flag_steps;
+    uint32_t sensor_alarms;
     uint16_t jitter_hist[JITTER_N_BINS];
 } diag_stats_t;
 
