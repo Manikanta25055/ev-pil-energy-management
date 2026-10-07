@@ -1,0 +1,50 @@
+{
+ "provenance": "replay on the laptop of the urban cell, same plant, run loop and noise seed as the board run",
+ "energy_wh_per_km": 167.9654201860034,
+ "alarms": [
+  {
+   "control_step": 125502,
+   "cycle_time_s": 1255.02,
+   "test": 3,
+   "reference_speed_mps": 0.44704,
+   "true_speed_mps": 0.44572356636833,
+   "speed_reading_mps": 0.46311482787132263,
+   "dead_reckoned_mps": 0.4275951625636328,
+   "dead_reckoning_error_mps": -0.018494087463308162,
+   "mean_gap_of_window_mps": 0.03183394325963669,
+   "mean_speed_noise_of_window_mps": 0.012592486313654746
+  }
+ ],
+ "board_runs": [
+  {
+   "sensor_alarms": 1,
+   "sensor_alarm_test": 3,
+   "sensor_alarm_loop": 125954,
+   "sensor_alarm_loop_first": 451,
+   "sensor_alarm_v_mmps": 466,
+   "sensor_alarm_gap_mmps": 33,
+   "equivalent_wh_per_km": 167.96826240611028
+  },
+  {
+   "sensor_alarms": 1,
+   "sensor_alarm_test": 3,
+   "sensor_alarm_loop": 125948,
+   "sensor_alarm_loop_first": 451,
+   "sensor_alarm_v_mmps": 466,
+   "sensor_alarm_gap_mmps": 33,
+   "equivalent_wh_per_km": 167.9543289450746
+  }
+ ],
+ "dead_reckoning_error": {
+  "sd_mps": 0.004942746343814595,
+  "min_mps": -0.022141675323503085,
+  "max_mps": 0.022060357179691792,
+  "expected_sd_from_acceleration_noise_mps": 0.005
+ },
+ "mean_test": {
+  "threshold_mps": 0.03577708763999663,
+  "what_it_allows_for": "the speed noise on the window's mean, 0.0045 m/s",
+  "what_it_leaves_out": "the error of the dead-reckoned speed it is compared with"
+ },
+ "plant_acceleration_matches_speed": true
+}

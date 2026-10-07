@@ -13,7 +13,8 @@ from docx.shared import Inches, Pt, RGBColor
 from scripts.corrected_campaign import load_corrected_a4, validate_campaign
 
 
-def build_note(sac, campaign=None, a4=None, robustness=None, board=None):
+def build_note(sac, campaign=None, a4=None, robustness=None, board=None,
+               accel=None):
     doc = Document()
     style = doc.styles["Normal"]
     style.font.name = "Calibri"
@@ -116,8 +117,11 @@ def build_note(sac, campaign=None, a4=None, robustness=None, board=None):
             "m/s, which is less than the shipped loop differs from itself "
             "between two identical runs. The detector raised its flag "
             f"{v6['false alarms on a healthy sensor']} time on a healthy "
-            f"sensor in {v6['hours on the board']:.2f} hours; the cause is "
-            "not established.")
+            f"sensor in {v6['hours on the board']:.2f} hours. The alarm "
+            "recurs on the same control step in two further board runs and "
+            "in a replay on the laptop, so it is not a link or chip fault: "
+            "the detector's threshold allows for noise on the speed reading "
+            "but not for drift in the speed it works out from acceleration.")
     if robustness:
         v = robustness["verdict"]
         doc.add_paragraph(
@@ -127,9 +131,21 @@ def build_note(sac, campaign=None, a4=None, robustness=None, board=None):
             f"{v['false alarms in them']} false alarms in "
             f"{v['clean hours at the noise floor']:.2f} h at the noise floor. "
             "No fault was injected on the board, so fault detection is not a "
-            "board result. The simulated acceleration channel is idealised; "
-            "sensor bias and slope gravity are unchecked. A 0.5 m/s offset "
-            "under ten times the noise is flagged but not corrected.")
+            "board result. A 0.5 m/s offset under ten times the noise is "
+            "flagged but not corrected.")
+    if accel:
+        s = accel["summary"]
+        doc.add_paragraph(
+            "The detector does not survive a real acceleration channel as "
+            f"tuned. On {s['trips']} logged BMW i3 trips ({s['hours']:.0f} "
+            "hours, no sensor fault in the data) logged acceleration and "
+            "speed disagree by a slow component of about "
+            f"{s['slow_disagreement_sd_mps2_median']:.2f} m/s^2, which the "
+            "detector's dead reckoning turns into a standing gap several "
+            "times its fault threshold: it would be flagged "
+            f"{100 * s['flagged_share']:.0f}% of the time. The simulated "
+            "channel carried white noise only and did not show this. The "
+            "filter does not use the acceleration channel and is unaffected.")
     doc.add_paragraph("Draft for review; this script does not send the note.")
     return doc
 
@@ -143,7 +159,7 @@ def main():
     sac = json.loads((docs / "week11-sac-corrected.json").read_text())
     campaign_path = docs / "week11-pil-corrected.json"
     campaign = json.loads(campaign_path.read_text()) if campaign_path.exists() else None
-    robustness = board = None
+    robustness = board = accel = None
     if args.robustness_docs:
         # The detector was corrected on 2026-10-07; its evaluation after the
         # correction is the week-12 file, and the earlier one is kept.
@@ -153,7 +169,11 @@ def main():
         board_path = args.robustness_docs / "week12-speed-arms.json"
         if board_path.exists():
             board = json.loads(board_path.read_text())
-    doc = build_note(sac, campaign, load_corrected_a4(docs), robustness, board)
+        accel_path = args.robustness_docs / "week12-accel-channel-check.json"
+        if accel_path.exists():
+            accel = json.loads(accel_path.read_text())
+    doc = build_note(sac, campaign, load_corrected_a4(docs), robustness, board,
+                     accel)
     path = Path(args.out)
     path.parent.mkdir(parents=True, exist_ok=True)
     doc.save(path)

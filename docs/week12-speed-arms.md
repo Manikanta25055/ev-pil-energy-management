@@ -111,11 +111,9 @@ support: a single event in a little over an hour. The simulation ran 3.8 hours
 of clean driving, 1.9 of them on this cycle, with none
 (`docs/week12-fault-arms-b6.json`).
 
-**The cause is not established.** The campaign records how many times the
-flag went up, not when or which of the detector's three tests raised it. The
-urban cycle is the one with standstills and launches, and it also had the most
-late host replies of b6's six cells (10), and either could be involved.
-Section 9 says what would settle it.
+**The cause was found afterwards**, and is in section 9: the detector's own
+threshold, on an ordinary stretch of noise. It is not a link fault and not the
+plant.
 
 ## 7. Against the criteria
 
@@ -141,7 +139,7 @@ the shipped loop differs from itself, so the bound is tighter than one run per
 cell can resolve. It is recorded as a failure because the bound was fixed
 first.
 
-b6's false alarm is a real event and is not explained.
+b6's false alarm is a real event. Section 9 explains it.
 
 ## 8. What this does and does not show
 
@@ -155,13 +153,67 @@ during a cycle, or a vehicle heavier than the model. Those remain simulated.
 
 Each cell is one run.
 
-## 9. What would settle the false alarm
+## 9. The false alarm, explained
 
-Two counters in the DIAG frame: which of the three tests raised the flag, and
-the control step it was raised on. Then the urban cell again, a few times.
-The step number gives the place in the cycle, which says at once whether it is
-a standstill, a launch or neither.
+**Data:** `docs/week12-b6-alarm-check-{1,2}.json` (board),
+`docs/week12-b6-alarm-replay.json` (laptop, `scripts/replay_b6_alarm.py`).
 
+Two counters were added to the DIAG frame, which of the detector's three tests
+raised the flag and the control loop it was raised on, and b6 was run twice
+more on the three clean cycles: 1.3 more hours on the board.
+
+| | First campaign | Re-run 1 | Re-run 2 | Laptop replay |
+|---|---|---|---|---|
+| Alarms in the urban cell | 1 | 1 | 1 | 1 |
+| Alarms on highway and US06 | 0 | 0 | 0 | not run |
+| Test that fired | not recorded | mean | mean | mean |
+| Control step into the cycle | not recorded | 125,503 | 125,497 | 125,502 |
+| Speed reading at that moment | not recorded | 0.466 m/s | 0.466 m/s | 0.463 m/s |
+| Mean gap of the window | not recorded | 0.033 m/s | 0.033 m/s | 0.032 m/s |
+
+The same place every time, 1255 s into the cycle, where the car creeps at a
+steady 0.45 m/s. The board's step count is taken from the first DIAG frame the
+host saw, so it is good to a few steps.
+
+**It reproduces on the laptop, on the same step.** The replay uses the
+campaign's own run loop, plant and noise seed, with a Python copy of the
+control task in place of the board. So it is not the link, the host answering
+late, or anything about the chip. It recurs in the same place because each
+cell of the campaign uses one fixed noise seed: these are one event seen four
+times, not four events.
+
+The replay can show what the board cannot, the true speed:
+
+| At the alarm | |
+|---|---|
+| True speed | 0.4457 m/s |
+| Dead-reckoned speed | 0.4276 m/s, -0.0185 from the truth |
+| Speed noise, averaged over the 20-sample window | +0.0126 m/s |
+| Mean gap the test saw | 0.0318 m/s |
+
+Nothing was wrong with the sensor, the plant or the acceleration: the plant's
+acceleration matches its change of speed exactly. Two ordinary things
+coincided. The dead-reckoned speed had drifted 0.018 m/s low, and the speed
+noise over the window happened to average 0.013 m/s high.
+
+**The defect is in the test's threshold.** The mean test allows for the speed
+noise on the window's mean, 0.0045 m/s at the floor, and sets its limit at
+eight of those. It allows nothing for the error of the dead-reckoned speed
+that the reading is compared with. That error is not small beside it:
+integrating acceleration noise of 0.05 m/s^2 with a two-second pull gives a
+standard deviation of 0.0050 m/s by calculation and 0.0049 measured over the
+cycle, reaching 0.022. It wanders slowly, so it does not average away inside
+a 0.2 s window. The limit is eight standard errors of one error source and
+about five of the two together.
+
+**How often.** The simulation ran 3.8 hours of clean driving at the floor with
+none, and the board's six cells are 1.26 hours of distinct noise with one. One
+in about five hours, from a single event: the rate is somewhere under the
+design's one per hour and is not known better than that.
+
+This is the same shortcoming section 10 finds from the other side. The test
+has to carry the uncertainty of the acceleration channel, and at present it
+carries none.
 
 ## 10. The detector's accelerometer assumption, against real logs
 
@@ -216,6 +268,6 @@ B6 is not usable on such a sensor. Making it usable means a test threshold set
 from the measured disagreement rather than from the speed noise, and that
 costs sensitivity: with a standing gap of 0.22 m/s in healthy driving, a 0.5 m/s
 offset is no longer clearly separable, while a dropout, a frozen reading or
-an offset of several m/s still are. That redesign has not been done.
+an offset of 3 m/s still are. That redesign has not been done.
 
 The filter, B5, does not use the acceleration channel and is not affected.

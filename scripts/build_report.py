@@ -3747,8 +3747,73 @@ def speed_arms_section(doc: Document, sa) -> None:
               f"with nothing wrong with it, in the urban run, and dropped it "
               f"again after {v6['control steps spent flagged']} control "
               f"steps, the shortest its own rule allows. In simulation it "
-              f"raised none in 3.8 hours. The campaign records that the "
-              f"flag went up and not when or why, so the cause is open.")
+              f"raised none in 3.8 hours.")
+    replay = load("week12-b6-alarm-replay.json")
+    if replay and replay["alarms"]:
+        al = replay["alarms"][0]
+        dr = replay["dead_reckoning_error"]
+        para(doc, f"The firmware was then made to report which of the "
+                  f"detector's tests raised the flag and when, and the clean "
+                  f"cycles were run twice more. The alarm came back both "
+                  f"times in the same place, {al['cycle_time_s']:.0f} seconds "
+                  f"into the urban cycle with the car creeping at "
+                  f"{al['reference_speed_mps']:.2f} metres per second, and it "
+                  f"comes back on the same step when the run is replayed on "
+                  f"the laptop with a copy of the control task in place of "
+                  f"the board. So it is not the link or the chip. It recurs "
+                  f"because each setting uses one fixed noise seed: this is "
+                  f"one event seen four times.")
+        para(doc, f"The replay shows the true speed, which the board "
+                  f"cannot. Nothing was wrong with the sensor. The speed the "
+                  f"detector works out from acceleration had drifted "
+                  f"{abs(al['dead_reckoning_error_mps']):.3f} metres per "
+                  f"second low, and the noise on the speed reading happened "
+                  f"to average {al['mean_speed_noise_of_window_mps']:.3f} "
+                  f"high over the same fifth of a second. The detector's "
+                  f"threshold allows for the second kind of error and not "
+                  f"the first, which is typically "
+                  f"{dr['sd_mps']:.3f} metres per second and reached "
+                  f"{max(abs(dr['min_mps']), abs(dr['max_mps'])):.3f} in this "
+                  f"run. The threshold is where the fault lies. One such "
+                  f"event in about five hours of distinct clean driving, "
+                  f"simulated and measured together, is all the evidence "
+                  f"there is on how often.")
+
+    accel = load("week12-accel-channel-check.json")
+    if accel:
+        s = accel["summary"]
+        doc.add_heading("The detector against a real acceleration channel",
+                        level=2)
+        para(doc, f"The detector trusts measured acceleration. In simulation "
+                  f"and on the board that channel is the car's true "
+                  f"acceleration with random noise on it. The BMW i3 archive "
+                  f"logs an acceleration channel beside speed, so the "
+                  f"assumption could be checked against a real one: "
+                  f"{s['trips']} trips, {s['hours']:.0f} hours, with no "
+                  f"sensor fault in them.")
+        para(doc, f"It does not hold. The detector would be flagged "
+                  f"{100 * s['flagged_share']:.0f} per cent of the time, on "
+                  f"every trip. The two logged channels agree well from one "
+                  f"sample to the next, but differ by a slow component of "
+                  f"about {s['slow_disagreement_sd_mps2_median']:.2f} metres "
+                  f"per second squared. The detector integrates acceleration "
+                  f"over about two seconds, which turns that into a standing "
+                  f"gap of about "
+                  f"{s['slow_disagreement_sd_mps2_median'] * accel['tau_s']:.2f} "
+                  f"metres per second, against a fault threshold of "
+                  f"{s['mean_test_threshold_at_floor_mps']:.3f}. Random noise "
+                  f"averages away in that integral and a slow error does "
+                  f"not, which is why the simulation never showed it.")
+        para(doc, "So the detector's results above and in simulation hold "
+                  "for the acceleration channel they were given, and not for "
+                  "one like this. It would need its threshold set from the "
+                  "measured disagreement, and would then no longer separate "
+                  "a small offset from healthy driving. That redesign has "
+                  "not been done. The filter does not use the acceleration "
+                  "channel and is not affected. The logs are sampled ten "
+                  "times a second and the firmware runs at a hundred, so the "
+                  "share of time flagged is indicative; the size of the "
+                  "standing gap does not depend on the rate.")
 
     doc.add_heading("Against the criteria", level=2)
     para(doc, "The criteria were fixed in the design before any of this was "
@@ -3899,9 +3964,10 @@ def remaining_section(doc: Document, pilc=None, a4_corrected=None,
               "The classical filter and detector are in the firmware, "
               "switched off by default"
               + (", and were measured on the board in section "
-                 + ref("speedarms") + ". Open from that section: the cause "
-                 "of the detector's one false alarm, and every fault and "
-                 "mismatch scenario, which remain simulated."
+                 + ref("speedarms") + ". Open from that section: the "
+                 "detector's threshold has to be redesigned before it can be "
+                 "relied on, and every fault and mismatch scenario remains "
+                 "simulated."
                  if speed_arms else
                  ", with simulation evidence only."))
     para(doc, "The following week-by-week plan records the earlier project "

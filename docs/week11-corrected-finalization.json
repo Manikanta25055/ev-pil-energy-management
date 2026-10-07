@@ -21,10 +21,10 @@
     "steps": 2282832
   },
   "source_sha256": {
-    "scripts/build_report.py": "636bb8baa0efc991b70581be27d871e62dc82cd34b2afef4f7d9f0e9c7d0d873",
+    "scripts/build_report.py": "c85489e9b32a2ccf75aa50175c957971db007fc25d0d542a222ee9cdb3454730",
     "scripts/plot_pil.py": "185ec85fe016ee0b4ada86b94f471335869b7f4603c98c50705fb9b6e2ca1447",
     "scripts/plot_a4_sweep.py": "af031753d28cde63392c5616cfd01681f0fc64a67440de0c7fff498ee53dc3f6",
-    "scripts/build_supervisor_note.py": "36f9a11f799dcb8817223991c793ff1c0362b9ba33ddec1d7b1ff2f9d9929e1f",
+    "scripts/build_supervisor_note.py": "d0ec6c5ea19c2c9c6ce3c91f3621cfe3f12319260594084c4e2ae5595ce09c13",
     "scripts/corrected_campaign.py": "d4d7de860634f275abfdae43aa8351bdde7708ef5602bd7aaaf509c6012bf45b",
     "scripts/finalize_corrected_campaign.py": "973a99b82c005cc4c5c121d6b347bc403f368ba26814b074158ccf4b91101deb",
     "scripts/arduino_build.sh": "ef08b440aec31b53e29276294933a5e98210f13574323f35dfa351c9b509d226",
@@ -54,8 +54,8 @@
     "docs/week11-a4-off-10s.json": "830313bfc8551c4ba791aa0add6614d91a485f186be291d1d3a875f7166656d9"
   },
   "output_sha256": {
-    "reports/EV-PIL-status-report.docx": "f6779d9a2cab7193277dd9276e1070a96d8d460c5f15b3a68ed1bd8fc2121bbf",
-    "reports/supervisor-correction-note.docx": "7d5e1658443ddc05e0d59bddc7bbfd0cb000f1e19c51b4939e1b6c63524dba7e",
+    "reports/EV-PIL-status-report.docx": "872ad699cdc00b25237f4e1876202ed8becac10220eba339067ad2fb7f990f50",
+    "reports/supervisor-correction-note.docx": "4023b51b4c5005488a52e979c567a13767ffd3bbfd96789fc02b4c313ec6fa54",
     "docs/figures/pil-energy-corrected.png": "7eb1e4e983916bbff1c549c302eb1e6422f65fb0327e7c0e704117c850e6114d",
     "docs/figures/week11-a4-corrected-sweep.png": "714be369109ed5331aa881736b2c657db3bcb533d8d6b99465ef0ff3cc5cd7a0"
   },
@@ -97,6 +97,19 @@
         "no overlapping or clipped content",
         "no text span under 8 pt",
         "tables in the new section reconciled with docs/week12-speed-arms.json"
+      ]
+    },
+    "third_review": {
+      "when": "2026-10-07T08:47:54+05:30",
+      "why": "both documents rebuilt with the explanation of the detector's false alarm and the check against logged acceleration",
+      "pages": {
+        "EV-PIL-status-report": 70,
+        "supervisor-correction-note": 2
+      },
+      "how": "the five pages of the speed-loop section, every page after it, and both pages of the note viewed; earlier pages unchanged; text spans checked from the PDF",
+      "found": [
+        "no overlapping or clipped content",
+        "no text span under 8 pt"
       ]
     }
   },
