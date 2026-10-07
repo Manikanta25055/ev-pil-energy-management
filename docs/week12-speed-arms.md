@@ -68,8 +68,7 @@ is on every channel, so the agreement is closer than the two set-ups are alike.
 | US06, 3x noise | 330 | 273 | 265 |
 | US06, 10x noise | 341 | 288 | 286 |
 
-The shipped loop's peak climbs with noise to 341 A, which is the pack's
-limit. The estimators hold it at 288 A or below.
+The shipped loop's peak climbs with noise to 341 A. The estimators hold it at 288 A or below.
 
 ## 4. Tracking
 

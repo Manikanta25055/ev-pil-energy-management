@@ -13,7 +13,7 @@ from docx.shared import Inches, Pt, RGBColor
 from scripts.corrected_campaign import load_corrected_a4, validate_campaign
 
 
-def build_note(sac, campaign=None, a4=None, robustness=None):
+def build_note(sac, campaign=None, a4=None, robustness=None, board=None):
     doc = Document()
     style = doc.styles["Normal"]
     style.font.name = "Calibri"
@@ -84,24 +84,52 @@ def build_note(sac, campaign=None, a4=None, robustness=None):
                 f"eight paired onsets each, {late} late steps and {failed} "
                 "files with counter checks not passed. The report presents "
                 "the new sweep separately from historical measurements.")
-    doc.add_heading("Robustness work and remaining decision", level=1)
-    text = ("The proposed speed-loop decision transformer was dropped. The "
-            "classical filter and sensor-fault detector are merged into the "
-            "code base and switched off by default. ")
+    doc.add_heading("Speed-loop robustness", level=1)
+    doc.add_paragraph(
+        "The proposed speed-loop decision transformer was dropped: in "
+        "simulation a Kalman filter on measured speed met the criteria set "
+        "for it. The filter "
+        "and a speed-sensor fault detector are in the firmware, switched off "
+        "by default.")
+    if board:
+        rows = {(r["scenario"], r["level"]): r for r in board["rows"]}
+        fl, sv = rows[("sensor_noise", "floor")], rows[("sensor_noise", "severe")]
+        v5, v6 = board["verdicts"]["b5"], board["verdicts"]["b6"]
+        doc.add_paragraph(
+            "MEASURED on the board, rule manager for energy in every arm, one "
+            "run per cell. Ten times the sensor noise costs the shipped speed "
+            f"loop {v5['b0 penalty at 10x noise, Wh/km']:.2f} Wh/km on US06 "
+            f"({fl['b0_equivalent_wh_per_km']:.2f} to "
+            f"{sv['b0_equivalent_wh_per_km']:.2f}). With the filter it costs "
+            f"{v5['own penalty at 10x noise, Wh/km']:.2f}, and with the "
+            f"detector added {v6['own penalty at 10x noise, Wh/km']:.2f}. "
+            f"Peak battery current under that noise falls from "
+            f"{sv['b0_peak_current_a']:.0f} A to "
+            f"{sv['b5_peak_current_a']:.0f} A. Worst control computation "
+            f"rises from {board['b0 worst control computation, us']} to "
+            f"{v6['worst control computation, us']} microseconds of a 10,000 "
+            "microsecond period, with no late step.")
+        doc.add_paragraph(
+            "Against the criteria fixed beforehand, each arm misses one. The "
+            "filter misses the clean-tracking bound on the urban cycle by "
+            f"{v5['clean tracking RMSE minus b0, m/s, per cycle'][0] - 0.005:.3f} "
+            "m/s, which is less than the shipped loop differs from itself "
+            "between two identical runs. The detector raised its flag "
+            f"{v6['false alarms on a healthy sensor']} time on a healthy "
+            f"sensor in {v6['hours on the board']:.2f} hours; the cause is "
+            "not established.")
     if robustness:
         v = robustness["verdict"]
-        text += (f"SIMULATED B6: {v['named faults run']} named faults, "
-                 f"{v['named faults missed']} missed, worst delay "
-                 f"{v['worst delay, s']:.2f} s; "
-                 f"{v['false alarms in them']} false alarms in "
-                 f"{v['clean hours at the noise floor']:.2f} h at the noise floor. ")
-    text += ("Acceleration is idealised; sensor bias and slope gravity remain "
-             "unchecked. The detector has lingering flags and weak small-offset "
-             "recovery. Only the earlier one-state Kalman filter has a C port. "
-             "B5 and B6 need firmware implementation and parity checks before "
-             "board testing. No board result is claimed. Measuring this arm "
-             "on the board remains a separate decision.")
-    doc.add_paragraph(text)
+        doc.add_paragraph(
+            f"SIMULATED, detector: {v['named faults run']} named faults, "
+            f"{v['named faults missed']} missed, worst delay "
+            f"{v['worst delay, s']:.2f} s; "
+            f"{v['false alarms in them']} false alarms in "
+            f"{v['clean hours at the noise floor']:.2f} h at the noise floor. "
+            "No fault was injected on the board, so fault detection is not a "
+            "board result. The simulated acceleration channel is idealised; "
+            "sensor bias and slope gravity are unchecked. A 0.5 m/s offset "
+            "under ten times the noise is flagged but not corrected.")
     doc.add_paragraph("Draft for review; this script does not send the note.")
     return doc
 
@@ -115,10 +143,17 @@ def main():
     sac = json.loads((docs / "week11-sac-corrected.json").read_text())
     campaign_path = docs / "week11-pil-corrected.json"
     campaign = json.loads(campaign_path.read_text()) if campaign_path.exists() else None
-    robustness = None
+    robustness = board = None
     if args.robustness_docs:
-        robustness = json.loads((args.robustness_docs / "week11-fault-arms-b6.json").read_text())
-    doc = build_note(sac, campaign, load_corrected_a4(docs), robustness)
+        # The detector was corrected on 2026-10-07; its evaluation after the
+        # correction is the week-12 file, and the earlier one is kept.
+        newer = args.robustness_docs / "week12-fault-arms-b6.json"
+        older = args.robustness_docs / "week11-fault-arms-b6.json"
+        robustness = json.loads((newer if newer.exists() else older).read_text())
+        board_path = args.robustness_docs / "week12-speed-arms.json"
+        if board_path.exists():
+            board = json.loads(board_path.read_text())
+    doc = build_note(sac, campaign, load_corrected_a4(docs), robustness, board)
     path = Path(args.out)
     path.parent.mkdir(parents=True, exist_ok=True)
     doc.save(path)

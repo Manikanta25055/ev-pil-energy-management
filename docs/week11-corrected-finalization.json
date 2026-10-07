@@ -21,10 +21,10 @@
     "steps": 2282832
   },
   "source_sha256": {
-    "scripts/build_report.py": "7bbbdd1edddf9dec189367178f55240498118dda0c8f2e95e5a4155447a1a6f4",
+    "scripts/build_report.py": "636bb8baa0efc991b70581be27d871e62dc82cd34b2afef4f7d9f0e9c7d0d873",
     "scripts/plot_pil.py": "185ec85fe016ee0b4ada86b94f471335869b7f4603c98c50705fb9b6e2ca1447",
     "scripts/plot_a4_sweep.py": "af031753d28cde63392c5616cfd01681f0fc64a67440de0c7fff498ee53dc3f6",
-    "scripts/build_supervisor_note.py": "fef78356fd4e2b94f3ce5e1ae41305243f75a0ac0aadf605c4bf4c084f4ed2d6",
+    "scripts/build_supervisor_note.py": "36f9a11f799dcb8817223991c793ff1c0362b9ba33ddec1d7b1ff2f9d9929e1f",
     "scripts/corrected_campaign.py": "d4d7de860634f275abfdae43aa8351bdde7708ef5602bd7aaaf509c6012bf45b",
     "scripts/finalize_corrected_campaign.py": "973a99b82c005cc4c5c121d6b347bc403f368ba26814b074158ccf4b91101deb",
     "scripts/arduino_build.sh": "ef08b440aec31b53e29276294933a5e98210f13574323f35dfa351c9b509d226",
@@ -54,13 +54,13 @@
     "docs/week11-a4-off-10s.json": "830313bfc8551c4ba791aa0add6614d91a485f186be291d1d3a875f7166656d9"
   },
   "output_sha256": {
-    "reports/EV-PIL-status-report.docx": "440a86f5342b3111b372bb1b303a72da8ce0df92718fa07d1282938ed6b4ccbe",
-    "reports/supervisor-correction-note.docx": "e52afbc5e1dbf28ea14839ab59d864504854d1b39f81df4443d8ca611f10fd49",
+    "reports/EV-PIL-status-report.docx": "f6779d9a2cab7193277dd9276e1070a96d8d460c5f15b3a68ed1bd8fc2121bbf",
+    "reports/supervisor-correction-note.docx": "7d5e1658443ddc05e0d59bddc7bbfd0cb000f1e19c51b4939e1b6c63524dba7e",
     "docs/figures/pil-energy-corrected.png": "7eb1e4e983916bbff1c549c302eb1e6422f65fb0327e7c0e704117c850e6114d",
     "docs/figures/week11-a4-corrected-sweep.png": "714be369109ed5331aa881736b2c657db3bcb533d8d6b99465ef0ff3cc5cd7a0"
   },
   "full_tests_passed": true,
-  "full_tests": "538 passed on the merged tree, 2026-10-07",
+  "full_tests": "see the commit that carries this manifest",
   "normal_actor_firmware_restored": true,
   "simulation_only_robustness_sha256": {
     "docs/week11-fault-arms-b6.json": "1cea5c2028d7f2beaa3a13bae98931f039228bb9bfce0d9408d15c4d61d17763"
@@ -84,7 +84,21 @@
     ],
     "not_fixed": [
       "text inside the figures is below 8 pt at the printed width, in the new figures as in every earlier one: they are drawn 13 in wide and placed at 6.4 in. Pre-existing convention across the report, left alone"
-    ]
+    ],
+    "second_review": {
+      "when": "2026-10-07T07:07:35+05:30",
+      "why": "both documents rebuilt after the speed-loop arms were measured on the board (docs/week12-speed-arms.json): a new report section and a rewritten paragraph in the note",
+      "pages": {
+        "EV-PIL-status-report": 69,
+        "supervisor-correction-note": 2
+      },
+      "how": "the four pages of the new section and both pages of the note viewed at full size; the two contact sheets that carry every page after the new section viewed; pages before it are unchanged from the first review; text spans checked from the PDF",
+      "found": [
+        "no overlapping or clipped content",
+        "no text span under 8 pt",
+        "tables in the new section reconciled with docs/week12-speed-arms.json"
+      ]
+    }
   },
   "note": "The finisher stopped at its render step; this manifest was written by hand to its schema after the review."
 }

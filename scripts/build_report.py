@@ -3630,6 +3630,171 @@ def correction_section(doc: Document, corr, pilc, sac_corrected=None,
            "error. MEASURED on the board, one run per cell.")
 
 
+SPEED_ARM_CELLS = {
+    ("driving_condition", "urban"): "Urban, noise floor",
+    ("driving_condition", "highway"): "Highway, noise floor",
+    ("driving_condition", "aggressive_mixed"): "Aggressive (US06), noise floor",
+    ("sensor_noise", "floor"): "US06, noise floor, second seed",
+    ("sensor_noise", "elevated"): "US06, 3 times the noise",
+    ("sensor_noise", "severe"): "US06, 10 times the noise",
+}
+
+
+def speed_arms_section(doc: Document, sa) -> None:
+    """The speed-loop arms on the board. Every number is read from
+    docs/week12-speed-arms.json, which scripts/report_speed_arms.py writes
+    after checking each cell was taken on the image its arm needs."""
+    h1(doc, "Sensor noise and the speed loop, measured on the board",
+       "speedarms")
+    if not sa:
+        para(doc, "The speed-loop arms had not been run on the board when "
+                  "this report was generated.", italic=True, colour=MUTED)
+        return
+
+    rows = {(r["scenario"], r["level"]): r for r in sa["rows"]}
+    v5, v6 = sa["verdicts"]["b5"], sa["verdicts"]["b6"]
+    fl = rows[("sensor_noise", "floor")]
+    sv = rows[("sensor_noise", "severe")]
+    tw = rows[("driving_condition", "aggressive_mixed")]
+    ur = rows[("driving_condition", "urban")]
+
+    para(doc, "Week 7's robustness test found that speed-sensor noise costs "
+              "energy because the speed controller chases the noise and pays "
+              "for it in torque reversals, and section " + ref("pil")
+              + " saw the rule manager's consumption rise with noise on the "
+              "chip. Both were observations about a loss. This section "
+              "measures the loss on the board and what removes it.")
+    para(doc, "The loss is in the speed loop and not in the energy manager. "
+              "In simulation a constant energy instruction loses as much as "
+              "the rule manager does under the same noise. The loop acts on "
+              "every sample, so a noisy reading makes it drive and brake by "
+              "turns, and the round trip through the motor and the battery "
+              "is paid for.")
+    para(doc, "Three versions of the firmware were run, all with the rule "
+              "manager deciding energy, differing only in what the speed "
+              "loop is given to control on.")
+    table(doc, ["Version", "What the speed loop controls on"], [
+        ["Shipped", "The speed measurement as it arrives"],
+        ["Filter", "A Kalman estimate: it predicts the speed from the torque "
+                   "it commanded, corrects with the measurement, and learns "
+                   "how noisy the measurement is and how far the car departs "
+                   "from its model"],
+        ["Filter and detector",
+         "The same, with a check on top that the speed reading agrees with "
+         "the measured acceleration. If it does not, the reading is set "
+         "aside and the loop runs on acceleration alone until it does"],
+    ])
+
+    def cells(field, fmt):
+        return [[SPEED_ARM_CELLS[k]]
+                + [fmt.format(rows[k][f"{a}_{field}"]) for a in ("b0", "b5", "b6")]
+                for k in SPEED_ARM_CELLS]
+
+    doc.add_heading("Energy", level=2)
+    table(doc, ["Setting", "Shipped, Wh/km", "Filter, Wh/km",
+                "Filter and detector, Wh/km"],
+          cells("equivalent_wh_per_km", "{:.2f}"))
+    para(doc, "Table. Energy on the comparable scale. One run per cell, each "
+              "on the firmware version its column names, confirmed from the "
+              "chip's own report. MEASURED on the board.",
+         size=9, italic=True, colour=MUTED)
+    pen = v5["b0 penalty at 10x noise, Wh/km"]
+    para(doc, f"Ten times the sensor noise costs the shipped loop {pen:.2f} "
+              f"watt-hours per kilometre, {100 * pen / fl['b0_equivalent_wh_per_km']:.1f} "
+              f"per cent. With the filter it costs "
+              f"{v5['own penalty at 10x noise, Wh/km']:.2f}, and with the "
+              f"detector added {v6['own penalty at 10x noise, Wh/km']:.2f}. "
+              f"The whole of the loss is recovered.")
+    spread = sa["twin_cell_spread_percent"]["b0"]
+    para(doc, f"At ordinary noise the three versions are within "
+              f"{max(abs(x) for x in v5['clean energy vs b0, percent, per cycle'] + v6['clean energy vs b0, percent, per cycle']):.2f} "
+              f"per cent of one another on every cycle. The shipped loop's "
+              f"own two runs of the same setting differ by {spread:.2f} per "
+              f"cent, so no saving is claimed there.")
+
+    doc.add_heading("Peak battery current and tracking", level=2)
+    table(doc, ["Setting", "Shipped", "Filter", "Filter and detector"],
+          [[SPEED_ARM_CELLS[k]]
+           + [f"{rows[k][a + '_peak_current_a']:.0f} A, "
+              f"{rows[k][a + '_tracking_rmse_mps']:.4f} m/s"
+              for a in ("b0", "b5", "b6")] for k in SPEED_ARM_CELLS])
+    para(doc, "Table. Peak battery current, then tracking error "
+              "(root-mean-square). MEASURED on the board.",
+         size=9, italic=True, colour=MUTED)
+    para(doc, f"Under ten times the noise the shipped loop's peak current "
+              f"reaches {sv['b0_peak_current_a']:.0f} amps. "
+              f"The filter holds it at {sv['b5_peak_current_a']:.0f}.")
+    para(doc, f"Tracking error is under 0.03 metres per second everywhere, "
+              f"and this table cannot rank the versions more finely than "
+              f"that. The shipped loop's two runs of one setting read "
+              f"{tw['b0_tracking_rmse_mps']:.4f} and "
+              f"{fl['b0_tracking_rmse_mps']:.4f}.")
+
+    doc.add_heading("What it costs on the chip", level=2)
+    para(doc, f"The longest the control computation took was "
+              f"{sa['b0 worst control computation, us']} microseconds as "
+              f"shipped, {v5['worst control computation, us']} with the "
+              f"filter and {v6['worst control computation, us']} with the "
+              f"detector, of a 10,000 microsecond period. No control step "
+              f"was late in any run.")
+
+    doc.add_heading("The detector on a healthy sensor", level=2)
+    para(doc, f"No fault was injected in this campaign, so it says nothing "
+              f"about whether the detector catches one. What it measures is "
+              f"the opposite error. In {v6['hours on the board']:.2f} hours "
+              f"the detector raised its flag "
+              f"{v6['false alarms on a healthy sensor']} time on a sensor "
+              f"with nothing wrong with it, in the urban run, and dropped it "
+              f"again after {v6['control steps spent flagged']} control "
+              f"steps, the shortest its own rule allows. In simulation it "
+              f"raised none in 3.8 hours. The campaign records that the "
+              f"flag went up and not when or why, so the cause is open.")
+
+    doc.add_heading("Against the criteria", level=2)
+    para(doc, "The criteria were fixed in the design before any of this was "
+              "built, and the script that applies them was committed before "
+              "the runs finished.")
+    yn = lambda b: "pass" if b else "FAIL"
+    table(doc, ["Criterion", "Filter", "Filter and detector"], [
+        ["Clean energy within 0.2% of the shipped loop",
+         yn(v5["clean energy within 0.2% of b0"]),
+         yn(v6["clean energy within 0.2% of b0"])],
+        ["Clean tracking within 0.005 m/s of the shipped loop",
+         yn(v5["clean tracking within 0.005 m/s of b0"]),
+         yn(v6["clean tracking within 0.005 m/s of b0"])],
+        ["At least half of the 10x noise loss recovered",
+         yn(v5["recovers at least half of the 10x penalty"]),
+         yn(v6["recovers at least half of the 10x penalty"])],
+        ["Tracking under 0.1 m/s in every run",
+         yn(v5["tracking under 0.1 m/s in every cell"]),
+         yn(v6["tracking under 0.1 m/s in every cell"])],
+        ["No late control step", yn(v5["late control steps"] == 0),
+         yn(v6["late control steps"] == 0)],
+        ["No false alarm on a healthy sensor", "not applicable",
+         yn(v6["false alarms on a healthy sensor"] == 0)],
+    ])
+    if not v5["clean tracking within 0.005 m/s of b0"]:
+        gap = v5["clean tracking RMSE minus b0, m/s, per cycle"][0]
+        para(doc, f"The filter's failure is on the urban cycle: "
+                  f"{ur['b5_tracking_rmse_mps']:.4f} against "
+                  f"{ur['b0_tracking_rmse_mps']:.4f}, {gap:.4f} apart where "
+                  f"the bound is 0.005. On the other two cycles it tracks "
+                  f"better than the shipped loop. The gap is smaller than "
+                  f"the {abs(tw['b0_tracking_rmse_mps'] - fl['b0_tracking_rmse_mps']):.3f} "
+                  f"by which the shipped loop differs from itself, so the "
+                  f"bound asks for more than one run per cell can show. It "
+                  f"stays a failure because the bound came first.")
+
+    doc.add_heading("What this does not cover", level=2)
+    bullets(doc, [
+        "Sensor faults. A stuck, dropped or offset speed reading was tested "
+        "in simulation only.",
+        "Twenty-five times the noise, and noise that changes during a drive.",
+        "A car heavier than the model the filter carries.",
+        "Repeats. Each cell is one run.",
+    ])
+
+
 def negatives_section(doc: Document) -> None:
     h1(doc, "Results that went against expectation", key="negatives")
 
@@ -3722,7 +3887,8 @@ def negatives_section(doc: Document) -> None:
               "was measured rather than argued.")
 
 
-def remaining_section(doc: Document, pilc=None, a4_corrected=None) -> None:
+def remaining_section(doc: Document, pilc=None, a4_corrected=None,
+                      speed_arms=None) -> None:
     h1(doc, "What is left to do")
 
     para(doc, "Corrected-model campaign: "
@@ -3730,10 +3896,14 @@ def remaining_section(doc: Document, pilc=None, a4_corrected=None) -> None:
               + " Corrected-model link-outage sweep: "
               + ("complete." if a4_corrected else "pending.")
               + " The proposed speed-loop decision transformer was dropped. "
-              "The classical filter and detector are merged into the code "
-              "base, switched off by default, with simulation evidence only. "
-              "B5 and B6 still need a C port and parity checks before board testing. "
-              "Measuring them on the board requires a separate decision.")
+              "The classical filter and detector are in the firmware, "
+              "switched off by default"
+              + (", and were measured on the board in section "
+                 + ref("speedarms") + ". Open from that section: the cause "
+                 "of the detector's one false alarm, and every fault and "
+                 "mismatch scenario, which remain simulated."
+                 if speed_arms else
+                 ", with simulation evidence only."))
     para(doc, "The following week-by-week plan records the earlier project "
               "schedule. Current correction status is stated above.",
          italic=True, colour=MUTED)
@@ -4547,6 +4717,7 @@ def main() -> int:
     a2 = load("a2-quantisation.json")
     baselines = load("week7-control-baselines.json")
     robust = load("week7-pid-robustness.json")
+    speed_arms = load("week12-speed-arms.json")
     rl = load("week7-rl-rampup.json")
     fb = load("week7-fallback.json")
     sac = load("week8-sac.json")
@@ -4618,9 +4789,10 @@ def main() -> int:
     pil_campaign_section(doc, pil)
     pil_repeat_section(doc, pil, pil2)
     correction_section(doc, corr, pilc, sac_corrected, a4_corrected)
+    speed_arms_section(doc, speed_arms)
     negatives_section(doc)
     changes_section(doc)
-    remaining_section(doc, pilc, a4_corrected)
+    remaining_section(doc, pilc, a4_corrected, speed_arms)
     reproduce_section(doc)
 
     resolve_refs(doc)
@@ -4643,6 +4815,7 @@ def main() -> int:
                ("PIL repeat campaign", pil2),
                ("plant correction", corr),
                ("PIL campaign on the corrected plant", pilc),
+               ("speed-loop arms on the board", speed_arms),
                ("SAC retraining on the corrected plant", sac_corrected),
                ("A4 on the corrected plant", a4_corrected),
                ("on-chip deployment", fullstack),
