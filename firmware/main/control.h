@@ -145,6 +145,13 @@ typedef struct {
     bool              flagged;
     uint32_t          alarms;                   /* times the flag went up */
     uint32_t          flag_steps;               /* steps spent flagged */
+    /* About the most recent time the flag went up, for telling a false alarm
+       apart from a real one after the fact: which test raised it (1 gross,
+       2 frozen, 3 mean), the reading at that moment, and the mean gap of
+       the window. */
+    uint32_t          alarm_test;
+    float             alarm_v_mps;
+    float             alarm_gap_mps;
 } fault_kalman_t;
 
 void control_fault_kalman_init(fault_kalman_t *f);

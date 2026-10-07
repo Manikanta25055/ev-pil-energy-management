@@ -167,7 +167,7 @@ def test_the_c_fault_detector_matches_the_python_one(params, dump):
     assert len(rows) == 1700
     est = KinematicFaultKalman(params, q_mps=0.002, q_d_mps2=0.02)
     flags = []
-    for n, v, a, tq, got, got_flag, got_alarms, got_dr in rows:
+    for n, v, a, tq, got, got_flag, got_alarms, got_dr, got_test in rows:
         want = est.step(v_meas_mps=v, a_meas_mps2=a, torque_prev_nm=tq,
                         grade_rad=0.0, dt_s=0.01)
         assert bool(got_flag) == est.flagged, f"flag at step {int(n)}"
@@ -177,6 +177,9 @@ def test_the_c_fault_detector_matches_the_python_one(params, dump):
             f"estimate at step {int(n)}"
         assert got_dr == pytest.approx(est._v_dr, rel=REL, abs=ABS), \
             f"dead-reckoned speed at step {int(n)}"
+        if est.alarm_tests:
+            assert int(got_test) == est.alarm_tests[-1], \
+                f"which test raised the flag, at step {int(n)}"
         flags.append(bool(got_flag))
 
     # The dump has to exercise what it claims to: three faults, each caught
@@ -187,6 +190,9 @@ def test_the_c_fault_detector_matches_the_python_one(params, dump):
         assert 0 <= alarm - onset <= 50, f"fault at {onset} flagged at {alarm}"
     assert not any(flags[:400])
     assert not flags[790] and not flags[1190] and not flags[-1]
+    # An offset is caught by the mean test, a dropout by the gross test and a
+    # frozen reading by the frozen test: all three paths are exercised.
+    assert est.alarm_tests == [3, 1, 2]
 
 
 def test_the_firmware_kalman_settings_are_the_tuned_ones():

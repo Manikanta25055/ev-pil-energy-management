@@ -257,7 +257,9 @@ def run_one(
                        "rtt_max_us", "period_min_us", "period_max_us",
                        "actor_wcet_us", "stale_worst",
                        "p_limit_min_w", "p_limit_mean_w", "p_limit_max_w",
-                       "speed_est_mode"):
+                       "speed_est_mode", "sensor_alarm_test",
+                       "sensor_alarm_loop", "sensor_alarm_v_mmps",
+                       "sensor_alarm_gap_mmps"):
                 delta[key] = int(diag_last[key])
             else:
                 delta[key] = int(diag_last[key]) - int(diag_first[key])
@@ -299,6 +301,11 @@ def run_one(
         "speed_est_mode": int(delta.get("speed_est_mode", -1)),
         "sensor_flag_steps": int(delta.get("sensor_flag_steps", -1)),
         "sensor_alarms": int(delta.get("sensor_alarms", -1)),
+        "sensor_alarm_test": int(delta.get("sensor_alarm_test", -1)),
+        "sensor_alarm_loop": int(delta.get("sensor_alarm_loop", -1)),
+        "sensor_alarm_loop_first": int(diag_first["loop_count"]) if diag_first else -1,
+        "sensor_alarm_v_mmps": int(delta.get("sensor_alarm_v_mmps", -1)),
+        "sensor_alarm_gap_mmps": int(delta.get("sensor_alarm_gap_mmps", -1)),
         "ctrl_wcet_us": int(delta.get("ctrl_wcet_us", -1)),
         "actor_wcet_us": int(delta.get("actor_wcet_us", -1)),
         "ems_fallback_steps": int(delta.get("ems_fallback_steps", -1)),

@@ -90,7 +90,7 @@ int main(void)
        enough for the flag to drop. The true speed follows the acceleration
        exactly, so only the faults break the agreement between the two, and
        both channels carry a pseudo-random jitter from a fixed generator. */
-    printf("# b6: step v_meas a_meas torque v_est flagged alarms v_dr\n");
+    printf("# b6: step v_meas a_meas torque v_est flagged alarms v_dr test\n");
     {
         fault_kalman_t fk;
         control_fault_kalman_init(&fk);
@@ -113,8 +113,9 @@ int main(void)
             float est = control_fault_kalman_step(&k_vehicle, &fk, 0.002f,
                                                   0.02f, 0.005f, 2.0f, v, a,
                                                   tq, 0.0f, 0.01f);
-            printf("b6 %d %.9g %.9g %.9g %.9g %d %u %.9g\n", n, v, a, tq, est,
-                   fk.flagged ? 1 : 0, (unsigned) fk.alarms, fk.v_dr);
+            printf("b6 %d %.9g %.9g %.9g %.9g %d %u %.9g %u\n", n, v, a, tq, est,
+                   fk.flagged ? 1 : 0, (unsigned) fk.alarms, fk.v_dr,
+                   (unsigned) fk.alarm_test);
         }
     }
 

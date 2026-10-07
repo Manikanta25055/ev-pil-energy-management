@@ -443,6 +443,7 @@ class KinematicFaultKalman(KalmanSpeed):
         self._good: tuple | None = None
         self.flagged = False
         self.alarm_steps: list[int] = []
+        self.alarm_tests: list[int] = []        # 1 gross, 2 frozen, 3 mean
         self.flag_history: list[bool] = []
 
     def step(self, *, v_meas_mps, torque_prev_nm, grade_rad, dt_s,
@@ -469,18 +470,25 @@ class KinematicFaultKalman(KalmanSpeed):
             self._gap.pop(0)
             self._pull.pop(0)
 
-        fault_now = self._gross >= s.gross_count
-        fault_now |= self._same >= s.frozen_count and self._meter.sigma_mps > 1e-4
-        if len(self._gap) == s.window:
+        # Which test fires, first match wins: 1 gross, 2 frozen, 3 mean.
+        test = 0
+        if self._gross >= s.gross_count:
+            test = 1
+        elif self._same >= s.frozen_count and self._meter.sigma_mps > 1e-4:
+            test = 2
+        elif len(self._gap) == s.window:
             n = s.window
             m = sum(self._gap) / n
             var = sum((g - m) ** 2 for g in self._gap) / (n - 1)
-            fault_now |= abs(m) > s.t_limit * math.sqrt(max(var, self.r2) / n)
+            if abs(m) > s.t_limit * math.sqrt(max(var, self.r2) / n):
+                test = 3
+        fault_now = test != 0
 
         if not self.flagged and fault_now:
             self.flagged = True
             self._quiet = 0
             self.alarm_steps.append(self._k - 1)
+            self.alarm_tests.append(test)
             # Undo the pull the faulty samples had on the dead-reckoned speed
             # while the test was making up its mind.
             v_dr -= sum(self._pull[:-1])

@@ -187,6 +187,15 @@ typedef struct {
     uint32_t speed_est_mode;
     uint32_t sensor_flag_steps;
     uint32_t sensor_alarms;
+    /* The most recent alarm: which test raised it (1 gross, 2 frozen,
+       3 mean), the loop it was raised on, the speed reading then in mm/s and
+       the size of the window's mean gap in mm/s. One false alarm on a healthy
+       sensor in the first board campaign could not be explained without
+       these. */
+    uint32_t sensor_alarm_test;
+    uint32_t sensor_alarm_loop;
+    uint32_t sensor_alarm_v_mmps;
+    uint32_t sensor_alarm_gap_mmps;
     uint16_t jitter_hist[JITTER_N_BINS];
 } diag_stats_t;
 

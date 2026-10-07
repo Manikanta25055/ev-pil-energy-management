@@ -1,4 +1,5 @@
 #include "tasks.h"
+#include <math.h>
 #include "control.h"
 #include "link.h"
 #include "protocol.h"
@@ -266,6 +267,14 @@ static void ctrl_task(void *arg)
                     KALMAN_R_FLOOR_MPS, KALMAN_DR_TAU_S, v_meas, a_meas,
                     tq_meas, grade, dt);
             s_diag.sensor_flag_steps = s_fault.flag_steps;
+            if (s_fault.alarms != s_diag.sensor_alarms) {
+                s_diag.sensor_alarm_test = s_fault.alarm_test;
+                s_diag.sensor_alarm_loop = s_diag.loop_count;
+                s_diag.sensor_alarm_v_mmps =
+                    (uint32_t) (fabsf(s_fault.alarm_v_mps) * 1000.0f);
+                s_diag.sensor_alarm_gap_mmps =
+                    (uint32_t) (fabsf(s_fault.alarm_gap_mps) * 1000.0f);
+            }
             s_diag.sensor_alarms = s_fault.alarms;
 #else
             const float q = (SPEED_KALMAN == 1) ? KALMAN_FIXED_Q_MPS
@@ -450,7 +459,7 @@ static void diag_task(void *arg)
     (void) arg;
     TickType_t next = xTaskGetTickCount();
     uint8_t tx[160];
-    uint8_t payload[24 * 4 + JITTER_N_BINS * 2];
+    uint8_t payload[28 * 4 + JITTER_N_BINS * 2];
     uint32_t seq = 0;
 
     for (;;) {
@@ -468,7 +477,7 @@ static void diag_task(void *arg)
         uint32_t pl_min = s_p_limit_n ? s_diag.p_limit_min_w : 0u;
 
         /* Order must match evpil.protocol.DIAG_FIELDS. */
-        uint32_t u32[24] = {
+        uint32_t u32[28] = {
             s_diag.loop_count, s_diag.rx_timeouts, s_diag.rx_bad,
             s_diag.infer_deadline_misses, s_diag.ctrl_wcet_us,
             s_diag.infer_wcet_us, s_diag.rtt_max_us,
@@ -481,6 +490,8 @@ static void diag_task(void *arg)
             pl_min, s_diag.p_limit_mean_w, s_diag.p_limit_max_w,
             (uint32_t) SPEED_KALMAN, s_diag.sensor_flag_steps,
             s_diag.sensor_alarms,
+            s_diag.sensor_alarm_test, s_diag.sensor_alarm_loop,
+            s_diag.sensor_alarm_v_mmps, s_diag.sensor_alarm_gap_mmps,
         };
         memcpy(payload, u32, sizeof u32);
         memcpy(payload + sizeof u32, s_diag.jitter_hist,

@@ -197,6 +197,12 @@ DIAG_FIELDS: tuple[str, ...] = (
     # flag up, and how many times it went up. On a healthy sensor both should
     # stay at zero, and that is a false-alarm measurement on real silicon.
     "speed_est_mode", "sensor_flag_steps", "sensor_alarms",
+    # The most recent alarm, so that one can be explained afterwards: which
+    # of the detector's tests raised it (1 gross, 2 frozen, 3 mean), the
+    # control loop it was raised on, the speed reading at that moment and the
+    # size of the mean gap, both in mm/s.
+    "sensor_alarm_test", "sensor_alarm_loop", "sensor_alarm_v_mmps",
+    "sensor_alarm_gap_mmps",
 )
 
 _DIAG = struct.Struct(f"<{len(DIAG_FIELDS)}I{N_JITTER_BINS}H")

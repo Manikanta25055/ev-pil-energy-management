@@ -316,10 +316,14 @@ float control_fault_kalman_step(const vehicle_t *v, fault_kalman_t *f,
     f->pull[f->n_gap] = 0.0f;       /* zero unless this sample is accepted */
     f->gap[f->n_gap++] = gap;
 
-    bool fault_now = f->gross >= FAULT_GROSS_COUNT;
-    if (f->same >= FAULT_FROZEN_COUNT && k->meter.sigma_mps > 1e-4f)
-        fault_now = true;
-    if (f->n_gap == FAULT_WINDOW) {
+    /* Which test fires, first match wins: 1 gross, 2 frozen, 3 mean. */
+    uint32_t test = 0;
+    float mean_now = gap;
+    if (f->gross >= FAULT_GROSS_COUNT) {
+        test = 1;
+    } else if (f->same >= FAULT_FROZEN_COUNT && k->meter.sigma_mps > 1e-4f) {
+        test = 2;
+    } else if (f->n_gap == FAULT_WINDOW) {
         float m = 0.0f;
         for (int i = 0; i < FAULT_WINDOW; i++) m += f->gap[i];
         m /= (float) FAULT_WINDOW;
@@ -332,13 +336,18 @@ float control_fault_kalman_step(const vehicle_t *v, fault_kalman_t *f,
         /* The scatter is not allowed below what the filter itself expects,
            or a noiseless stretch would make any offset look significant. */
         float se = sqrtf(fmaxf(var, k->r2) / (float) FAULT_WINDOW);
-        if (fabsf(m) > FAULT_T_LIMIT * se) fault_now = true;
+        mean_now = m;
+        if (fabsf(m) > FAULT_T_LIMIT * se) test = 3;
     }
+    bool fault_now = (test != 0);
 
     if (!f->flagged && fault_now) {
         f->flagged = true;
         f->quiet = 0;
         f->alarms++;
+        f->alarm_test = test;
+        f->alarm_v_mps = v_meas_mps;
+        f->alarm_gap_mps = mean_now;
         /* Undo the pull the faulty samples had on the dead-reckoned speed
            while the test was making up its mind. A sample that was refused
            pulled nothing and has nothing to undo. */
