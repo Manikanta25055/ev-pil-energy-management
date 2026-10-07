@@ -161,3 +161,61 @@ Two counters in the DIAG frame: which of the three tests raised the flag, and
 the control step it was raised on. Then the urban cell again, a few times.
 The step number gives the place in the cycle, which says at once whether it is
 a standstill, a launch or neither.
+
+
+## 10. The detector's accelerometer assumption, against real logs
+
+**Checked 2026-10-07.** Script: `scripts/check_accel_channel.py`. Data:
+`docs/week12-accel-channel-check.json`. Logged data only: 70 BMW i3 trips,
+30.4 hours, 10 Hz, with no sensor fault in them.
+
+The detector trusts measured acceleration. In the simulation, and on the
+board, that channel is the vehicle's true acceleration with white noise on
+it. The i3 archive logs `Longitudinal Acceleration [m/s^2]` beside speed, and
+the project's loader has always discarded it and derived acceleration from
+speed instead, because the two do not agree. This looks at how far they
+disagree and what the detector would make of it.
+
+| | |
+|---|---|
+| Logged acceleration against the acceleration speed implies: correlation, one trip | 0.96, no lag |
+| Offset between the two, median over trips | 0.016 m/s^2 |
+| Offset, worst trip | 0.167 m/s^2 |
+| Slow disagreement (5 s average), median standard deviation | 0.11 m/s^2 |
+| Its correlation with gravity along the logged slope, median | 0.14 |
+| Times the detector's flag went up | 142 (4.7 per hour) |
+| Share of the driving spent flagged | 99.4% |
+| Trips with no alarm | 0 of 70 |
+
+**On real logs the detector is flagged 99% of the time, on every trip, with
+nothing wrong with the sensor.** 139 of the 142 alarms come from its mean test.
+
+The reason is arithmetic. The two channels agree well sample by sample, and
+their average offset is small. What they do not share is a slow component of
+about 0.11 m/s^2. Dead reckoning integrates acceleration and is pulled back to
+the reading over 2 seconds, so an acceleration error that lasts longer than
+that leaves a standing gap of error times 2 seconds: about 0.22 m/s. The mean
+test calls a fault at 0.036 m/s. White noise, which is all the simulation
+put on the channel, averages away in the integral and never shows this.
+
+The slow component is only weakly related to road slope (correlation 0.14),
+so it is not simply gravity on a hill, which was the guess beforehand. The
+logs do not say what it is.
+
+Two limits on this check. The logs are 10 Hz and the firmware runs at 100 Hz,
+so the detector's 20-sample window spans two seconds here against 0.2 on the
+board, and the alarm count is not the count the firmware would give. The
+standing-gap argument does not depend on the rate. And these are one car's
+CAN signals, which may be filtered differently from each other before they
+are logged.
+
+**What follows.** The simulated fault results for B6 (`docs/week12-fault-arms-b6.json`)
+and its clean runs on the board hold for the acceleration channel they were
+given. They do not carry to an acceleration channel like this one. As tuned,
+B6 is not usable on such a sensor. Making it usable means a test threshold set
+from the measured disagreement rather than from the speed noise, and that
+costs sensitivity: with a standing gap of 0.22 m/s in healthy driving, a 0.5 m/s
+offset is no longer clearly separable, while a dropout, a frozen reading or
+an offset of several m/s still are. That redesign has not been done.
+
+The filter, B5, does not use the acceleration channel and is not affected.
