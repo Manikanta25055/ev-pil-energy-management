@@ -1,0 +1,12 @@
+{
+ "stage": "P7, architecture A7: a numerical planner on a host or in the cloud, with buffered speed-reference segments executed on the board",
+ "decision": "skipped",
+ "gate": "The plan runs A7 only if extra look-ahead or host computation has demonstrated value.",
+ "reason": "Neither has. Look-ahead: on the test route the whole-route planner saves 10.44 percent against the tracked cycle and a planner seeing 300 m saves 9.46; with the learned terminal cost the 300 m planner saves 10.41, so the gap that longer look-ahead could close is already closed without it (validation: 1.19, 0.78, 1.06). Host computation: one plan of the 300 m horizon takes 0.0006 s per replan in unoptimised Python on the laptop (0.19 s for the whole route's 323 replans), one replan per 40 m driven; nothing measured says the board cannot do it, and nothing says it can, because it was not ported. A remote planner would add a link, its delay and its outage cases to buy a saving the local arm already has.",
+ "evidence": {
+  "source_file": "docs/week13-energy-planner.json",
+  "provenance": "SIMULATED; no other traffic on the route"
+ },
+ "what_would_reopen_it": "Route information the board cannot hold (live traffic, signal timing), or a measured planning time on the chip that is too long for the replanning distance.",
+ "result_file": null
+}

@@ -1,0 +1,78 @@
+{
+ "stage": "P3, architecture A4: a bounded learned torque correction around the PID",
+ "decision": "skipped",
+ "gate": "The plan runs A4 only for a distinct tracking gap that remains after estimation has been dealt with, and only after classical feedforward and tuning have been compared.",
+ "reason": "No such gap was measured. With B7 in the loop and a healthy sensor, the worst clean tracking RMSE over every acceleration case, both noise levels and the car 10 percent heavier than the model is 0.0409 m/s, against a registered bound of 0.1 m/s, and at the noise floor B7 is never more than 0.00001 m/s worse than the filter B5. The tracking errors that are large (1 to 13 m/s) occur while a sensor fault is flagged and the loop is controlling on a drifting fallback speed: that is an estimation error, which a torque correction acting on the same wrong speed cannot remove. Planned profiles in stage P6 were tracked to 0.001 m/s RMSE.",
+ "evidence": {
+  "clean_tracking_with_b7": {
+   "val": {
+    "offset, mass x1": {
+     "worst_clean_rmse_mps": 0.023,
+     "worst_tracking_gap_to_b5_mps": 0.0
+    },
+    "replay, mass x1": {
+     "worst_clean_rmse_mps": 0.023,
+     "worst_tracking_gap_to_b5_mps": 0.0
+    },
+    "slope, mass x1": {
+     "worst_clean_rmse_mps": 0.023,
+     "worst_tracking_gap_to_b5_mps": 0.0
+    },
+    "wander, mass x1": {
+     "worst_clean_rmse_mps": 0.023,
+     "worst_tracking_gap_to_b5_mps": 0.0
+    },
+    "wander hard, mass x1": {
+     "worst_clean_rmse_mps": 0.023,
+     "worst_tracking_gap_to_b5_mps": 0.0
+    },
+    "white, mass x1": {
+     "worst_clean_rmse_mps": 0.023,
+     "worst_tracking_gap_to_b5_mps": 0.0
+    },
+    "white, mass x1.1": {
+     "worst_clean_rmse_mps": 0.0236,
+     "worst_tracking_gap_to_b5_mps": 0.0
+    }
+   },
+   "test": {
+    "offset, mass x1": {
+     "worst_clean_rmse_mps": 0.0224,
+     "worst_tracking_gap_to_b5_mps": 1e-05
+    },
+    "replay, mass x1": {
+     "worst_clean_rmse_mps": 0.0224,
+     "worst_tracking_gap_to_b5_mps": 1e-05
+    },
+    "slope, mass x1": {
+     "worst_clean_rmse_mps": 0.0225,
+     "worst_tracking_gap_to_b5_mps": 1e-05
+    },
+    "wander, mass x1": {
+     "worst_clean_rmse_mps": 0.0224,
+     "worst_tracking_gap_to_b5_mps": 1e-05
+    },
+    "wander hard, mass x1": {
+     "worst_clean_rmse_mps": 0.0224,
+     "worst_tracking_gap_to_b5_mps": 1e-05
+    },
+    "white, mass x1": {
+     "worst_clean_rmse_mps": 0.0224,
+     "worst_tracking_gap_to_b5_mps": 1e-05
+    },
+    "white, mass x1.1": {
+     "worst_clean_rmse_mps": 0.0409,
+     "worst_tracking_gap_to_b5_mps": 0.0
+    }
+   }
+  },
+  "source_files": [
+   "docs/week13-arch-val.json",
+   "docs/week13-arch-test.json",
+   "docs/week13-energy-planner.json"
+  ],
+  "provenance": "SIMULATED"
+ },
+ "what_would_reopen_it": "A measured clean tracking error near the 0.1 m/s bound on the board, or a plant change (tyre, payload, grade) that the feedforward cannot follow.",
+ "result_file": null
+}
