@@ -132,6 +132,12 @@ class Policy:
     max_hold_s: float = 10.0    # a hold cannot outlast this
     min_flag_s: float = 0.5     # no release before the fast path's own wait
     trigger: str = "always"     # or "event": ask only when something is up
+    # A3. "switch" picks one fallback speed or the other; "blend" weights the
+    # model's prediction by the reviewer's probability that the acceleration
+    # channel is degraded. `blend_fixed` is a constant weight that needs no
+    # reviewer at all, and overrides both.
+    fallback: str = "switch"
+    blend_fixed: float | None = None
     use_hold: bool = True
     use_release: bool = True
     use_fallback: bool = True
@@ -208,6 +214,9 @@ class Supervisor:
         self._latest: list[tuple[float, Advice] | None] = [None] * len(self.paths)
         self.record = record
         self.snapshots: list[Snapshot] = []
+        self.blend_seen: list[float] = []
+        if policy.blend_fixed is not None:
+            base.fallback_blend = policy.blend_fixed
         self.applied = {"hold": 0, "release": 0, "fallback": 0,
                         "vigilant": 0, "expired": 0, "stale_epoch": 0,
                         "requests": 0}
@@ -245,12 +254,18 @@ class Supervisor:
             break
         b.hold_release = False
         b.vigilance = 1.0
+        blending = p.fallback == "blend" and p.blend_fixed is None
         if advice is None:
             # Nothing usable: the detector runs as it would alone.
             b.fallback_model = False
+            if blending:
+                b.fallback_blend = None
             return
         if b.flagged:
-            if p.use_fallback:
+            if blending and p.use_fallback:
+                b.fallback_blend = advice.p_accel
+                self.blend_seen.append(advice.p_accel)
+            elif p.use_fallback and p.blend_fixed is None:
                 want = advice.p_accel > p.p_accel
                 self.applied["fallback"] += want != b.fallback_model
                 b.fallback_model = want

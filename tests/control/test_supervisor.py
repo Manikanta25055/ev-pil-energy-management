@@ -122,3 +122,39 @@ def test_the_numpy_cells_match_torch(kind):
     model = TinyReviewer(net.export())
     got = np.array([model.logits(x[0, t].numpy()) for t in range(50)])
     assert np.allclose(got, want, atol=1e-5)
+
+
+def test_a_blend_of_zero_is_the_dead_reckoning_and_one_is_the_model(params):
+    """A3: while flagged the loop may control on a weighted mix of the two
+    fallback speeds. The ends of the range are the two speeds it had."""
+    fault = lambda: SpeedFault("dropout", 30.0, duration_s=5.0)
+    err = am.wander(6000, 0.01, seed=4)
+    plain, zero, one, model = b7(params), b7(params), b7(params), b7(params)
+    zero.fallback_blend, one.fallback_blend = 0.0, 1.0
+    model.fallback_model = True
+    a = run(params, plain, err=err, fault=fault())
+    b = run(params, zero, err=err, fault=fault())
+    c = run(params, one, err=err, fault=fault())
+    d = run(params, model, err=err, fault=fault())
+    assert a.energy_wh == b.energy_wh
+    assert c.energy_wh == d.energy_wh
+    assert a.energy_wh != c.energy_wh
+
+
+def test_a_fixed_blend_needs_no_reviewer(params):
+    sup = Supervisor(b7(params), policy=Policy(blend_fixed=0.5))
+    half = b7(params)
+    half.fallback_blend = 0.5
+    fault = lambda: SpeedFault("stuck", 30.0, duration_s=5.0)
+    a = run(params, sup, fault=fault())
+    b = run(params, half, fault=fault())
+    assert a.energy_wh == b.energy_wh
+
+
+def test_a_reviewer_sets_the_blend_from_its_channel_diagnosis(params):
+    degraded = FixedReviewer((0.0, 0.0, 1.0, 0.0), "accel")
+    sup = Supervisor(b7(params), fast=(degraded, Channel()),
+                     policy=Policy(fallback="blend", use_hold=False,
+                                   use_release=False, use_vigilance=False))
+    run(params, sup, fault=SpeedFault("stuck", 30.0, duration_s=5.0))
+    assert sup.blend_seen and max(sup.blend_seen) == 1.0

@@ -602,6 +602,10 @@ class BiasAwareFaultKalman(KalmanSpeed):
       release_now     drop the flag on the next sample that is not frozen
       fallback_model  while flagged, control on the vehicle model's
                       prediction rather than the dead-reckoned speed
+      fallback_blend  while flagged, control on a mix of the two: this
+                      weight on the model's prediction, the rest on the
+                      dead-reckoned speed. None leaves the choice to
+                      fallback_model
     """
 
     def __init__(self, params: VehicleParams, *, q_mps: float,
@@ -636,6 +640,7 @@ class BiasAwareFaultKalman(KalmanSpeed):
         self.hold_release = False
         self.release_now = False
         self.fallback_model = False
+        self.fallback_blend: float | None = None
         self.last_gap = 0.0         # reading minus dead-reckoned speed
         self.last_nu = 0.0          # reading minus the model's prediction
         self.flag_history: list[bool] = []
@@ -643,6 +648,12 @@ class BiasAwareFaultKalman(KalmanSpeed):
     @property
     def accel_offset_mps2(self) -> float:
         return self._b
+
+    def _model_weight(self) -> float:
+        """How much of the fallback speed is the model's prediction."""
+        if self.fallback_blend is not None:
+            return min(1.0, max(0.0, self.fallback_blend))
+        return 1.0 if self.fallback_model else 0.0
 
     def _test(self, scale: float) -> int:
         s = self.s
@@ -723,9 +734,11 @@ class BiasAwareFaultKalman(KalmanSpeed):
             self.last_nu = v_meas_mps - self._x
             band = (max(s.clear_band_mps, 4.0 * scale)
                     + s.band_growth_mps2 * self._flag_s)
-            off = self.last_nu if self.fallback_model else gap
+            w = self._model_weight()
+            off = (self.last_nu if w >= 1.0 else gap if w <= 0.0
+                   else w * self.last_nu + (1.0 - w) * gap)
             quiet = (abs(off) < band and self._same < s.frozen_count
-                     and (self._gross == 0 or self.fallback_model))
+                     and (self._gross == 0 or w > 0.0))
             self._quiet = self._quiet + 1 if quiet else 0
             if self.hold_release:
                 self._quiet = min(self._quiet, s.clear_count - 1)
@@ -747,7 +760,9 @@ class BiasAwareFaultKalman(KalmanSpeed):
 
         if self.flagged:
             self._v_dr = v_dr
-            return self._x if self.fallback_model else v_dr
+            w = self._model_weight()
+            return (self._x if w >= 1.0 else v_dr if w <= 0.0
+                    else w * self._x + (1.0 - w) * v_dr)
 
         if abs(gap) > max(s.gross_mps, 8.0 * scale):
             self._v_dr = v_dr
