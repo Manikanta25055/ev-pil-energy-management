@@ -40,6 +40,10 @@ REVIEWER_INC ?= ../main
 test_reviewer: test_reviewer.c ../main/reviewer.c
 	$(CC) -I$(REVIEWER_INC) $(CFLAGS) -o $@ $^ -lm
 
+# B7 and the on-chip monitor over a drive given on stdin.
+test_b7: test_b7.c ../main/control.c
+	$(CC) $(CFLAGS) -o $@ $^ -lm
+
 .PHONY: check clean
 check: test_protocol test_control test_features
 	./test_protocol
