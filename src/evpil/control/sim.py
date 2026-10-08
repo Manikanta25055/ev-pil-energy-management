@@ -135,6 +135,8 @@ def simulate(
     speed_estimator=None,
     speed_fault=None,
     accel_noise_mps2: float = 0.0,
+    accel_error_mps2: np.ndarray | None = None,
+    v0_mps: float = 0.0,
 ) -> Result:
     """Run one cycle closed-loop and return its control metrics.
 
@@ -160,6 +162,14 @@ def simulate(
     estimator. It draws from its own generator, so turning it on does not
     change the speed noise of a run with the same seed.
 
+    `accel_error_mps2` is an error added to that same channel, one value per
+    step, on top of the white noise: an offset, a slow wander, gravity along
+    a slope (`evpil.control.accel_models`). The plant and the energy manager
+    never see it.
+
+    `v0_mps` starts the vehicle moving, for a run that begins part-way
+    through a cycle. The default is the standing start every cycle has.
+
     `speed_noise_mps` may also be an array with one value per step, for a
     noise level that changes during the cycle.
     """
@@ -174,6 +184,8 @@ def simulate(
     ff_params = params if ff_params is None else ff_params
     plant = Plant(params)
     state: PlantState = plant.reset(soc0, t_ambient_c, t_batt_c)
+    if v0_mps != 0.0:
+        state = replace(state, v_mps=float(v0_mps))
     pid = PidState()
 
     n = len(cycle.v_ref_mps)
@@ -209,6 +221,13 @@ def simulate(
             raise ValueError(
                 f"speed_noise_mps has shape {noise_k.shape}, cycle has {n} steps")
 
+    if accel_error_mps2 is not None:
+        accel_error_mps2 = np.asarray(accel_error_mps2, dtype=float)
+        if accel_error_mps2.shape != (n,):
+            raise ValueError(
+                f"accel_error_mps2 has shape {accel_error_mps2.shape}, "
+                f"cycle has {n} steps")
+
     for k in range(n):
         v_true = state.v_mps
         sigma = float(noise_k[k]) if noise_k is not None else speed_noise_mps
@@ -222,6 +241,8 @@ def simulate(
         if speed_estimator is not None:
             a_sens = a_meas + (rng_a.normal(0.0, accel_noise_mps2)
                                if accel_noise_mps2 > 0.0 else 0.0)
+            if accel_error_mps2 is not None:
+                a_sens += float(accel_error_mps2[k])
             v_meas = float(speed_estimator.step(
                 v_meas_mps=v_meas, torque_prev_nm=torque_prev,
                 grade_rad=grade if ff_knows_grade else 0.0, dt_s=dt,

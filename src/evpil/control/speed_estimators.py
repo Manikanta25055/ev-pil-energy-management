@@ -540,6 +540,235 @@ class KinematicFaultKalman(KalmanSpeed):
         return self._correct(x_pred, P_pred, v_meas_mps)
 
 
+@dataclass(frozen=True)
+class BiasAwareSettings:
+    """Thresholds of B7. The first block is B6's and means the same. The
+    second is what B7 adds; `dr_sigma_mps`, `t_step` and `tau_b_s` are set on
+    the training cycles by scripts/tune_bias_aware.py."""
+    window: int = 20
+    t_limit: float = 8.0
+    gross_mps: float = 1.0
+    gross_count: int = 2
+    frozen_count: int = 10
+    clear_count: int = 50
+    clear_band_mps: float = 0.25
+
+    tau_s: float = 2.0          # pull of the dead-reckoned speed to the reading
+    tau_b_s: float = 2.0        # how fast the acceleration offset is learned
+    step_half: int = 30         # samples each side of the step test (300 ms)
+    t_step: float = 6.0
+    # Acceleration error the step test must not mistake for a step: an error
+    # of this size moves the gap by itself times 300 ms between the two
+    # halves. The offset state removes the standing part; this is what is
+    # left while the error is changing.
+    step_slope_mps2: float = 0.2
+    # Standard error of the dead-reckoned speed itself, which B6's mean test
+    # left out. It does not shrink with the window: the error wanders slowly.
+    dr_sigma_mps: float = 0.15
+    # While flagged the dead-reckoned speed runs on acceleration alone and
+    # its error grows with time. The band a returning sensor must sit in
+    # grows with it, so a flag cannot outlive the reference it is judged by.
+    band_growth_mps2: float = 0.2
+
+
+class BiasAwareFaultKalman(KalmanSpeed):
+    """B7: B6 made to live with an acceleration channel that is not the true
+    acceleration plus white noise.
+
+    B6 dead-reckons a speed from measured acceleration and calls a fault when
+    the reading leaves it. A real channel carries an offset and a slow wander
+    (`evpil.control.accel_models`), the dead-reckoned speed follows them, and
+    B6 flags a healthy sensor. Three changes:
+
+      offset state   the dead reckoning estimates the acceleration offset
+                     alongside the speed and subtracts it, so a standing
+                     error in the channel leaves no standing gap
+      step test      a sensor offset arrives in one sample; the channel's
+                     wander does not. The mean gap of the last 300 ms is
+                     compared with the 300 ms before, and the slow error of
+                     the dead reckoning, common to both, cancels
+      mean test      keeps B6's form with the dead reckoning's own error
+                     added to its threshold. It is left to catch what the
+                     step test cannot: a reading that slides away gradually
+
+    The gross and frozen tests are B6's. So is the estimate while healthy:
+    the two-state Kalman filter B5.
+
+    Four attributes let a slower supervisor (`evpil.control.supervisor`)
+    steer it, each bounded and each without effect at its default:
+
+      vigilance       multiplies the step and mean thresholds
+      hold_release    the flag may not drop while this is set
+      release_now     drop the flag on the next sample that is not frozen
+      fallback_model  while flagged, control on the vehicle model's
+                      prediction rather than the dead-reckoned speed
+    """
+
+    def __init__(self, params: VehicleParams, *, q_mps: float,
+                 q_d_mps2: float,
+                 settings: BiasAwareSettings = BiasAwareSettings(),
+                 r_floor_mps: float = 0.005) -> None:
+        super().__init__(params, q_mps=q_mps, r_mps=0.02, adaptive=True,
+                         r_floor_mps=r_floor_mps, q_d_mps2=q_d_mps2)
+        self.s = settings
+        self._keep = max(settings.window, 2 * settings.step_half)
+        self._v_dr: float | None = None
+        self._b = 0.0
+        self._gap: list[float] = []
+        # The dead-reckoned speed and offset before each sample in the
+        # window, and the acceleration since: enough to rebuild the
+        # reference without the samples a fault got into.
+        self._before: list[tuple[float, float]] = []
+        self._adt: list[float] = []
+        self._gross = 0
+        self._same = 0
+        self._last: float | None = None
+        self._quiet = 0
+        self._flag_s = 0.0
+        self._dt = 0.01
+        self._k = 0
+        self._good: tuple | None = None
+        self.flagged = False
+        self.alarm_steps: list[int] = []
+        self.alarm_tests: list[int] = []   # 1 gross, 2 frozen, 3 mean, 4 step
+        self.clear_steps: list[int] = []
+        self.vigilance = 1.0
+        self.hold_release = False
+        self.release_now = False
+        self.fallback_model = False
+        self.last_gap = 0.0         # reading minus dead-reckoned speed
+        self.last_nu = 0.0          # reading minus the model's prediction
+        self.flag_history: list[bool] = []
+
+    @property
+    def accel_offset_mps2(self) -> float:
+        return self._b
+
+    def _test(self, scale: float) -> int:
+        s = self.s
+        if self._gross >= s.gross_count:
+            return 1
+        if self._same >= s.frozen_count and self._meter.sigma_mps > 1e-4:
+            return 2
+        r2 = scale * scale
+        h = s.step_half
+        if len(self._gap) >= 2 * h:
+            new, old = self._gap[-h:], self._gap[-2 * h:-h]
+            m_new, m_old = sum(new) / h, sum(old) / h
+            var = (sum((g - m_new) ** 2 for g in new)
+                   + sum((g - m_old) ** 2 for g in old)) / (2 * h - 2)
+            if abs(m_new - m_old) > self.vigilance * (
+                    s.t_step * math.sqrt(2.0 * max(var, r2) / h)
+                    + s.step_slope_mps2 * h * self._dt):
+                return 4
+        n = s.window
+        if len(self._gap) >= n:
+            win = self._gap[-n:]
+            m = sum(win) / n
+            var = sum((g - m) ** 2 for g in win) / (n - 1)
+            if abs(m) > self.vigilance * s.t_limit * math.sqrt(
+                    max(var, r2) / n + s.dr_sigma_mps ** 2):
+                return 3
+        return 0
+
+    def step(self, *, v_meas_mps, torque_prev_nm, grade_rad, dt_s,
+             a_meas_mps2=0.0) -> float:
+        s = self.s
+        self._k += 1
+        if self._x is None:
+            self._x = self._v_dr = self._last = v_meas_mps
+            self.flag_history.append(False)
+            return self._x
+
+        self._dt = dt_s
+        v_dr = self._v_dr + (a_meas_mps2 - self._b) * dt_s
+        gap = v_meas_mps - v_dr
+        self.last_gap = gap
+        scale = math.sqrt(self.r2)
+
+        self._gross = self._gross + 1 if abs(gap) > max(
+            s.gross_mps, 8.0 * scale) else 0
+        self._same = self._same + 1 if v_meas_mps == self._last else 0
+        self._last = v_meas_mps
+        self._gap.append(gap)
+        self._before.append((self._v_dr, self._b))
+        self._adt.append(a_meas_mps2 * dt_s)
+        if len(self._gap) > self._keep:
+            self._gap.pop(0)
+            self._before.pop(0)
+            self._adt.pop(0)
+
+        test = 0 if self.flagged else self._test(scale)
+        if test:
+            self.flagged = True
+            self._quiet = 0
+            self._flag_s = 0.0
+            self.alarm_steps.append(self._k - 1)
+            self.alarm_tests.append(test)
+            # Back to the reference as it stood before the window, brought
+            # forward on acceleration alone: none of the samples the fault
+            # may have been in is left in it.
+            v0, b0 = self._before[0]
+            self._b = b0
+            v_dr = v0 + sum(self._adt) - b0 * dt_s * len(self._adt)
+            # The model's prediction starts from the same place and runs
+            # beside the dead reckoning for as long as the flag is up, on
+            # the filter state from before the fault could have reached it.
+            if self._good is not None:
+                self._restore(self._good)
+            self._x = v_dr
+        elif self.flagged:
+            self._flag_s += dt_s
+            self._coast(*self._predict(torque_prev_nm, grade_rad, dt_s))
+            self.last_nu = v_meas_mps - self._x
+            band = (max(s.clear_band_mps, 4.0 * scale)
+                    + s.band_growth_mps2 * self._flag_s)
+            off = self.last_nu if self.fallback_model else gap
+            quiet = (abs(off) < band and self._same < s.frozen_count
+                     and (self._gross == 0 or self.fallback_model))
+            self._quiet = self._quiet + 1 if quiet else 0
+            if self.hold_release:
+                self._quiet = min(self._quiet, s.clear_count - 1)
+            if self.release_now and self._same < s.frozen_count:
+                self._quiet = s.clear_count
+            self.release_now = False
+            if self._quiet >= s.clear_count:
+                self.flagged = False
+                self.clear_steps.append(self._k - 1)
+                tail = self._gap[-s.window:]
+                v_dr += sum(tail) / len(tail)
+                self._gap.clear()
+                self._before.clear()
+                self._adt.clear()
+                if self._good is not None:
+                    self._restore(self._good)
+                self._x, self._P = v_dr, self.r2
+        self.flag_history.append(self.flagged)
+
+        if self.flagged:
+            self._v_dr = v_dr
+            return self._x if self.fallback_model else v_dr
+
+        if abs(gap) > max(s.gross_mps, 8.0 * scale):
+            self._v_dr = v_dr
+            x_pred, P_pred = self._predict(torque_prev_nm, grade_rad, dt_s)
+            return self._coast(x_pred, P_pred)
+
+        pull = (dt_s / s.tau_s) * gap
+        self._v_dr = v_dr + pull
+        # The dead reckoning running ahead of the reading means the channel
+        # reads high: the offset estimate goes up.
+        self._b -= pull / s.tau_b_s
+        self._meter.push(v_meas_mps)
+        if self._meter.new_block:
+            self.r2 = max(self._meter.sigma_mps ** 2, self.r_floor2)
+            self._good_next, self._good = self._snapshot(), getattr(
+                self, "_good_next", None)
+        x_pred, P_pred = self._predict(torque_prev_nm, grade_rad, dt_s)
+        self.last_nu = v_meas_mps - x_pred
+        return self._correct(x_pred, P_pred, v_meas_mps)
+
+
 class SpeedFault:
     """A fault on the speed measurement, applied after the noise.
 

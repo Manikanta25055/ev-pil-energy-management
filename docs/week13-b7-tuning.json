@@ -1,0 +1,99 @@
+{
+ "provenance": "SIMULATED on the laptop; training split only. The run's own write failed on a numpy integer; this table is the rows it printed, with the selection rule applied to them unchanged",
+ "rule": "1. keep the candidates with fewer than one false alarm per clean hour, at\n     the floor and at 10x separately\n  2. of those, the fewest offsets missed or late\n  3. ties go to the larger t_step, then the smaller window",
+ "chosen": {
+  "step_half": 30,
+  "t_step": 6.0,
+  "step_slope_mps2": 0.2
+ },
+ "candidates": [
+  {
+   "step_half": 20,
+   "t_step": 5.0,
+   "step_slope_mps2": 0.2,
+   "offsets_run": 120,
+   "missed": 12,
+   "false_alarms_before_onset": 0,
+   "false_alarms_per_hour_floor": 0.26296374752558416,
+   "false_alarms_per_hour_10x": 0.0,
+   "clean_hours_each": 3.8028055555555556
+  },
+  {
+   "step_half": 20,
+   "t_step": 5.0,
+   "step_slope_mps2": 0.3,
+   "offsets_run": 120,
+   "missed": 19,
+   "false_alarms_before_onset": 0,
+   "false_alarms_per_hour_floor": 0.26296374752558416,
+   "false_alarms_per_hour_10x": 0.0,
+   "clean_hours_each": 3.8028055555555556
+  },
+  {
+   "step_half": 20,
+   "t_step": 6.0,
+   "step_slope_mps2": 0.2,
+   "offsets_run": 120,
+   "missed": 30,
+   "false_alarms_before_onset": 0,
+   "false_alarms_per_hour_floor": 0.5259274950511683,
+   "false_alarms_per_hour_10x": 0.0,
+   "clean_hours_each": 3.8028055555555556
+  },
+  {
+   "step_half": 20,
+   "t_step": 6.0,
+   "step_slope_mps2": 0.3,
+   "offsets_run": 120,
+   "missed": 39,
+   "false_alarms_before_onset": 0,
+   "false_alarms_per_hour_floor": 0.26296374752558416,
+   "false_alarms_per_hour_10x": 0.0,
+   "clean_hours_each": 3.8028055555555556
+  },
+  {
+   "step_half": 30,
+   "t_step": 5.0,
+   "step_slope_mps2": 0.2,
+   "offsets_run": 120,
+   "missed": 0,
+   "false_alarms_before_onset": 0,
+   "false_alarms_per_hour_floor": 0.26296374752558416,
+   "false_alarms_per_hour_10x": 0.0,
+   "clean_hours_each": 3.8028055555555556
+  },
+  {
+   "step_half": 30,
+   "t_step": 5.0,
+   "step_slope_mps2": 0.3,
+   "offsets_run": 120,
+   "missed": 0,
+   "false_alarms_before_onset": 0,
+   "false_alarms_per_hour_floor": 0.26296374752558416,
+   "false_alarms_per_hour_10x": 0.0,
+   "clean_hours_each": 3.8028055555555556
+  },
+  {
+   "step_half": 30,
+   "t_step": 6.0,
+   "step_slope_mps2": 0.2,
+   "offsets_run": 120,
+   "missed": 0,
+   "false_alarms_before_onset": 0,
+   "false_alarms_per_hour_floor": 0.26296374752558416,
+   "false_alarms_per_hour_10x": 0.0,
+   "clean_hours_each": 3.8028055555555556
+  },
+  {
+   "step_half": 30,
+   "t_step": 6.0,
+   "step_slope_mps2": 0.3,
+   "offsets_run": 120,
+   "missed": 5,
+   "false_alarms_before_onset": 0,
+   "false_alarms_per_hour_floor": 0.26296374752558416,
+   "false_alarms_per_hour_10x": 0.0,
+   "clean_hours_each": 3.8028055555555556
+  }
+ ]
+}
