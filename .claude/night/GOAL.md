@@ -1,126 +1,47 @@
-# Night Protocol anchor — EV PIL, close out the corrected campaign
-
-Written 2026-10-07 00:58 IST. Deadline: 07:00 IST the same morning.
-The previous anchor is kept as `.claude/night/GOAL-2026-09-21.md`.
-
-Two agents share this repository tonight. The board chain
-(`.claude/night/chain_after_rule.sh`, PID 76070) is mine. The finisher
-(`scripts/finalize_corrected_campaign.py`, PID 86802) is the Codex agent's and
-starts when the chain exits. The criteria below are about outcomes and do not
-care which agent produced them. Read `.claude/night/finalize-corrected-status.json`
-before every increment.
-
 ## OBJECTIVE
-The corrected-plant work is closed: every measurement is taken, reported,
-reviewed, tested and committed locally, with no job running and no loose end
-recorded, so that the model research in `docs/2026-10-07-model-advancement-research.md`
-can start from a settled baseline.
+Every remaining stage of `docs/2026-10-07-model-advancement-research.md` that does not need Jev (P3, P5, P6, P7) has a recorded result or a recorded reason it was not run, on branch `feature/sensor-arch`.
+
+All commands run from `/Users/manikantagonugondla/Desktop/EV Drives Improvement/.worktrees/sensor-arch`.
+A criterion asks that a result exists and is honestly labelled. None asks that any arm wins.
 
 ## ACCEPTANCE
-All commands run from the repository root, `/Users/manikantagonugondla/Desktop/EV Drives Improvement`.
-
-1. The corrected campaign is complete and clean — VERIFY:
-   `python3 -c "import json;r=json.load(open('docs/week11-pil-corrected.json'))['runs'];k={(x['scenario'],x['level'],x['controller']) for x in r};assert len(r)==len(k)==36;assert sum(x['controller']=='rule' for x in r)==18;assert all(x['ctrl_late']==0 for x in r);assert all((x['actor_steps']>0)==(x['controller']=='actor') for x in r);assert not [x for x in r if x['tracking_rmse_mps']<1.0 and x['dropped_frames']>16];print('OK campaign')"`
-   — EXPECT: prints `OK campaign`, exit 0.
-
-2. The A4 sweep on the corrected plant is complete and paired — VERIFY:
-   `python3 -c "import json;L=['0.2','0.5','1','2','3','4','5','10'];[(lambda a,b:(a['n_blackouts']==8 and [x['onset_s'] for x in a['blackouts']]==[x['onset_s'] for x in b['blackouts']]) or (_ for _ in ()).throw(AssertionError(s)))(json.load(open(f'docs/week11-a4-on-{s}s.json')),json.load(open(f'docs/week11-a4-off-{s}s.json'))) for s in L];print('OK a4')"`
-   — EXPECT: prints `OK a4`, exit 0.
-
-3. The report and the supervisor note are rebuilt from the final data — VERIFY:
-   `test reports/EV-PIL-status-report.docx -nt docs/week11-pil-corrected.json && test reports/supervisor-correction-note.docx -nt docs/week11-pil-corrected.json && echo OK`
-   — EXPECT: prints `OK`.
-
-4. Both documents have been looked at page by page and the manifest says so — VERIFY:
-   `python3 -c "import json;d=json.load(open('docs/week11-corrected-finalization.json'));assert d['visual_review_pending'] is False;print('OK review')"`
-   — EXPECT: prints `OK review`, exit 0.
-
-5. The correction note carries the board result — VERIFY:
-   `grep -c "^## 7. The campaign on the corrected plant, MEASURED" docs/week11-plant-correction.md`
-   — EXPECT: `1`.
-
-6. The rule-arm shift against the earlier campaign is explained from data, not left as a remark — VERIFY:
-   `python3 -c "import json;d=json.load(open('docs/week11-rule-arm-check.json'));assert d['conclusion'] and d['rows'];print('OK rule-arm')" && grep -c "^## 8. Why the rule arm moved" docs/week11-plant-correction.md`
-   — EXPECT: prints `OK rule-arm` then `1`.
-
-7. The full test suite passes — VERIFY:
-   `PYTHONPATH="src:." python3 -m pytest tests -q`
-   — EXPECT: exit 0, last line reports passed and no failed or error.
-
-8. Nothing is left running — VERIFY:
-   `pgrep -f "run_pil_campaign|run_arm.sh|chain_after_rule|rerun_disturbed|corrected_a4|run_a4_closedloop|finalize_corrected_campaign" ; echo "rc=$?"`
-   — EXPECT: last line `rc=1`.
-
-9. Everything is committed locally and the tree is clean, apart from the operator's own research file — VERIFY:
-   `git status --porcelain | grep -v "docs/2026-10-07-model-advancement-research.md" | wc -l | tr -d ' '`
-   — EXPECT: `0`.
-
-10. The handoff says the work is closed — VERIFY:
-    `grep -c "^Corrected campaign: closed" .remember/remember.md`
-    — EXPECT: `1`.
-
-11. Project memory records the measured result — VERIFY:
-    `grep -c "week11-pil-corrected.json" "$HOME/.claude/projects/-Users-manikantagonugondla-Desktop-EV-Drives-Improvement/memory/ev-pil-gate-status.md"`
-    — EXPECT: `1` or more.
-
-12. The Kalman branch is merged, or the reason it could not be is written down
-    — VERIFY:
-    `(git merge-base --is-ancestor feature/decision-model HEAD || test -s .claude/night/MERGE-BLOCKED.md) && echo OK`
-    — EXPECT: prints `OK`. If merged, criterion 7 must pass on the merged tree.
-
-> **AMENDED 2026-10-07 00:58 by the operator, in chat:** "you can merge the
-> kalman branch if there are no issues". Criterion 12 and the merge clause
-> below record that. "No issues" is taken to mean all four of: the merge has no
-> conflicts; the full suite passes on the merged tree; the firmware defaults
-> are unchanged (`SPEED_FILTER_ALPHA 1.0f`, `SPEED_KALMAN 0`); and it happens
-> only after the board chain and the finisher have both exited, because the
-> chain builds from `firmware/main/` and the finisher hashes its sources. If
-> any of the four fails, the merge is aborted and `MERGE-BLOCKED.md` says which.
+1. The suite is green — VERIFY: `PYTHONPATH="src:." python3 -m pytest tests -q` — EXPECT: exit code 0.
+2. The registered sensor evaluation was not altered — VERIFY: `PYTHONPATH=src python3 -c "from evpil.control import sensor_eval as se; assert se.config_hash()=='8822ca1eb5a48b74'"` — EXPECT: exit code 0.
+3. P3, A3 (a better speed while flagged / learned estimator component) is evaluated on both splits beside B7 alone and B7 with the rule monitor — VERIFY: `python3 -c "import json; ds=[json.load(open('docs/week13-a3-%s.json'%s)) for s in ('val','test')]; assert all(d['provenance'].startswith('SIMULATED') and {'A0 b7','A2 monitor'}<=set(d['rows']) and any(k.startswith('A3') for k in d['rows']) and all(r['summary']['named_faults']==560 for r in d['rows'].values()) for d in ds)"` — EXPECT: exit code 0.
+4. P3, A4 (bounded torque correction) is either run or declined with a reason — VERIFY: `python3 -c "import json; d=json.load(open('docs/week13-a4-decision.json')); assert d['decision'] in ('run','skipped') and len(d['reason'])>40 and (d['decision']=='skipped' or d['result_file'])"` — EXPECT: exit code 0.
+5. P5: B7 and the rule monitor in C agree with Python — VERIFY: `PYTHONPATH="src:." python3 -m pytest tests/control/test_b7_c_parity.py tests/control/test_monitor_c_parity.py -q` — EXPECT: exit code 0, at least 2 tests passed, none skipped.
+6. P5: the firmware host harnesses still build — VERIFY: `make -C firmware/host_test check` — EXPECT: exit code 0.
+7. P5: a board campaign of B7 (with and without the monitor) with injected faults is MEASURED, or the reason it could not be is recorded — VERIFY: `python3 -c "import json,os; p='docs/week13-b7-pil.json'; b='docs/week13-b7-pil-blocker.json'; d=json.load(open(p)) if os.path.exists(p) else None; assert (d and d['provenance'].startswith('MEASURED') and d['late_control_steps'] is not None and d['estimator_mode_verified'] is True and d['board_restored_to']=='actor') or (len(json.load(open(b))['blocker'])>40 and json.load(open(b))['board_restored_to']=='actor')"` — EXPECT: exit code 0.
+8. P6: a constrained classical speed planner, a learned terminal cost and a student policy are compared on matched route, distance and arrival time — VERIFY: `python3 -c "import json; d=json.load(open('docs/week13-energy-planner.json')); a=d['arms']; assert {'tracked_cycle','classical','terminal_cost','student'}<=set(a); assert all(abs(a[k]['distance_km']-a['classical']['distance_km'])<0.01*a['classical']['distance_km'] and abs(a[k]['arrival_s']-a['classical']['arrival_s'])<=d['constraints']['arrival_tolerance_s'] and 'equivalent_wh_per_km' in a[k] and 'constraint_violations' in a[k] for k in a); assert d['provenance'].startswith('SIMULATED') and d['split']=='test'"` — EXPECT: exit code 0.
+9. P7 (remote planning with buffering) is either run or declined with a reason — VERIFY: `python3 -c "import json; d=json.load(open('docs/week13-a7-decision.json')); assert d['decision'] in ('run','skipped') and len(d['reason'])>40 and (d['decision']=='skipped' or d['result_file'])"` — EXPECT: exit code 0.
+10. The Jev stages are recorded as blocked, not filled in — VERIFY: `grep -c "Jev" docs/week13-plan-status.md && ! grep -rl '"reviewer": *"jev"' docs/*.json` — EXPECT: a count of at least 1 on the first line and no file names after it; exit code 0.
+11. The write-ups exist and name what was not done — VERIFY: `grep -l "Not done" docs/week13-estimator-and-board.md docs/week13-energy-planning.md docs/week13-plan-status.md | wc -l` — EXPECT: `3`.
+12. The sealed i3 test trips were not read by new code — VERIFY: `python3 -c "import json,subprocess,sys; t=json.load(open('data/splits.json'))['test']; out=subprocess.run(['git','grep','-l','-E','|'.join(t),'--','src','scripts'],capture_output=True,text=True).stdout.strip(); sys.exit(1 if out else 0)"` — EXPECT: exit code 0.
+13. Nothing was pushed — VERIFY: `git branch -r --contains HEAD | wc -l` — EXPECT: `0`.
+14. Everything is committed — VERIFY: `git status --porcelain | wc -l` — EXPECT: `0`.
+15. Nothing is left running — VERIFY: `pgrep -f "[s]pawn_main|[r]un_arch_study|[r]un_sensor_eval|[r]un_pil|[a]rduino-cli"; echo $?` — EXPECT: `1` and no process lines. (The brackets keep the check from matching its own shell.)
 
 ## BLAST RADIUS
-May be created or modified:
-
-- `docs/week11-*.json`, `docs/week11-*.csv`, `docs/week11-plant-correction.md`
-- `docs/figures/pil-energy-corrected.png`, `docs/figures/week11-a4-corrected-sweep.png`
-- `reports/EV-PIL-status-report.docx`, `reports/supervisor-correction-note.docx`
-- `scripts/build_report.py`, `scripts/plot_a4_sweep.py`, `scripts/plot_pil.py`,
-  `scripts/build_supervisor_note.py`, `scripts/corrected_campaign.py`,
-  `scripts/finalize_corrected_campaign.py`, and one new read-only analysis
-  script `scripts/check_rule_arm.py`
-- `tests/test_corrected_finalization.py`
-- `AGENTS.md` (commit as written; no edits)
-- `.claude/night/*`, `.remember/*`
-- `~/.claude/projects/-Users-manikantagonugondla-Desktop-EV-Drives-Improvement/memory/*`
-
-The four finisher-hashed sources (`scripts/build_report.py`,
-`scripts/corrected_campaign.py`, `scripts/finalize_corrected_campaign.py`,
-`tests/test_corrected_finalization.py`) may be edited only after the finisher
-has exited or been stopped by whoever owns it.
-
-By `git merge feature/decision-model` only, never by hand edit: whatever that
-branch carries under `src/evpil/control/`, `firmware/main/`,
-`firmware/host_test/`, `tests/control/`, `scripts/`, `docs/` and `.gitignore`.
-
-Board actions allowed: flashing and running the images the chain already
-builds, and re-running a campaign or A4 cell that failed or was disturbed.
+Inside the worktree `.worktrees/sensor-arch` only:
+- `src/evpil/control/**` (new modules; in existing files only `speed_estimators.py`, `supervisor.py`, `sim.py`, `tiny_rnn.py`, and never `sensor_eval.py`'s registered constants)
+- `src/evpil/plan/**` (new: the speed planner)
+- `scripts/` new files, plus `scripts/sensor_arms.py`, `scripts/run_arch_study.py`, `scripts/run_sensor_eval.py`, `scripts/train_reviewer.py`
+- `tests/control/**`, `tests/plan/**` (new tests; existing tests are not edited to make them pass)
+- `firmware/main/control.c`, `control.h`, `reviewer.c`, `reviewer.h`, `tasks.c`, `tasks.h`, `CMakeLists.txt`; `firmware/host_test/**`
+- `docs/week13-*`, `models/**`
+- `data/reviewer*/`, `data/planner/` (gitignored working data)
+- `.claude/night/**` in the worktree
+- The board on `/dev/cu.usbmodem101`: flashing test images, and restoring the normal actor image at the end
+- Outside the worktree, exactly two files: `.remember/remember.md` in the main checkout and the memory folder under `~/.claude/projects/-Users-manikantagonugondla-Desktop-EV-Drives-Improvement/memory/`
 
 ## OUT OF SCOPE
-- Anything in `docs/2026-10-07-model-advancement-research.md`: reading it to
-  plan is fine, acting on it is tomorrow's work. No new model, no training, no
-  new experiment.
-- `src/` and `firmware/`. If the rule-arm check finds a defect in the plant or
-  the firmware, record it in the note and the handoff and stop there.
-- On `feature/decision-model`: no rebase, no new commits, no port of B5 or B6
-  to C, no board run of the Kalman arms, no resolving a merge conflict by
-  editing. Merging it as it stands is in scope (criterion 12).
-- Retraining SAC, choosing a different seed, re-tuning any arm.
-- Rebuilding the `comm_delay` axis with a delivery queue.
-- `git push`, sending or drafting the supervisor email in Gmail, opening a PR.
-- Deleting or overwriting `docs/week11-pil-corrected-rule-disturbed.json` or
-  any week-10 measurement file.
-- Starting a second board job, a second finisher, or killing the Codex
-  agent's finisher or wake-up watcher because it is slow.
-- Side compute while a board cell is running: no multi-process sweeps, no
-  cross-compiles, no full test suite until the board is idle.
-- Unrelated fixes met along the way, including the report's three pre-existing
-  MED prose findings and any test that was already failing.
+- Anything with Jev, Laya, Kev or Nimble: no purchase, no API call, no download, no stand-in model reported under their names (plan stages P4, most of P5-variants).
+- `git push`, merging `feature/sensor-arch` into any branch, sending the supervisor note.
+- Changing the registered cases, splits, seeds or criteria in `sensor_eval.py`, or loosening a bound after seeing a result. A new criterion set for a new task (energy planning) is written before its first run.
+- Re-tuning B7 or retraining the reviewers so that a row passes; a fourth round of reviewer training.
+- The main checkout's working tree, including its two untracked `docs/` files and the Codex agent's files (`AGENTS.md`, `scripts/build_report.py`, `scripts/corrected_campaign.py`, `scripts/finalize_corrected_campaign.py`).
+- The 70-page report, the supervisor note, `src/evpil/plant/**`, the SAC actor and its weights header, the rule energy manager, the PID gains.
+- The sealed i3 test trips and `data/splits.json`.
+- The earlier campaigns' result files (`docs/week7-*` through `docs/week12-*`).
+- Fixing the pre-existing skipped tests, the iCloud eviction of `.git`, or any unrelated bug met on the way: note it in the write-up and leave it.
+- Any multiprocessing pool started from a heredoc; any board job while a second one is running.
