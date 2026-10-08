@@ -65,7 +65,9 @@ static volatile float    s_p_limit_w   = 50000.0f;
    the build's constant. */
 static volatile float    s_speed_alpha = SPEED_FILTER_ALPHA;
 static speed_filter_t    s_speed_filt;
-#if SPEED_KALMAN == 4
+#if SPEED_KALMAN >= 5
+static supervisor_t      s_sup;
+#elif SPEED_KALMAN == 4
 static fault_kalman_t    s_fault;
 #elif SPEED_KALMAN
 static kalman_speed_t    s_kalman;
@@ -200,7 +202,7 @@ static void ctrl_task(void *arg)
 
         xSemaphoreTake(s_state_mux, portMAX_DELAY);
         float v_meas = s_state.v_mps;
-#if SPEED_KALMAN == 4
+#if SPEED_KALMAN >= 4
         float a_meas = s_state.a_mps2;
 #endif
         float v_ref  = s_state.v_ref_mps;
@@ -254,7 +256,36 @@ static void ctrl_task(void *arg)
 #endif
             s_torque_prev2 = s_torque_cmd;
             bool fresh = (stale_run == 0);
-#if SPEED_KALMAN == 4
+#if SPEED_KALMAN >= 5
+            if (!s_kalman_ready) {
+                control_supervisor_init(&s_sup);
+                s_kalman_ready = true;
+            }
+            /* No new measurement this period: hold the last estimate, as
+               mode 4 does. Mode 5 is B7 alone; mode 6 puts the rule monitor
+               around it. */
+            if (fresh) {
+#if SPEED_KALMAN == 6
+                s_v_ctl = control_supervisor_step(
+                    &k_vehicle, &s_sup, KALMAN_ADAPT_Q_MPS, KALMAN_QD_MPS2,
+                    KALMAN_R_FLOOR_MPS, v_meas, a_meas, tq_meas, grade, dt);
+#else
+                s_v_ctl = control_b7_step(
+                    &k_vehicle, &s_sup.b, KALMAN_ADAPT_Q_MPS, KALMAN_QD_MPS2,
+                    KALMAN_R_FLOOR_MPS, v_meas, a_meas, tq_meas, grade, dt);
+#endif
+            }
+            s_diag.sensor_flag_steps = s_sup.b.flag_steps;
+            if (s_sup.b.alarms != s_diag.sensor_alarms) {
+                s_diag.sensor_alarm_test = s_sup.b.alarm_test;
+                s_diag.sensor_alarm_loop = s_diag.loop_count;
+                s_diag.sensor_alarm_v_mmps =
+                    (uint32_t) (fabsf(v_meas) * 1000.0f);
+                s_diag.sensor_alarm_gap_mmps =
+                    (uint32_t) (fabsf(s_sup.b.last_gap) * 1000.0f);
+            }
+            s_diag.sensor_alarms = s_sup.b.alarms;
+#elif SPEED_KALMAN == 4
             if (!s_kalman_ready) {
                 control_fault_kalman_init(&s_fault);
                 s_kalman_ready = true;

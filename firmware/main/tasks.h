@@ -40,6 +40,9 @@
    3  as 2, with a second state for acceleration the model
       does not know about                                      (arm B5)
    4  as 3, with the speed-sensor fault detector on top        (arm B6)
+   5  as 3, with the detector that lives with a real
+      acceleration channel                                     (arm B7)
+   6  as 5, with the rule monitor around it                    (B7 + A2)
 
    The settings are the ones scripts/run_speed_arms.py chose on a training
    cycle (docs/week11-speed-arms-tuned.json). The mode is reported in the

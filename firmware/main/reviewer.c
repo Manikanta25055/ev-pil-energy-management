@@ -1,5 +1,7 @@
 #include "reviewer.h"
 
+#ifdef HAVE_REVIEWER_WEIGHTS
+
 #include <math.h>
 
 static float sigmoidf(float x)
@@ -90,3 +92,5 @@ void reviewer_step(reviewer_state_t *st, const float *x, float *logits)
         logits[i] = y;
     }
 }
+
+#endif /* HAVE_REVIEWER_WEIGHTS */
