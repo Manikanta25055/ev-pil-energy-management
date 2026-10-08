@@ -1,0 +1,240 @@
+{
+ "provenance": "SIMULATED on the laptop; no board involved; no other traffic on the route",
+ "split": "test",
+ "route": "us06",
+ "task_config": "dcc91be7d65af373",
+ "commit": "fe48fb3",
+ "constraints": {
+  "arrival_tolerance_s": 6.001,
+  "distance_tolerance_frac": 0.01,
+  "a_max_mps2": 3.694785599999997,
+  "a_min_mps2": -3.0331663999999936,
+  "horizon_m": 300.0
+ },
+ "arms": {
+  "tracked_cycle": {
+   "equivalent_wh_per_km": 190.46729466350823,
+   "equivalent_wh": 2454.666907321579,
+   "distance_km": 12.887603153382061,
+   "tracking_rmse_mps": 0.0013269437291760682,
+   "peak_current_a": 257.42559835642146,
+   "arrival_s": 600.1,
+   "constraint_violations": {
+    "over_limit_nodes": 0,
+    "missed_stops": 0,
+    "over_accel_segments": 0,
+    "over_brake_segments": 1,
+    "late_or_early_s": 6.488946408179548
+   },
+   "note": "the route is made from this cycle; counts above are its speed snapped to the 10 m nodes, not how it was driven",
+   "saving_vs_tracked_frac": 0.0
+  },
+  "classical": {
+   "equivalent_wh_per_km": 170.57673635473722,
+   "equivalent_wh": 2198.7404113135026,
+   "distance_km": 12.890036814521569,
+   "tracking_rmse_mps": 0.0011000720881888,
+   "peak_current_a": 318.6764770185202,
+   "arrival_s": 598.9227827715629,
+   "arrival_gap_s": -1.1772172284371436,
+   "price_on_time_w": 12656.25,
+   "constraint_violations": {
+    "over_limit_nodes": 0,
+    "missed_stops": 0,
+    "over_accel_segments": 0,
+    "over_brake_segments": 0,
+    "late_or_early_s": 0.0
+   },
+   "top_speed_mps": 26.5,
+   "one_plan_s": 0.01724696159362793,
+   "with_time_search_s": 0.12141609191894531,
+   "saving_vs_tracked_frac": 0.10443030833146938
+  },
+  "classical_short": {
+   "equivalent_wh_per_km": 172.44199482980832,
+   "equivalent_wh": 2222.7835274440913,
+   "distance_km": 12.890036035815221,
+   "tracking_rmse_mps": 0.001264022696536322,
+   "peak_current_a": 339.9753883576383,
+   "arrival_s": 596.594706676485,
+   "arrival_gap_s": -3.5052933235150476,
+   "price_on_time_w": 50468.75,
+   "constraint_violations": {
+    "over_limit_nodes": 0,
+    "missed_stops": 0,
+    "over_accel_segments": 0,
+    "over_brake_segments": 0,
+    "late_or_early_s": 0.0
+   },
+   "top_speed_mps": 26.0,
+   "one_plan_s": 0.16612792015075684,
+   "with_time_search_s": 3.30700421333313,
+   "saving_vs_tracked_frac": 0.09463724397169893
+  },
+  "terminal_cost": {
+   "equivalent_wh_per_km": 170.64890208496288,
+   "equivalent_wh": 2199.670523713823,
+   "distance_km": 12.890036190321625,
+   "tracking_rmse_mps": 0.0012405858952973076,
+   "peak_current_a": 333.883741431991,
+   "arrival_s": 602.865501715877,
+   "arrival_gap_s": 2.765501715877008,
+   "price_on_time_w": 21679.6875,
+   "constraint_violations": {
+    "over_limit_nodes": 0,
+    "missed_stops": 0,
+    "over_accel_segments": 0,
+    "over_brake_segments": 0,
+    "late_or_early_s": 0.0
+   },
+   "top_speed_mps": 27.5,
+   "one_plan_s": 0.18616294860839844,
+   "with_time_search_s": 3.8195481300354004,
+   "saving_vs_tracked_frac": 0.10405142055258243
+  },
+  "student": {
+   "equivalent_wh_per_km": 190.41353726486628,
+   "equivalent_wh": 2454.4375855201047,
+   "distance_km": 12.890037235671793,
+   "tracking_rmse_mps": 0.0012661193379908575,
+   "peak_current_a": 322.69051303441347,
+   "arrival_s": 600.7644571922611,
+   "arrival_gap_s": 0.6644571922611249,
+   "price_on_time_w": 55625.0,
+   "constraint_violations": {
+    "over_limit_nodes": 0,
+    "missed_stops": 0,
+    "over_accel_segments": 0,
+    "over_brake_segments": 0,
+    "late_or_early_s": 0.0
+   },
+   "top_speed_mps": 33.5,
+   "one_plan_s": 0.032129764556884766,
+   "with_time_search_s": 0.15649914741516113,
+   "saving_vs_tracked_frac": 0.00028223952430739274
+  }
+ },
+ "validation": {
+  "route": "hwfet",
+  "distance_m": 16510.0,
+  "duration_s": 765.1,
+  "stops": 2,
+  "arms": {
+   "tracked_cycle": {
+    "equivalent_wh_per_km": 153.90155013996434,
+    "equivalent_wh": 2540.3837114879498,
+    "distance_km": 16.5065505134784,
+    "tracking_rmse_mps": 0.00027055358261394015,
+    "peak_current_a": 90.93983209699422,
+    "arrival_s": 765.1,
+    "constraint_violations": {
+     "over_limit_nodes": 0,
+     "missed_stops": 0,
+     "over_accel_segments": 0,
+     "over_brake_segments": 0,
+     "late_or_early_s": 0.0
+    },
+    "note": "the route is made from this cycle; counts above are its speed snapped to the 10 m nodes, not how it was driven",
+    "saving_vs_tracked_frac": 0.0
+   },
+   "classical": {
+    "equivalent_wh_per_km": 152.07048917703713,
+    "equivalent_wh": 2510.684193555362,
+    "distance_km": 16.510002743743915,
+    "tracking_rmse_mps": 0.0007334403342659577,
+    "peak_current_a": 171.51341101270214,
+    "arrival_s": 764.3868188098915,
+    "arrival_gap_s": -0.7131811901085712,
+    "price_on_time_w": 9648.4375,
+    "constraint_violations": {
+     "over_limit_nodes": 0,
+     "missed_stops": 0,
+     "over_accel_segments": 0,
+     "over_brake_segments": 0,
+     "late_or_early_s": 0.0
+    },
+    "top_speed_mps": 24.5,
+    "one_plan_s": 0.023840665817260742,
+    "with_time_search_s": 0.21569204330444336,
+    "saving_vs_tracked_frac": 0.011897612215484354
+   },
+   "classical_short": {
+    "equivalent_wh_per_km": 152.7037218327688,
+    "equivalent_wh": 2521.1388614419757,
+    "distance_km": 16.51000271102078,
+    "tracking_rmse_mps": 0.0008566139945253703,
+    "peak_current_a": 167.11730007464416,
+    "arrival_s": 761.9159763569012,
+    "arrival_gap_s": -3.18402364309884,
+    "price_on_time_w": 47460.9375,
+    "constraint_violations": {
+     "over_limit_nodes": 0,
+     "missed_stops": 0,
+     "over_accel_segments": 0,
+     "over_brake_segments": 0,
+     "late_or_early_s": 0.0
+    },
+    "top_speed_mps": 24.0,
+    "one_plan_s": 0.1707761287689209,
+    "with_time_search_s": 3.758194923400879,
+    "saving_vs_tracked_frac": 0.0077830814966203254
+   },
+   "terminal_cost": {
+    "equivalent_wh_per_km": 152.2769043241681,
+    "equivalent_wh": 2514.09210261016,
+    "distance_km": 16.510002707029976,
+    "tracking_rmse_mps": 0.0008393631499351144,
+    "peak_current_a": 167.25355511414634,
+    "arrival_s": 764.769503722708,
+    "arrival_gap_s": -0.3304962772920135,
+    "price_on_time_w": 16093.75,
+    "constraint_violations": {
+     "over_limit_nodes": 0,
+     "missed_stops": 0,
+     "over_accel_segments": 0,
+     "over_brake_segments": 0,
+     "late_or_early_s": 0.0
+    },
+    "top_speed_mps": 24.0,
+    "one_plan_s": 0.19640398025512695,
+    "with_time_search_s": 1.3788621425628662,
+    "saving_vs_tracked_frac": 0.010556396698530479
+   },
+   "student": {
+    "equivalent_wh_per_km": 153.42383277840466,
+    "equivalent_wh": 2533.0279027448005,
+    "distance_km": 16.510002760805357,
+    "tracking_rmse_mps": 0.000856755744768948,
+    "peak_current_a": 179.0007412945859,
+    "arrival_s": 764.1655061113112,
+    "arrival_gap_s": -0.9344938886888485,
+    "price_on_time_w": 21250.0,
+    "constraint_violations": {
+     "over_limit_nodes": 0,
+     "missed_stops": 0,
+     "over_accel_segments": 0,
+     "over_brake_segments": 0,
+     "late_or_early_s": 0.0
+    },
+    "top_speed_mps": 25.0,
+    "one_plan_s": 0.032033681869506836,
+    "with_time_search_s": 0.12981915473937988,
+    "saving_vs_tracked_frac": 0.0031040451582535766
+   }
+  }
+ },
+ "training": {
+  "rows": 1361237,
+  "seed": 0,
+  "terminal_cost": {
+   "held_out_mean_abs_error": 0.0840458795428276,
+   "unit": "1e5 J",
+   "parameters": 2785
+  },
+  "student": {
+   "held_out_mean_abs_error": 0.2557714581489563,
+   "unit": "m/s",
+   "parameters": 2785
+  }
+ }
+}

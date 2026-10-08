@@ -1,0 +1,14 @@
+{
+ "rows": 1361237,
+ "seed": 0,
+ "terminal_cost": {
+  "held_out_mean_abs_error": 0.0840458795428276,
+  "unit": "1e5 J",
+  "parameters": 2785
+ },
+ "student": {
+  "held_out_mean_abs_error": 0.2557714581489563,
+  "unit": "m/s",
+  "parameters": 2785
+ }
+}
