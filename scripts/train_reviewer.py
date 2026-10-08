@@ -21,10 +21,13 @@ import numpy as np
 import torch
 from torch import nn
 
-from evpil.control.supervisor import DIAGNOSES, N_FEATURES
+from evpil.control.supervisor import DIAGNOSES, FEATURES, N_FEATURES
 from evpil.control.tiny_rnn import TinyReviewer
 
-CHUNK = 300                 # blocks per training sequence: 30 s
+# Blocks per training sequence. A fault run is 430 blocks and its fault
+# starts at block 300: a 300-block chunk would start every fault from an
+# empty state, which is not how the model is run. 440 keeps a fault run whole.
+CHUNK = 440
 
 
 class FastGRNN(nn.Module):
@@ -110,11 +113,14 @@ def run_whole(model: TinyReviewer, d) -> np.ndarray:
     return out
 
 
-def nll(logits: np.ndarray, y: np.ndarray, temp: float) -> float:
+def nll(logits: np.ndarray, y: np.ndarray, temp: float,
+        sample_weight: np.ndarray | None = None) -> float:
     z = logits / temp
     z = z - z.max(axis=1, keepdims=True)
     logp = z - np.log(np.exp(z).sum(axis=1, keepdims=True))
-    return float(-logp[np.arange(len(y)), y].mean())
+    each = -logp[np.arange(len(y)), y]
+    return float(each.mean() if sample_weight is None
+                 else (each * sample_weight).mean())
 
 
 def scores(logits: np.ndarray, y: np.ndarray, temp: float) -> dict:
@@ -154,22 +160,42 @@ def main() -> int:
     ap.add_argument("--out", default="data/reviewer")
     ap.add_argument("--epochs", type=int, default=40)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--weighting", default="sqrt", choices=("sqrt", "full"),
+                    help="class weights: square root of inverse frequency, "
+                         "or inverse frequency. With 'full' the model is "
+                         "also selected on class-balanced validation loss")
+    ap.add_argument("--weight-decay", type=float, default=0.0)
+    ap.add_argument("--drop", default="",
+                    help="comma-separated inputs to zero, e.g. v_meas,torque")
+    ap.add_argument("--val", default=None,
+                    help="validation blocks; default val.npz beside the "
+                         "training data")
+    ap.add_argument("--tag", default="",
+                    help="suffix for the output file stem")
     args = ap.parse_args()
 
     torch.manual_seed(args.seed)
     torch.set_num_threads(2)
     tr = dict(np.load(f"{args.data}/train.npz"))
-    va = dict(np.load(f"{args.data}/val.npz"))
+    va = dict(np.load(args.val or f"{args.data}/val.npz"))
+    mask = np.array([0.0 if f in args.drop.split(",") else 1.0
+                     for f in FEATURES], np.float32)
+    tr["x"] = tr["x"] * mask
     x, y, m = chunks(tr, CHUNK)
     counts = np.bincount(tr["y"], minlength=len(DIAGNOSES)).astype(float)
     # Inverse-frequency weights, square-rooted: the healthy class is most of
     # the data, and full inverse weighting trades too much of it away.
-    weight = torch.tensor(np.sqrt(counts.sum() / np.maximum(counts, 1.0)),
+    inv = counts.sum() / np.maximum(counts, 1.0)
+    weight = torch.tensor(np.sqrt(inv) if args.weighting == "sqrt" else inv,
                           dtype=torch.float32)
     weight = weight / weight.mean()
+    va_counts = np.bincount(va["y"], minlength=len(DIAGNOSES)).astype(float)
+    va_w = (va_counts.sum() / np.maximum(va_counts, 1.0))[va["y"]]
+    va_w = va_w / va_w.mean() if args.weighting == "full" else None
 
     net = Net(args.kind, args.hidden)
-    opt = torch.optim.Adam(net.parameters(), lr=3e-3)
+    opt = torch.optim.AdamW(net.parameters(), lr=3e-3,
+                            weight_decay=args.weight_decay)
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, args.epochs)
     loss_fn = nn.CrossEntropyLoss(weight=weight, reduction="none")
     gen = torch.Generator().manual_seed(args.seed)
@@ -189,10 +215,10 @@ def main() -> int:
             loss.backward()
             nn.utils.clip_grad_norm_(net.parameters(), 1.0)
             opt.step()
-            total += float(loss) * len(idx)
+            total += float(loss.detach()) * len(idx)
         sched.step()
-        w = net.export()
-        v = nll(run_whole(TinyReviewer(w), va), va["y"], 1.0)
+        w = {**net.export(), "mask": mask}
+        v = nll(run_whole(TinyReviewer(w), va), va["y"], 1.0, va_w)
         history.append({"epoch": epoch, "train_loss": total / len(x),
                         "val_nll": v})
         if v < best:
@@ -205,10 +231,14 @@ def main() -> int:
     temps = np.exp(np.linspace(np.log(0.5), np.log(5.0), 47))
     temp = float(temps[np.argmin([nll(logits, va["y"], t) for t in temps])])
     best_w["temperature"] = np.float32(temp)
-    stem = f"{args.out}/{args.kind}{args.hidden}"
+    stem = f"{args.out}/{args.kind}{args.hidden}{args.tag}"
     np.savez(f"{stem}.npz", **best_w)
     report = {
         "kind": args.kind, "hidden": args.hidden, "seed": args.seed,
+        "weighting": args.weighting, "weight_decay": args.weight_decay,
+        "dropped_inputs": [f for f in args.drop.split(",") if f],
+        "chunk_blocks": CHUNK,
+        "train_data": args.data,
         "parameters": model.n_params(), "weight_bytes": model.weight_bytes(),
         "temperature": temp, "data_config": str(tr["config"]),
         "train_blocks": int(len(tr["y"])), "val_blocks": int(len(va["y"])),

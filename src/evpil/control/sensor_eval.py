@@ -124,9 +124,14 @@ def accel_error(case: Case, n: int, dt_s: float) -> tuple[np.ndarray | None,
 
 
 def fault_cases(split: str, *, accels: tuple[str, ...] | None = None,
-                noise_x: tuple[float, ...] = NOISE_X) -> list[Case]:
+                noise_x: tuple[float, ...] = NOISE_X,
+                onsets_per_cycle: int | None = None) -> list[Case]:
     """Every fault, at every onset, under every acceleration case on the
-    nominal car, and under white acceleration noise on a car 10% heavier."""
+    nominal car, and under white acceleration noise on a car 10% heavier.
+
+    `onsets_per_cycle` draws more onsets than the registered number, for
+    training data. The first ones are the registered ones; an evaluation
+    never passes it."""
     out = []
     for cyc_name in SPLIT_CYCLES[split]:
         dur = load_cycle(cyc_name).duration_s
@@ -134,6 +139,11 @@ def fault_cases(split: str, *, accels: tuple[str, ...] | None = None,
         m = ONSETS_PER_CYCLE[split]
         onsets = (np.linspace(16.0, 580.0, m) if split == "test" else
                   np.sort(rng.uniform(16.0, dur - FAULT_S - TAIL_S - 1.0, m)))
+        if onsets_per_cycle is not None:
+            if split != "train" or onsets_per_cycle > 400:
+                raise ValueError("extra onsets are for training data only")
+            onsets = np.concatenate([onsets, rng.uniform(
+                16.0, dur - FAULT_S - TAIL_S - 1.0, onsets_per_cycle - m)])
         for label, _, _, _ in FAULTS:
             for accel, mass in ([(a[0], 1.0) for a in ACCEL_CASES]
                                 + [("white", 1.1)]):

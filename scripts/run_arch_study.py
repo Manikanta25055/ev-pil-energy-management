@@ -63,7 +63,7 @@ def rows(reviewers=SMALL, host=HOST) -> list[tuple[str, str, dict | None, bool]]
         out.append((f"A6 {host}", "sup",
                     {"slow": host, "delay_s": 0.005}, True))
         for r in reviewers:
-            if r != "fastgrnn16":
+            if not r.startswith("fastgrnn"):
                 out.append((f"A5 {r}+{host} 150ms", "sup", {
                     "fast": r, "slow": host, "delay_s": 0.15,
                     "jitter_s": 0.03}, False))

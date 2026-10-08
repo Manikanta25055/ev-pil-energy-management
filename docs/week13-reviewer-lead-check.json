@@ -1,0 +1,204 @@
+{
+ "provenance": "SIMULATED on the laptop; validation fault runs, every third, re-recorded with a different lead",
+ "runs": 224,
+ "leads": {
+  "30.0": {
+   "monitor": {
+    "brier": 0.06117340346991508,
+    "recall": 0.6341071428571429,
+    "false_positive_rate": 0.02413063909774436,
+    "recall_while_flagged": 0.9436356351008415,
+    "recall_while_not_flagged": 0.009964987880420145,
+    "false_positive_rate_while_flagged": 0.5527027027027027,
+    "recall_by_fault": {
+     "bias +0.5": 0.2118918918918919,
+     "bias +3.0": 0.98,
+     "bias -0.5": 0.2236842105263158,
+     "drift 0.5/s": 0.4308108108108108,
+     "dropout": 0.98,
+     "stuck": 0.98
+    }
+   },
+   "gru16v3": {
+    "brier": 0.01676899348433402,
+    "recall": 0.9548214285714286,
+    "false_positive_rate": 0.01679981203007519,
+    "recall_while_flagged": 0.9949245358621611,
+    "recall_while_not_flagged": 0.8739563695125235,
+    "false_positive_rate_while_flagged": 0.28945945945945944,
+    "recall_by_fault": {
+     "bias +0.5": 0.9302702702702703,
+     "bias +3.0": 1.0,
+     "bias -0.5": 0.9305263157894736,
+     "drift 0.5/s": 0.8718918918918919,
+     "dropout": 1.0,
+     "stuck": 0.9957894736842106
+    }
+   },
+   "fastgrnn16v3": {
+    "brier": 0.018362889045860344,
+    "recall": 0.9361607142857142,
+    "false_positive_rate": 0.015084586466165414,
+    "recall_while_flagged": 0.9890476826499265,
+    "recall_while_not_flagged": 0.8295179100457851,
+    "false_positive_rate_while_flagged": 0.2781081081081081,
+    "recall_by_fault": {
+     "bias +0.5": 0.8827027027027027,
+     "bias +3.0": 1.0,
+     "bias -0.5": 0.9305263157894736,
+     "drift 0.5/s": 0.8167567567567567,
+     "dropout": 1.0,
+     "stuck": 0.9857894736842105
+    }
+   },
+   "gru64v3": {
+    "brier": 0.008065322394337136,
+    "recall": 0.9594642857142858,
+    "false_positive_rate": 0.005145676691729323,
+    "recall_while_flagged": 0.9967944437024175,
+    "recall_while_not_flagged": 0.8841906813897118,
+    "false_positive_rate_while_flagged": 0.07972972972972973,
+    "recall_by_fault": {
+     "bias +0.5": 0.9302702702702703,
+     "bias +3.0": 1.0,
+     "bias -0.5": 0.9452631578947368,
+     "drift 0.5/s": 0.8805405405405405,
+     "dropout": 1.0,
+     "stuck": 1.0
+    }
+   }
+  },
+  "12.0": {
+   "monitor": {
+    "brier": 0.11583134920634923,
+    "recall": 0.6241964285714285,
+    "false_positive_rate": 0.056607142857142856,
+    "recall_while_flagged": 0.9335213537469782,
+    "recall_while_not_flagged": 0.010655301012253596,
+    "false_positive_rate_while_flagged": 0.6203406566279931,
+    "recall_by_fault": {
+     "bias +0.5": 0.18324324324324323,
+     "bias +3.0": 0.98,
+     "bias -0.5": 0.24052631578947367,
+     "drift 0.5/s": 0.38216216216216214,
+     "dropout": 0.98,
+     "stuck": 0.98
+    }
+   },
+   "gru16v3": {
+    "brier": 0.028722983622825687,
+    "recall": 0.9478571428571428,
+    "false_positive_rate": 0.030535714285714284,
+    "recall_while_flagged": 0.9814665592264303,
+    "recall_while_not_flagged": 0.8811933937133724,
+    "false_positive_rate_while_flagged": 0.2401876079980252,
+    "recall_by_fault": {
+     "bias +0.5": 0.9183783783783783,
+     "bias +3.0": 1.0,
+     "bias -0.5": 0.93,
+     "drift 0.5/s": 0.8416216216216216,
+     "dropout": 1.0,
+     "stuck": 0.9963157894736843
+    }
+   },
+   "fastgrnn16v3": {
+    "brier": 0.0348816327970115,
+    "recall": 0.9283928571428571,
+    "false_positive_rate": 0.0303125,
+    "recall_while_flagged": 0.9747515444533978,
+    "recall_while_not_flagged": 0.8364411294619073,
+    "false_positive_rate_while_flagged": 0.26117008146136755,
+    "recall_by_fault": {
+     "bias +0.5": 0.8735135135135135,
+     "bias +3.0": 1.0,
+     "bias -0.5": 0.9305263157894736,
+     "drift 0.5/s": 0.7816216216216216,
+     "dropout": 1.0,
+     "stuck": 0.9831578947368421
+    }
+   },
+   "gru64v3": {
+    "brier": 0.015659771724117283,
+    "recall": 0.9466071428571429,
+    "false_positive_rate": 0.009486607142857142,
+    "recall_while_flagged": 0.9814665592264303,
+    "recall_while_not_flagged": 0.8774640383590836,
+    "false_positive_rate_while_flagged": 0.06393483090594915,
+    "recall_by_fault": {
+     "bias +0.5": 0.9032432432432432,
+     "bias +3.0": 1.0,
+     "bias -0.5": 0.9363157894736842,
+     "drift 0.5/s": 0.8389189189189189,
+     "dropout": 1.0,
+     "stuck": 1.0
+    }
+   }
+  },
+  "47.0": {
+   "monitor": {
+    "brier": 0.04498878085265519,
+    "recall": 0.6277678571428571,
+    "false_positive_rate": 0.0172,
+    "recall_while_flagged": 0.9389589482157231,
+    "recall_while_not_flagged": 0.008542445274959957,
+    "false_positive_rate_while_flagged": 0.5531067445565587,
+    "recall_by_fault": {
+     "bias +0.5": 0.1972972972972973,
+     "bias +3.0": 0.98,
+     "bias -0.5": 0.18842105263157893,
+     "drift 0.5/s": 0.44594594594594594,
+     "dropout": 0.98,
+     "stuck": 0.9773684210526316
+    }
+   },
+   "gru16v3": {
+    "brier": 0.012852261829828225,
+    "recall": 0.9408928571428572,
+    "false_positive_rate": 0.011126530612244898,
+    "recall_while_flagged": 0.9953045344781325,
+    "recall_while_not_flagged": 0.8326214628937534,
+    "false_positive_rate_while_flagged": 0.2716409984067977,
+    "recall_by_fault": {
+     "bias +0.5": 0.9318918918918919,
+     "bias +3.0": 1.0,
+     "bias -0.5": 0.8547368421052631,
+     "drift 0.5/s": 0.8632432432432432,
+     "dropout": 1.0,
+     "stuck": 0.9963157894736843
+    }
+   },
+   "fastgrnn16v3": {
+    "brier": 0.015612672853170964,
+    "recall": 0.918125,
+    "false_positive_rate": 0.011371428571428572,
+    "recall_while_flagged": 0.9892675073785887,
+    "recall_while_not_flagged": 0.7765616657768286,
+    "false_positive_rate_while_flagged": 0.27296866702071165,
+    "recall_by_fault": {
+     "bias +0.5": 0.8627027027027027,
+     "bias +3.0": 1.0,
+     "bias -0.5": 0.8542105263157894,
+     "drift 0.5/s": 0.8037837837837838,
+     "dropout": 1.0,
+     "stuck": 0.9878947368421053
+    }
+   },
+   "gru64v3": {
+    "brier": 0.010464582353831133,
+    "recall": 0.9415178571428572,
+    "false_positive_rate": 0.007583673469387755,
+    "recall_while_flagged": 0.9974510330024148,
+    "recall_while_not_flagged": 0.8302189001601709,
+    "false_positive_rate_while_flagged": 0.07912904938927244,
+    "recall_by_fault": {
+     "bias +0.5": 0.9367567567567567,
+     "bias +3.0": 1.0,
+     "bias -0.5": 0.8647368421052631,
+     "drift 0.5/s": 0.8502702702702702,
+     "dropout": 1.0,
+     "stuck": 0.9978947368421053
+    }
+   }
+  }
+ }
+}

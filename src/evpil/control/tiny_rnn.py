@@ -34,7 +34,10 @@ class TinyReviewer:
 
     def __init__(self, weights: dict, name: str | None = None) -> None:
         self.w = {k: np.asarray(v, dtype=F32) for k, v in weights.items()
-                  if k not in ("kind", "temperature")}
+                  if k not in ("kind", "temperature", "mask")}
+        # Inputs the model was trained without are zeroed here too.
+        self.mask = (np.asarray(weights["mask"], dtype=F32)
+                     if "mask" in weights else None)
         self.kind = str(weights["kind"])
         self.temperature = float(weights.get("temperature", 1.0))
         self.hidden = self.w["w_out"].shape[1]
@@ -75,7 +78,10 @@ class TinyReviewer:
         return self.h
 
     def logits(self, x) -> np.ndarray:
-        h = self.cell(np.asarray(x, dtype=F32))
+        x = np.asarray(x, dtype=F32)
+        if self.mask is not None:
+            x = x * self.mask
+        h = self.cell(x)
         return self.w["w_out"] @ h + self.w["b_out"]
 
     def review(self, snap) -> tuple[float, ...]:

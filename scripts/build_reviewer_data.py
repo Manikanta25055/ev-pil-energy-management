@@ -76,10 +76,15 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="data/reviewer")
     ap.add_argument("--procs", type=int, default=4)
+    ap.add_argument("--train-onsets", type=int, default=None,
+                    help="fault onsets per training cycle; default the "
+                         "registered six")
     args = ap.parse_args()
     Path(args.out).mkdir(parents=True, exist_ok=True)
     for split in ("train", "val"):
-        cases = se.fault_cases(split) + se.clean_cases(split)
+        cases = se.fault_cases(
+            split, onsets_per_cycle=args.train_onsets if split == "train"
+            else None) + se.clean_cases(split)
         t0 = time.time()
         with Pool(args.procs) as pool:
             rows = pool.map(_one, cases, chunksize=8)
