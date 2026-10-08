@@ -33,6 +33,13 @@ test_actor: test_actor.c ../main/actor.c
 test_decode: test_decode.c ../main/actor.c
 	$(CC) -I$(ACTOR_INC) $(CFLAGS) -o $@ $^ -lm
 
+# The learned reviewer's cell, against a weights header on the include path
+# written by evpil.control.tiny_rnn.write_c_header. REVIEWER_INC first, for
+# the reason ACTOR_INC is.
+REVIEWER_INC ?= ../main
+test_reviewer: test_reviewer.c ../main/reviewer.c
+	$(CC) -I$(REVIEWER_INC) $(CFLAGS) -o $@ $^ -lm
+
 .PHONY: check clean
 check: test_protocol test_control test_features
 	./test_protocol

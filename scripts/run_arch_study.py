@@ -42,11 +42,12 @@ HOST = "gru64"
 OUTAGE = ((20.0, 40.0),)
 
 
-def rows(reviewers=SMALL, host=HOST) -> list[tuple[str, str, dict | None, bool]]:
+def rows(reviewers=SMALL, host=HOST,
+         ablations=False) -> list[tuple[str, str, dict | None, bool]]:
     """(name, arm, settings, also run the clean cycles)."""
     out = [("A0 b7", "b7", None, True),
            ("ctl healthy", "sup", {"fast": "healthy"}, True)]
-    for r in reviewers:
+    for r in reviewers if not ablations else ():
         out.append((f"A2 {r}", "sup", {"fast": r}, True))
         for ms in (70, 150, 500, 1000):
             out.append((f"A1 {r} {ms}ms", "sup", {
@@ -59,6 +60,21 @@ def rows(reviewers=SMALL, host=HOST) -> list[tuple[str, str, dict | None, bool]]
                     {**base, "policy": {"expiry_s": 5.0}}, False))
         out.append((f"A1x {r} 150ms", "sup",
                     {**base, "loss": 0.2, "outages": OUTAGE}, False))
+    if ablations:
+        # One bounded setting at a time, reviewer on the chip: which of the
+        # four things a diagnosis may change is doing the good or the harm.
+        only = {"hold": "use_hold", "release": "use_release",
+                "fallback": "use_fallback", "vigilance": "use_vigilance"}
+        for r in reviewers:
+            for label, keep in only.items():
+                pol = {k: k == keep for k in only.values()}
+                out.append((f"A2 {r} {label} only", "sup",
+                            {"fast": r, "policy": pol}, False))
+            # The default lets a hold run for ten seconds. While it runs the
+            # loop is on dead reckoning or the model, and both drift.
+            out.append((f"A2 {r} hold 2 s", "sup",
+                        {"fast": r, "policy": {"max_hold_s": 2.0}}, True))
+        return out
     if host:
         out.append((f"A6 {host}", "sup",
                     {"slow": host, "delay_s": 0.005}, True))
@@ -104,6 +120,8 @@ def main() -> int:
                     help="comma-separated row names; default all")
     ap.add_argument("--reviewers", default=",".join(SMALL))
     ap.add_argument("--host", default=HOST)
+    ap.add_argument("--ablations", action="store_true",
+                    help="run the one-setting-at-a-time rows instead")
     ap.add_argument("--procs", type=int, default=4)
     ap.add_argument("--out-json", default=None)
     args = ap.parse_args()
@@ -118,7 +136,8 @@ def main() -> int:
     want = args.only.split(",") if args.only else None
     t0 = time.time()
     for name, arm, settings, clean in rows(
-            tuple(r for r in args.reviewers.split(",") if r), args.host):
+            tuple(r for r in args.reviewers.split(",") if r), args.host,
+            args.ablations):
         if (want and name not in want) or name in doc["rows"]:
             continue
         out = evaluate(arm, args.split, settings=settings, clean=clean,
