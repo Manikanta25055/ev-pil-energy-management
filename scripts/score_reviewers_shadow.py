@@ -96,11 +96,11 @@ def main() -> int:
                d["y"], minlength=4).tolist())),
            "data_config": str(d["config"]), "reviewers": {}}
     for name in args.reviewers.split(","):
-        if name not in ("healthy", "monitor") and not Path(
-                f"data/reviewer/{name}.npz").exists():
+        try:
+            rev = reviewer(name)
+        except FileNotFoundError:
             print(f"{name}: not trained, skipped")
             continue
-        rev = reviewer(name)
         s = score(probs_for(rev, d), d)
         if hasattr(rev, "n_params"):
             s["parameters"], s["weight_bytes"] = rev.n_params(), rev.weight_bytes()

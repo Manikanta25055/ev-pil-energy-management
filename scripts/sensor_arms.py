@@ -6,6 +6,8 @@ build an arm the same way.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from evpil.control.speed_estimators import (
     BiasAwareFaultKalman, BiasAwareSettings, KinematicFaultKalman,
 )
@@ -29,7 +31,7 @@ def make_arm(name: str, nominal, q: float, q_d: float, settings=None):
 
 def reviewer(name: str):
     """A reviewer by name: `monitor`, `healthy`, or a trained model's file
-    stem under data/reviewer (`gru16`, `fastgrnn16`, `gru64`)."""
+    stem (`gru16v3`, `fastgrnn16v3`, `gru64v3`)."""
     from evpil.control.supervisor import FixedReviewer, RuleMonitor
     from evpil.control.tiny_rnn import TinyReviewer
 
@@ -37,7 +39,13 @@ def reviewer(name: str):
         return RuleMonitor()
     if name == "healthy":
         return FixedReviewer(name="healthy")
-    return TinyReviewer.load(f"data/reviewer/{name}.npz", name)
+    # The committed reviewers first; a freshly trained one, not yet copied
+    # there, is found under data/reviewer.
+    for root in ("models/reviewer", "data/reviewer"):
+        path = Path(root) / f"{name}.npz"
+        if path.exists():
+            return TinyReviewer.load(path, name)
+    raise FileNotFoundError(f"no trained reviewer named {name!r}")
 
 
 def _sup(nominal, q, q_d, settings):
