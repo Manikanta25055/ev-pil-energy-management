@@ -52,8 +52,9 @@ ONSET_INDEX = (2, 5)            # of the eight registered test onsets
 DIAG_PERIOD_S = 0.5
 
 
-def cases() -> list[se.Case]:
-    """The fault runs, then the clean cycles."""
+def cases(seed_offset: int = 0) -> list[se.Case]:
+    """The fault runs, then the clean cycles. `seed_offset` gives the same
+    cases other draws of noise and of acceleration wander: a repeat."""
     onsets = sorted({c.onset_s for c in se.fault_cases("test")})
     keep = {onsets[i] for i in ONSET_INDEX}
     named = {f[0] for f in se.FAULTS if f[3]}
@@ -62,6 +63,8 @@ def cases() -> list[se.Case]:
     out += [c for c in se.clean_cases("test")
             if c.mass == 1.0 and c.accel in ACCELS and c.noise_x == 1.0
             and c.seed == se.SPLIT_SEED0["test"] + 500]
+    if seed_offset:
+        out = [replace(c, seed=c.seed + seed_offset) for c in out]
     return out
 
 
@@ -215,6 +218,11 @@ def main() -> int:
     ap.add_argument("--out-json", default=None)
     ap.add_argument("--limit", type=int, default=None,
                     help="stop after this many cells are in the file")
+    ap.add_argument("--seed-offset", type=int, default=0,
+                    help="add this to every case's seed: a repeat with "
+                         "other noise draws. 100 and up keeps clear of the "
+                         "registered test, train and validation seeds only "
+                         "below 400")
     ap.add_argument("--no-reset", action="store_true")
     ap.add_argument("--probe", action="store_true",
                     help="run five seconds and print what image the board "
@@ -236,7 +244,7 @@ def main() -> int:
                           "steps": r["steps"]}), flush=True)
         return 0
 
-    todo = cases()
+    todo = cases(args.seed_offset)
     path = Path(args.out_json)
     runs = json.loads(path.read_text())["runs"] if path.exists() else []
     done = {key_of(r) for r in runs}
@@ -266,6 +274,7 @@ def main() -> int:
         "provenance": "MEASURED on the board (ESP32-S3), laptop simulates "
                       "the vehicle", "port": args.port,
         "speed_est_mode": args.speed_est, "config": se.config_hash(),
+        "seed_offset": args.seed_offset,
         "runs": runs}, indent=1) + "\n")
     print(f"[{len(runs)}/{len(todo)}] {case.accel} {case.fault or 'clean'} "
           f"{case.noise_x:g}x onset {case.onset_s:.0f}: delay {r['delay_s']} "

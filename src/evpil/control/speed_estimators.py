@@ -641,6 +641,8 @@ class BiasAwareFaultKalman(KalmanSpeed):
         self.release_now = False
         self.fallback_model = False
         self.fallback_blend: float | None = None
+        # Set by a subclass that supplies its own speed while flagged (B8).
+        self._fused_now: float | None = None
         self.last_gap = 0.0         # reading minus dead-reckoned speed
         self.last_nu = 0.0          # reading minus the model's prediction
         self.flag_history: list[bool] = []
@@ -737,6 +739,8 @@ class BiasAwareFaultKalman(KalmanSpeed):
             w = self._model_weight()
             off = (self.last_nu if w >= 1.0 else gap if w <= 0.0
                    else w * self.last_nu + (1.0 - w) * gap)
+            if self._fused_now is not None:
+                off, w = v_meas_mps - self._fused_now, 1.0
             quiet = (abs(off) < band and self._same < s.frozen_count
                      and (self._gross == 0 or w > 0.0))
             self._quiet = self._quiet + 1 if quiet else 0
@@ -782,6 +786,169 @@ class BiasAwareFaultKalman(KalmanSpeed):
         x_pred, P_pred = self._predict(torque_prev_nm, grade_rad, dt_s)
         self.last_nu = v_meas_mps - x_pred
         return self._correct(x_pred, P_pred, v_meas_mps)
+
+
+def model_accel(p: VehicleParams, v: float, torque_nm: float,
+                grade_rad: float) -> float:
+    """The acceleration the vehicle model expects from a torque: what
+    `KalmanSpeed._predict` uses, on its own."""
+    omega = (v / p.wheel_radius_m) * p.gear_ratio
+    torque = clamp_torque(p.motor, torque_nm, omega)
+    if torque >= 0.0:
+        f_wheel = torque * p.gear_ratio * p.drivetrain_eta / p.wheel_radius_m
+    else:
+        f_wheel = torque * p.gear_ratio / (p.drivetrain_eta * p.wheel_radius_m)
+    load = road_load(
+        v_mps=v, a_mps2=0.0, grade_rad=grade_rad, mass_kg=p.mass_kg,
+        c_rr=p.c_rr, cd=p.cd, frontal_area_m2=p.frontal_area_m2,
+        rot_mass_factor=p.rot_mass_factor)
+    return ((f_wheel - load.rolling_n - load.aero_n - load.grade_n)
+            / (p.mass_kg * (1.0 + p.rot_mass_factor)))
+
+
+@dataclass(frozen=True)
+class FusedSettings:
+    """How the fused backup speed weighs its two sources. Set on the
+    training cycles by scripts/tune_fused_fallback.py."""
+    q_v_mps: float = 0.002          # as B5
+    q_d_mps2: float = 1e-3          # how fast the model's error may wander
+    q_b_mps2: float = 1e-3          # how fast the accelerometer's may
+    r_a_mps2: float = 0.1           # white noise on the acceleration reading
+
+
+class FusedSpeed:
+    """One filter over both backup sources.
+
+    State: the speed, the acceleration the model does not know about (d),
+    and the acceleration channel's error (b). The model predicts the speed
+    from the torque. The acceleration reading is a measurement of what the
+    model predicted plus d plus b. The speed reading, while it is trusted,
+    is a measurement of the speed.
+
+    With the speed reading, d is learned from how the speed departs from the
+    model and b from what is left of the acceleration reading. Without it,
+    the acceleration reading still corrects the sum d + b, split between the
+    two by how far each is allowed to wander. Neither backup speed is thrown
+    away and neither is trusted outright.
+    """
+
+    def __init__(self, params: VehicleParams, s: FusedSettings) -> None:
+        self.p, self.s = params, s
+        self.x = [0.0, 0.0, 0.0]
+        self.P = [[1.0, 0.0, 0.0], [0.0, 0.01, 0.0], [0.0, 0.0, 0.01]]
+        self.primed = False
+
+    def snapshot(self):
+        return (list(self.x), [list(r) for r in self.P])
+
+    def restore(self, snap) -> None:
+        self.x, self.P = list(snap[0]), [list(r) for r in snap[1]]
+
+    def _update(self, h, z_minus_hx: float, r2: float) -> None:
+        P = self.P
+        ph = [sum(P[i][j] * h[j] for j in range(3)) for i in range(3)]
+        s_ = sum(h[i] * ph[i] for i in range(3)) + r2
+        k = [ph[i] / s_ for i in range(3)]
+        for i in range(3):
+            self.x[i] += k[i] * z_minus_hx
+        self.P = [[P[i][j] - k[i] * ph[j] for j in range(3)] for i in range(3)]
+
+    def step(self, *, torque_prev_nm: float, grade_rad: float, dt_s: float,
+             a_meas_mps2: float, v_meas_mps: float | None,
+             r_v2: float = 0.0) -> float:
+        """Advance one control step. `v_meas_mps` None means the speed
+        reading is not to be used."""
+        s = self.s
+        if not self.primed:
+            self.x[0] = 0.0 if v_meas_mps is None else v_meas_mps
+            self.primed = True
+            return self.x[0]
+        a_m = model_accel(self.p, self.x[0], torque_prev_nm, grade_rad)
+        v, d, b = self.x
+        # What the acceleration reading should be, from the state before the
+        # step: the model's acceleration over the step plus both errors.
+        self._update((0.0, 1.0, 1.0), a_meas_mps2 - (a_m + d + b),
+                     s.r_a_mps2 ** 2)
+        v, d, b = self.x
+        self.x = [v + (a_m + d) * dt_s, d, b]
+        P = self.P
+        # F = [[1, dt, 0], [0, 1, 0], [0, 0, 1]]
+        fp = [[P[0][j] + dt_s * P[1][j] for j in range(3)], P[1], P[2]]
+        P = [[fp[i][0] + dt_s * fp[i][1], fp[i][1], fp[i][2]]
+             for i in range(3)]
+        P[0][0] += s.q_v_mps ** 2
+        P[1][1] += s.q_d_mps2 ** 2
+        P[2][2] += s.q_b_mps2 ** 2
+        self.P = P
+        if v_meas_mps is not None:
+            self._update((1.0, 0.0, 0.0), v_meas_mps - self.x[0], r_v2)
+        return self.x[0]
+
+
+class FusedFallbackKalman(BiasAwareFaultKalman):
+    """B8: B7's detector, with one fused speed to fall back on in place of
+    the choice between dead reckoning and the model.
+
+    Detection is B7's, unchanged. What changes is the speed the loop is
+    given while the flag is up, and the speed a returning sensor is judged
+    against: both are `FusedSpeed`. When the flag goes up the fused filter
+    is taken back to before the window the fault may have been in and
+    brought forward without the speed reading.
+    """
+
+    def __init__(self, params: VehicleParams, *, q_mps: float,
+                 q_d_mps2: float,
+                 settings: BiasAwareSettings = BiasAwareSettings(),
+                 fused: FusedSettings = FusedSettings(),
+                 r_floor_mps: float = 0.005) -> None:
+        super().__init__(params, q_mps=q_mps, q_d_mps2=q_d_mps2,
+                         settings=settings, r_floor_mps=r_floor_mps)
+        self.fuse = FusedSpeed(params, fused)
+        # The fused state before each of the last `_keep` samples, and what
+        # was fed to it since.
+        self._fsnap: list = []
+        self._fin: list[tuple[float, float, float, float]] = []
+
+    def step(self, *, v_meas_mps, torque_prev_nm, grade_rad, dt_s,
+             a_meas_mps2=0.0) -> float:
+        was = self.flagged
+        feed = dict(torque_prev_nm=torque_prev_nm, grade_rad=grade_rad,
+                    dt_s=dt_s, a_meas_mps2=a_meas_mps2)
+        self._fsnap.append(self.fuse.snapshot())
+        self._fin.append((torque_prev_nm, grade_rad, dt_s, a_meas_mps2))
+        if len(self._fsnap) > self._keep:
+            self._fsnap.pop(0)
+            self._fin.pop(0)
+        if was:
+            # Needed inside B7's step, for judging the returning sensor.
+            self._fused_now = self.fuse.step(v_meas_mps=None, **feed)
+        out = super().step(v_meas_mps=v_meas_mps,
+                           torque_prev_nm=torque_prev_nm,
+                           grade_rad=grade_rad, dt_s=dt_s,
+                           a_meas_mps2=a_meas_mps2)
+        if self.flagged and not was:
+            # Just raised: undo what the fault put into the fused speed.
+            self.fuse.restore(self._fsnap[0])
+            for tq, g, dt, a in self._fin:
+                self.fuse.step(torque_prev_nm=tq, grade_rad=g, dt_s=dt,
+                               a_meas_mps2=a, v_meas_mps=None)
+            self._fused_now = self.fuse.x[0]
+            return self._fused_now
+        if self.flagged:
+            return self._fused_now
+        self._fused_now = None
+        if was:
+            # Just dropped: B7 has put its speed on the sensor; follow it.
+            self.fuse.x[0] = self._x
+            self.fuse.P[0][0] = self.r2
+            self._fsnap.clear()
+            self._fin.clear()
+            return out
+        gross = abs(self.last_gap) > max(self.s.gross_mps,
+                                         8.0 * math.sqrt(self.r2))
+        self.fuse.step(v_meas_mps=None if gross else v_meas_mps,
+                       r_v2=self.r2, **feed)
+        return out
 
 
 class SpeedFault:

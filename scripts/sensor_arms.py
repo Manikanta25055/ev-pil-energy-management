@@ -9,7 +9,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from evpil.control.speed_estimators import (
-    BiasAwareFaultKalman, BiasAwareSettings, KinematicFaultKalman,
+    BiasAwareFaultKalman, BiasAwareSettings, FusedFallbackKalman,
+    FusedSettings, KinematicFaultKalman,
 )
 
 
@@ -22,7 +23,12 @@ def _b7(nominal, q, q_d, settings):
                                 settings=BiasAwareSettings(**(settings or {})))
 
 
-ARMS = {"b6": _b6, "b7": _b7}
+def _b8(nominal, q, q_d, settings):
+    return FusedFallbackKalman(nominal, q_mps=q, q_d_mps2=q_d,
+                               fused=FusedSettings(**(settings or {})))
+
+
+ARMS = {"b6": _b6, "b7": _b7, "b8": _b8}
 
 
 def make_arm(name: str, nominal, q: float, q_d: float, settings=None):
@@ -56,11 +62,13 @@ def _sup(nominal, q, q_d, settings):
       jitter_s, loss, outages, seed   of the slow path
       policy         overrides of `supervisor.Policy`
       b7             overrides of `BiasAwareSettings`
+      b8             if present, the base is B8 with these `FusedSettings`
     """
     from evpil.control.supervisor import Channel, Policy, Supervisor
 
     s = dict(settings or {})
-    base = _b7(nominal, q, q_d, s.get("b7"))
+    base = (_b8(nominal, q, q_d, s.get("b8")) if "b8" in s
+            else _b7(nominal, q, q_d, s.get("b7")))
     fast = (reviewer(s["fast"]), Channel()) if s.get("fast") else None
     slow = None
     if s.get("slow"):

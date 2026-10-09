@@ -106,3 +106,22 @@ def test_a_cycle_obeys_the_route_made_from_it():
     assert r.stop[0] and r.stop[-1]
     assert r.limit_mps.max() <= 27.0 and r.a_min_mps2 < 0.0 < r.a_max_mps2
     assert r.distance_m == pytest.approx(16510.0, abs=20.0)
+
+
+def test_a_corridor_plan_ends_where_the_recorded_drive_does(params):
+    from evpil.plan import corridor
+    plan = corridor.plan_corridor(params, "hwfet", 10.0)
+    v_rec, s_rec = corridor.recorded("hwfet")
+    assert len(plan.v_mps) == len(v_rec)
+    assert plan.v_mps[0] == 0.0 and plan.v_mps[-1] == 0.0
+    assert plan.offset_m[-1] == 0.0
+    assert np.abs(plan.offset_m).max() <= 10.0
+    dist = np.sum(0.5 * (plan.v_mps[:-1] + plan.v_mps[1:]))
+    assert dist == pytest.approx(s_rec[-1], abs=0.5)
+
+
+def test_a_wider_corridor_never_costs_the_planner_more(params):
+    from evpil.plan import corridor
+    narrow = corridor.plan_corridor(params, "hwfet", 5.0)
+    wide = corridor.plan_corridor(params, "hwfet", 15.0)
+    assert wide.model_energy_j <= narrow.model_energy_j + 1e-6

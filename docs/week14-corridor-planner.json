@@ -1,0 +1,205 @@
+{
+ "provenance": "SIMULATED on the laptop; no board involved",
+ "commit": "7033686",
+ "what": "planner held within a corridor around the recorded drive, in metres ahead and behind; one run per width",
+ "routes": {
+  "hwfet": {
+   "split": "val",
+   "rows": {
+    "recorded": {
+     "equivalent_wh_per_km": 153.90155013996434,
+     "equivalent_wh": 2540.3837114879498,
+     "distance_km": 16.5065505134784,
+     "peak_current_a": 90.93983209699422,
+     "tracking_rmse_mps": 0.00027055358261394015,
+     "width_m": 0.0
+    },
+    "5 m": {
+     "equivalent_wh_per_km": 153.99841897444833,
+     "equivalent_wh": 2541.9751835507827,
+     "distance_km": 16.506501823064504,
+     "peak_current_a": 162.44945160561207,
+     "tracking_rmse_mps": 0.0007343601416360855,
+     "width_m": 5.0,
+     "saving_vs_recorded_frac": -0.0006294207848842603,
+     "furthest_ahead_m": 5.0,
+     "furthest_behind_m": 5.0,
+     "top_speed_mps": 26.5,
+     "seconds_at_rest": 4,
+     "plan_s": 3.4435031414031982
+    },
+    "10 m": {
+     "equivalent_wh_per_km": 153.36562547561965,
+     "equivalent_wh": 2531.529798285813,
+     "distance_km": 16.506500660985775,
+     "peak_current_a": 162.44133452539904,
+     "tracking_rmse_mps": 0.0006534830529940227,
+     "width_m": 10.0,
+     "saving_vs_recorded_frac": 0.003482256441584286,
+     "furthest_ahead_m": 10.0,
+     "furthest_behind_m": 10.0,
+     "top_speed_mps": 26.5,
+     "seconds_at_rest": 2,
+     "plan_s": 3.6357510089874268
+    },
+    "25 m": {
+     "equivalent_wh_per_km": 152.59706167992053,
+     "equivalent_wh": 2518.8436134348763,
+     "distance_km": 16.50650140772873,
+     "peak_current_a": 151.04559620282544,
+     "tracking_rmse_mps": 0.0005642792519690456,
+     "width_m": 25.0,
+     "saving_vs_recorded_frac": 0.008476122942604913,
+     "furthest_ahead_m": 25.0,
+     "furthest_behind_m": 25.0,
+     "top_speed_mps": 26.0,
+     "seconds_at_rest": 2,
+     "plan_s": 3.7946009635925293
+    },
+    "50 m": {
+     "equivalent_wh_per_km": 151.90092174003328,
+     "equivalent_wh": 2507.3526942222957,
+     "distance_km": 16.506500852663926,
+     "peak_current_a": 151.04411827899523,
+     "tracking_rmse_mps": 0.0005408957094093749,
+     "width_m": 50.0,
+     "saving_vs_recorded_frac": 0.012999403827392286,
+     "furthest_ahead_m": 50.0,
+     "furthest_behind_m": 50.0,
+     "top_speed_mps": 25.5,
+     "seconds_at_rest": 2,
+     "plan_s": 3.9926769733428955
+    },
+    "100 m": {
+     "equivalent_wh_per_km": 151.63181790914533,
+     "equivalent_wh": 2502.9107312844667,
+     "distance_km": 16.506500850528347,
+     "peak_current_a": 147.5432254358107,
+     "tracking_rmse_mps": 0.00048470183165883927,
+     "width_m": 100.0,
+     "saving_vs_recorded_frac": 0.014747949119127357,
+     "furthest_ahead_m": 100.0,
+     "furthest_behind_m": 53.25,
+     "top_speed_mps": 25.0,
+     "seconds_at_rest": 2,
+     "plan_s": 4.734222173690796
+    },
+    "200 m": {
+     "equivalent_wh_per_km": 151.34645423843617,
+     "equivalent_wh": 2498.2003755262267,
+     "distance_km": 16.506500849966923,
+     "peak_current_a": 147.57007135336661,
+     "tracking_rmse_mps": 0.0004918863020844021,
+     "width_m": 200.0,
+     "saving_vs_recorded_frac": 0.01660214532735027,
+     "furthest_ahead_m": 200.0,
+     "furthest_behind_m": 54.5,
+     "top_speed_mps": 24.5,
+     "seconds_at_rest": 2,
+     "plan_s": 5.772564888000488
+    }
+   },
+   "a_max_mps2": 1.4305280000000042,
+   "a_min_mps2": -1.4752320000000108
+  },
+  "us06": {
+   "split": "test",
+   "rows": {
+    "recorded": {
+     "equivalent_wh_per_km": 190.46729466350823,
+     "equivalent_wh": 2454.666907321579,
+     "distance_km": 12.887603153382061,
+     "peak_current_a": 257.42559835642146,
+     "tracking_rmse_mps": 0.0013269437291760682,
+     "width_m": 0.0
+    },
+    "5 m": {
+     "equivalent_wh_per_km": 186.0415889851536,
+     "equivalent_wh": 2397.61418708454,
+     "distance_km": 12.88751724903765,
+     "peak_current_a": 232.6038073563382,
+     "tracking_rmse_mps": 0.00192776327902005,
+     "width_m": 5.0,
+     "saving_vs_recorded_frac": 0.023236040004523395,
+     "furthest_ahead_m": 5.0,
+     "furthest_behind_m": 5.0,
+     "top_speed_mps": 35.0,
+     "seconds_at_rest": 36,
+     "plan_s": 3.275089740753174
+    },
+    "10 m": {
+     "equivalent_wh_per_km": 184.04937755247587,
+     "equivalent_wh": 2371.937630399376,
+     "distance_km": 12.887506939397786,
+     "peak_current_a": 223.48384912698285,
+     "tracking_rmse_mps": 0.0017274969325039823,
+     "width_m": 10.0,
+     "saving_vs_recorded_frac": 0.03369563852088442,
+     "furthest_ahead_m": 10.0,
+     "furthest_behind_m": 10.0,
+     "top_speed_mps": 34.5,
+     "seconds_at_rest": 20,
+     "plan_s": 3.599835157394409
+    },
+    "25 m": {
+     "equivalent_wh_per_km": 180.7050081528565,
+     "equivalent_wh": 2328.8358360830284,
+     "distance_km": 12.887500240796262,
+     "peak_current_a": 214.59478118438244,
+     "tracking_rmse_mps": 0.0014481946796250245,
+     "width_m": 25.0,
+     "saving_vs_recorded_frac": 0.05125439791591735,
+     "furthest_ahead_m": 25.0,
+     "furthest_behind_m": 25.0,
+     "top_speed_mps": 33.0,
+     "seconds_at_rest": 3,
+     "plan_s": 4.0561769008636475
+    },
+    "50 m": {
+     "equivalent_wh_per_km": 176.70278757129591,
+     "equivalent_wh": 2277.2578202959103,
+     "distance_km": 12.88750365286164,
+     "peak_current_a": 217.92423858420028,
+     "tracking_rmse_mps": 0.001277171811733291,
+     "width_m": 50.0,
+     "saving_vs_recorded_frac": 0.07226703732275708,
+     "furthest_ahead_m": 50.0,
+     "furthest_behind_m": 50.0,
+     "top_speed_mps": 31.5,
+     "seconds_at_rest": 2,
+     "plan_s": 4.543213129043579
+    },
+    "100 m": {
+     "equivalent_wh_per_km": 171.96499618815483,
+     "equivalent_wh": 2216.199757760093,
+     "distance_km": 12.887505055594259,
+     "peak_current_a": 217.84756568415804,
+     "tracking_rmse_mps": 0.0008510539112692744,
+     "width_m": 100.0,
+     "saving_vs_recorded_frac": 0.09714160380153847,
+     "furthest_ahead_m": 100.0,
+     "furthest_behind_m": 100.0,
+     "top_speed_mps": 30.5,
+     "seconds_at_rest": 2,
+     "plan_s": 5.945815086364746
+    },
+    "200 m": {
+     "equivalent_wh_per_km": 166.56355137575704,
+     "equivalent_wh": 2146.588733951354,
+     "distance_km": 12.887505797164367,
+     "peak_current_a": 197.51106397086937,
+     "tracking_rmse_mps": 0.000757946520478512,
+     "width_m": 200.0,
+     "saving_vs_recorded_frac": 0.1255005135132573,
+     "furthest_ahead_m": 200.0,
+     "furthest_behind_m": 200.0,
+     "top_speed_mps": 29.5,
+     "seconds_at_rest": 2,
+     "plan_s": 8.431641101837158
+    }
+   },
+   "a_max_mps2": 3.694785599999997,
+   "a_min_mps2": -3.0331663999999936
+  }
+ }
+}

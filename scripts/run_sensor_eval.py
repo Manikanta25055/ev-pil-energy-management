@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import time
 from multiprocessing import Pool
@@ -45,8 +46,12 @@ def _one(job):
                                       q_d_mps2=q_d)
 
 
+# EVPIL_PROCS=1 keeps a run to one core, for when the board is in use.
+DEFAULT_PROCS = int(os.environ.get("EVPIL_PROCS", "4"))
+
+
 def evaluate(arm: str, split: str, *, settings: dict | None = None,
-             procs: int = 4, accels=None, clean: bool = True,
+             procs: int = DEFAULT_PROCS, accels=None, clean: bool = True,
              faults: bool = True, noise_x=se.NOISE_X,
              fault_labels=None, cycles=None) -> dict:
     """The keyword filters cut the registered set down for tuning. A
@@ -78,7 +83,7 @@ def main() -> int:
     ap.add_argument("--split", required=True, choices=("train", "val", "test"))
     ap.add_argument("--settings", default=None,
                     help="JSON file of settings for the arm")
-    ap.add_argument("--procs", type=int, default=4)
+    ap.add_argument("--procs", type=int, default=DEFAULT_PROCS)
     ap.add_argument("--out-json", default=None)
     args = ap.parse_args()
 

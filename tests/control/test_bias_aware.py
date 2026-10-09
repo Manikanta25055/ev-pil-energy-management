@@ -124,3 +124,49 @@ def test_the_verdict_fails_an_arm_that_misses_a_fault():
     assert g["missed_or_late"] == 1 and g["passes"] is False
     f[1]["delay_s"] = 0.2
     assert se.verdict(f, c)["by_accel"]["white, mass x1"]["passes"] is True
+
+
+def test_b8_detects_exactly_as_b7_does(params):
+    """B8 changes the speed used while flagged, not when the flag goes up."""
+    from evpil.control.speed_estimators import FusedFallbackKalman
+    err = am.wander(6000, 0.01, seed=2)
+    b7 = BiasAwareFaultKalman(params, q_mps=Q, q_d_mps2=QD)
+    b8 = FusedFallbackKalman(params, q_mps=Q, q_d_mps2=QD)
+    a = run(params, b7, err=err)
+    b = run(params, b8, err=err)
+    assert a.energy_wh == b.energy_wh          # no flag, same drive
+    f = lambda: SpeedFault("dropout", 30.0, duration_s=5.0)
+    b7, b8 = (BiasAwareFaultKalman(params, q_mps=Q, q_d_mps2=QD),
+              FusedFallbackKalman(params, q_mps=Q, q_d_mps2=QD))
+    run(params, b7, err=err, fault=f())
+    run(params, b8, err=err, fault=f())
+    assert b7.alarm_steps[0] == b8.alarm_steps[0]
+
+
+def test_the_fused_speed_learns_both_errors_and_coasts_on_them(params):
+    """A car heavier than the model and an offset accelerometer at once.
+    With the speed reading the filter separates the two; without it, it
+    stays close for five seconds."""
+    from dataclasses import replace as dc_replace
+    from evpil.control.speed_estimators import FusedSettings, FusedSpeed
+    heavy = dc_replace(params, mass_kg=params.mass_kg * 1.1)
+    fuse = FusedSpeed(params, FusedSettings())
+    seen = {}
+
+    class Tap:
+        def __init__(self): self.k = 0
+        def step(self, *, v_meas_mps, torque_prev_nm, grade_rad, dt_s,
+                 a_meas_mps2=0.0):
+            use = None if 3000 <= self.k < 3500 else v_meas_mps
+            v = fuse.step(torque_prev_nm=torque_prev_nm, grade_rad=grade_rad,
+                          dt_s=dt_s, a_meas_mps2=a_meas_mps2, v_meas_mps=use,
+                          r_v2=0.02 ** 2)
+            if self.k == 3499:
+                seen["gap"] = abs(v - v_meas_mps)
+            self.k += 1
+            return v_meas_mps
+    simulate(heavy, cruise(6000), POL, ff_params=params, speed_noise_mps=0.02,
+             accel_noise_mps2=0.05, seed=0, speed_estimator=Tap(),
+             accel_error_mps2=am.offset(6000, 0.17))
+    assert fuse.x[2] == pytest.approx(0.17, abs=0.08)
+    assert seen["gap"] < 0.5

@@ -1,0 +1,177 @@
+{
+ "provenance": "SIMULATED on the laptop; training split only",
+ "rule": "1. the smallest worst-case tracking error through a fault\n  2. ties, within 0.01 m/s, go to the smaller median",
+ "chosen": {
+  "q_d_mps2": 0.0003,
+  "q_b_mps2": 0.001,
+  "r_a_mps2": 0.3
+ },
+ "b7_on_the_same_runs": {
+  "worst_peak_err_mps": 4.142996356967361,
+  "median_peak_err_mps": 0.1979143055910768
+ },
+ "candidates": [
+  {
+   "q_d_mps2": 0.0003,
+   "q_b_mps2": 0.0003,
+   "r_a_mps2": 0.1,
+   "runs": 180,
+   "worst_peak_err_mps": 0.6501334797990328,
+   "median_peak_err_mps": 0.08588528720016342,
+   "stuck_flags": 0
+  },
+  {
+   "q_d_mps2": 0.0003,
+   "q_b_mps2": 0.0003,
+   "r_a_mps2": 0.3,
+   "runs": 180,
+   "worst_peak_err_mps": 0.3948933690109051,
+   "median_peak_err_mps": 0.06159591391755015,
+   "stuck_flags": 0
+  },
+  {
+   "q_d_mps2": 0.0003,
+   "q_b_mps2": 0.001,
+   "r_a_mps2": 0.1,
+   "runs": 180,
+   "worst_peak_err_mps": 0.268556218354318,
+   "median_peak_err_mps": 0.04308100417510019,
+   "stuck_flags": 0
+  },
+  {
+   "q_d_mps2": 0.0003,
+   "q_b_mps2": 0.001,
+   "r_a_mps2": 0.3,
+   "runs": 180,
+   "worst_peak_err_mps": 0.26054562837946804,
+   "median_peak_err_mps": 0.04300277823550225,
+   "stuck_flags": 0
+  },
+  {
+   "q_d_mps2": 0.0003,
+   "q_b_mps2": 0.003,
+   "r_a_mps2": 0.1,
+   "runs": 180,
+   "worst_peak_err_mps": 0.26763958601071103,
+   "median_peak_err_mps": 0.033836743814274595,
+   "stuck_flags": 0
+  },
+  {
+   "q_d_mps2": 0.0003,
+   "q_b_mps2": 0.003,
+   "r_a_mps2": 0.3,
+   "runs": 180,
+   "worst_peak_err_mps": 0.26729734199257216,
+   "median_peak_err_mps": 0.03383699665219719,
+   "stuck_flags": 0
+  },
+  {
+   "q_d_mps2": 0.001,
+   "q_b_mps2": 0.0003,
+   "r_a_mps2": 0.1,
+   "runs": 180,
+   "worst_peak_err_mps": 4.496666011005263,
+   "median_peak_err_mps": 0.2034526729085533,
+   "stuck_flags": 3
+  },
+  {
+   "q_d_mps2": 0.001,
+   "q_b_mps2": 0.0003,
+   "r_a_mps2": 0.3,
+   "runs": 180,
+   "worst_peak_err_mps": 1.1413162668247294,
+   "median_peak_err_mps": 0.1397735024478779,
+   "stuck_flags": 0
+  },
+  {
+   "q_d_mps2": 0.001,
+   "q_b_mps2": 0.001,
+   "r_a_mps2": 0.1,
+   "runs": 180,
+   "worst_peak_err_mps": 0.6036100840426553,
+   "median_peak_err_mps": 0.09440486667049974,
+   "stuck_flags": 0
+  },
+  {
+   "q_d_mps2": 0.001,
+   "q_b_mps2": 0.001,
+   "r_a_mps2": 0.3,
+   "runs": 180,
+   "worst_peak_err_mps": 0.49958353834485614,
+   "median_peak_err_mps": 0.08119118160429473,
+   "stuck_flags": 0
+  },
+  {
+   "q_d_mps2": 0.001,
+   "q_b_mps2": 0.003,
+   "r_a_mps2": 0.1,
+   "runs": 180,
+   "worst_peak_err_mps": 0.3503609329676802,
+   "median_peak_err_mps": 0.05277369162579326,
+   "stuck_flags": 0
+  },
+  {
+   "q_d_mps2": 0.001,
+   "q_b_mps2": 0.003,
+   "r_a_mps2": 0.3,
+   "runs": 180,
+   "worst_peak_err_mps": 0.35594038837261266,
+   "median_peak_err_mps": 0.0512577544614885,
+   "stuck_flags": 0
+  },
+  {
+   "q_d_mps2": 0.003,
+   "q_b_mps2": 0.0003,
+   "r_a_mps2": 0.1,
+   "runs": 180,
+   "worst_peak_err_mps": 5.444901093873021,
+   "median_peak_err_mps": 0.21385861482021973,
+   "stuck_flags": 6
+  },
+  {
+   "q_d_mps2": 0.003,
+   "q_b_mps2": 0.0003,
+   "r_a_mps2": 0.3,
+   "runs": 180,
+   "worst_peak_err_mps": 4.707220807184792,
+   "median_peak_err_mps": 0.1921634451338372,
+   "stuck_flags": 3
+  },
+  {
+   "q_d_mps2": 0.003,
+   "q_b_mps2": 0.001,
+   "r_a_mps2": 0.1,
+   "runs": 180,
+   "worst_peak_err_mps": 1.065503378580102,
+   "median_peak_err_mps": 0.18218672988280726,
+   "stuck_flags": 0
+  },
+  {
+   "q_d_mps2": 0.003,
+   "q_b_mps2": 0.001,
+   "r_a_mps2": 0.3,
+   "runs": 180,
+   "worst_peak_err_mps": 1.0861898664367404,
+   "median_peak_err_mps": 0.16593236908039977,
+   "stuck_flags": 0
+  },
+  {
+   "q_d_mps2": 0.003,
+   "q_b_mps2": 0.003,
+   "r_a_mps2": 0.1,
+   "runs": 180,
+   "worst_peak_err_mps": 0.583897060655385,
+   "median_peak_err_mps": 0.09403107939723121,
+   "stuck_flags": 0
+  },
+  {
+   "q_d_mps2": 0.003,
+   "q_b_mps2": 0.003,
+   "r_a_mps2": 0.3,
+   "runs": 180,
+   "worst_peak_err_mps": 0.5833000354674098,
+   "median_peak_err_mps": 0.08462748243979235,
+   "stuck_flags": 0
+  }
+ ]
+}

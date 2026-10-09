@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import time
 from pathlib import Path
@@ -42,12 +43,12 @@ HOST = "gru64"
 OUTAGE = ((20.0, 40.0),)
 
 
-def rows(reviewers=SMALL, host=HOST, ablations=False,
-         a3=False) -> list[tuple[str, str, dict | None, bool]]:
+def rows(reviewers=SMALL, host=HOST, ablations=False, a3=False,
+         b8=None) -> list[tuple[str, str, dict | None, bool]]:
     """(name, arm, settings, also run the clean cycles)."""
     out = [("A0 b7", "b7", None, True),
            ("ctl healthy", "sup", {"fast": "healthy"}, True)]
-    for r in reviewers if not (ablations or a3) else ():
+    for r in reviewers if not (ablations or a3 or b8 is not None) else ():
         out.append((f"A2 {r}", "sup", {"fast": r}, True))
         for ms in (70, 150, 500, 1000):
             out.append((f"A1 {r} {ms}ms", "sup", {
@@ -60,6 +61,15 @@ def rows(reviewers=SMALL, host=HOST, ablations=False,
                     {**base, "policy": {"expiry_s": 5.0}}, False))
         out.append((f"A1x {r} 150ms", "sup",
                     {**base, "loss": 0.2, "outages": OUTAGE}, False))
+    if b8 is not None:
+        # B8: one fused backup speed in place of the choice between two.
+        # `b8` is the tuned FusedSettings (docs/week14-b8-tuning.json).
+        return [("A0 b7", "b7", None, True),
+                ("A2 monitor", "sup", {"fast": "monitor"}, True),
+                ("B8 fused backup", "b8", b8, True),
+                ("B8 + monitor", "sup",
+                 {"fast": "monitor", "b8": b8,
+                  "policy": {"use_fallback": False}}, True)]
     if a3:
         # A3: a better speed while flagged. The loop controls on a mix of the
         # dead-reckoned speed and the model's prediction. The weight is a
@@ -139,12 +149,20 @@ def main() -> int:
     ap.add_argument("--a3", action="store_true",
                     help="run the blended-fallback rows instead; writes "
                          "docs/week13-a3-<split>.json")
-    ap.add_argument("--procs", type=int, default=4)
+    ap.add_argument("--b8", action="store_true",
+                    help="run the fused-backup rows instead, with the "
+                         "settings in docs/week14-b8-tuning.json; writes "
+                         "docs/week14-b8-<split>.json")
+    ap.add_argument("--procs", type=int,
+                    default=int(os.environ.get("EVPIL_PROCS", "4")))
     ap.add_argument("--out-json", default=None)
     args = ap.parse_args()
 
+    b8 = (json.loads(Path("docs/week14-b8-tuning.json").read_text())["chosen"]
+          if args.b8 else None)
     path = Path(args.out_json or (
-        f"docs/week13-a3-{args.split}.json" if args.a3
+        f"docs/week14-b8-{args.split}.json" if args.b8
+        else f"docs/week13-a3-{args.split}.json" if args.a3
         else f"docs/week13-arch-{args.split}.json"))
     doc = (json.loads(path.read_text()) if path.exists() else {
         "provenance": "SIMULATED on the laptop; no board involved; link "
@@ -156,7 +174,7 @@ def main() -> int:
     t0 = time.time()
     for name, arm, settings, clean in rows(
             tuple(r for r in args.reviewers.split(",") if r), args.host,
-            args.ablations, args.a3):
+            args.ablations, args.a3, b8):
         if (want and name not in want) or name in doc["rows"]:
             continue
         out = evaluate(arm, args.split, settings=settings, clean=clean,
