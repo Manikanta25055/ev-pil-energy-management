@@ -1,0 +1,217 @@
+{
+ "provenance": "MEASURED on the board (ESP32-S3); the laptop simulates the vehicle and injects the faults. One run per cell.",
+ "cases": "US06 from the registered test split: five named faults, two onsets, white and wander acceleration cases, noise floor and 10x; two clean cycles",
+ "config": "8822ca1eb5a48b74",
+ "estimator_mode_verified": true,
+ "late_control_steps": 0,
+ "board_restored_to": "actor",
+ "arms": {
+  "B6": {
+   "speed_est_mode": 4,
+   "file": "docs/week13-b7-pil-b6.json",
+   "cells": 42,
+   "fault_runs": 40,
+   "clean_runs": 2,
+   "detected_in_time": 33,
+   "worst_delay_s": 5.18,
+   "median_delay_s": 0.05,
+   "alarms_before_onset": 220,
+   "released_early": 2,
+   "still_flagged_in_last_second": 21,
+   "worst_peak_err_mps": 1.9258462038882875,
+   "median_peak_err_mps": 0.7903162224895315,
+   "by_fault": {
+    "bias +0.5": {
+     "runs": 8,
+     "detected_in_time": 6,
+     "worst_peak_err_mps": 1.7328671583679771
+    },
+    "bias +3.0": {
+     "runs": 8,
+     "detected_in_time": 7,
+     "worst_peak_err_mps": 1.9258292008837543
+    },
+    "bias -0.5": {
+     "runs": 8,
+     "detected_in_time": 6,
+     "worst_peak_err_mps": 1.921287796112619
+    },
+    "dropout": {
+     "runs": 8,
+     "detected_in_time": 7,
+     "worst_peak_err_mps": 1.9199156254247995
+    },
+    "stuck": {
+     "runs": 8,
+     "detected_in_time": 7,
+     "worst_peak_err_mps": 1.9258462038882875
+    }
+   },
+   "by_accel": {
+    "wander": {
+     "runs": 20,
+     "detected_in_time": 14,
+     "worst_peak_err_mps": 1.9258462038882875
+    },
+    "white": {
+     "runs": 20,
+     "detected_in_time": 19,
+     "worst_peak_err_mps": 0.6059367009293872
+    }
+   },
+   "clean_hours": 0.3333388888888889,
+   "clean_false_alarms": 162,
+   "clean_flagged_share": 0.38911018149697507,
+   "clean_tracking_rmse_mps": {
+    "white": 0.01159656236671459,
+    "wander": 3.4837325666517196
+   },
+   "clean_equivalent_wh_per_km": {
+    "white": 190.63397753253903,
+    "wander": 205.93829125404804
+   },
+   "late_control_steps": 0,
+   "worst_control_computation_us": 72,
+   "cells_over_dropped_limit": 0,
+   "max_dropped_frames": 10
+  },
+  "B7": {
+   "speed_est_mode": 5,
+   "file": "docs/week13-b7-pil-b7.json",
+   "cells": 42,
+   "fault_runs": 40,
+   "clean_runs": 2,
+   "detected_in_time": 40,
+   "worst_delay_s": 0.32,
+   "median_delay_s": 0.13,
+   "alarms_before_onset": 0,
+   "released_early": 16,
+   "still_flagged_in_last_second": 0,
+   "worst_peak_err_mps": 0.6661796902556354,
+   "median_peak_err_mps": 0.25377398260331674,
+   "by_fault": {
+    "bias +0.5": {
+     "runs": 8,
+     "detected_in_time": 8,
+     "worst_peak_err_mps": 0.6661796902556354
+    },
+    "bias +3.0": {
+     "runs": 8,
+     "detected_in_time": 8,
+     "worst_peak_err_mps": 0.27586724914862515
+    },
+    "bias -0.5": {
+     "runs": 8,
+     "detected_in_time": 8,
+     "worst_peak_err_mps": 0.596518454327164
+    },
+    "dropout": {
+     "runs": 8,
+     "detected_in_time": 8,
+     "worst_peak_err_mps": 0.27443754548432864
+    },
+    "stuck": {
+     "runs": 8,
+     "detected_in_time": 8,
+     "worst_peak_err_mps": 0.24880051822595206
+    }
+   },
+   "by_accel": {
+    "wander": {
+     "runs": 20,
+     "detected_in_time": 20,
+     "worst_peak_err_mps": 0.6661796902556354
+    },
+    "white": {
+     "runs": 20,
+     "detected_in_time": 20,
+     "worst_peak_err_mps": 0.5956562499681581
+    }
+   },
+   "clean_hours": 0.3333388888888889,
+   "clean_false_alarms": 0,
+   "clean_flagged_share": 0.0,
+   "clean_tracking_rmse_mps": {
+    "white": 0.009241595840289168,
+    "wander": 0.012628940940193711
+   },
+   "clean_equivalent_wh_per_km": {
+    "white": 190.59389555421,
+    "wander": 190.6434865174209
+   },
+   "late_control_steps": 0,
+   "worst_control_computation_us": 74,
+   "cells_over_dropped_limit": 0,
+   "max_dropped_frames": 10
+  },
+  "B7 + rule monitor": {
+   "speed_est_mode": 6,
+   "file": "docs/week13-b7-pil-b7mon.json",
+   "cells": 42,
+   "fault_runs": 40,
+   "clean_runs": 2,
+   "detected_in_time": 40,
+   "worst_delay_s": 0.32,
+   "median_delay_s": 0.135,
+   "alarms_before_onset": 0,
+   "released_early": 10,
+   "still_flagged_in_last_second": 0,
+   "worst_peak_err_mps": 0.6072156826155428,
+   "median_peak_err_mps": 0.19715197854227107,
+   "by_fault": {
+    "bias +0.5": {
+     "runs": 8,
+     "detected_in_time": 8,
+     "worst_peak_err_mps": 0.6072156826155428
+    },
+    "bias +3.0": {
+     "runs": 8,
+     "detected_in_time": 8,
+     "worst_peak_err_mps": 0.37005154941303076
+    },
+    "bias -0.5": {
+     "runs": 8,
+     "detected_in_time": 8,
+     "worst_peak_err_mps": 0.598242487343235
+    },
+    "dropout": {
+     "runs": 8,
+     "detected_in_time": 8,
+     "worst_peak_err_mps": 0.37005154941303076
+    },
+    "stuck": {
+     "runs": 8,
+     "detected_in_time": 8,
+     "worst_peak_err_mps": 0.42207763926032627
+    }
+   },
+   "by_accel": {
+    "wander": {
+     "runs": 20,
+     "detected_in_time": 20,
+     "worst_peak_err_mps": 0.6072156826155428
+    },
+    "white": {
+     "runs": 20,
+     "detected_in_time": 20,
+     "worst_peak_err_mps": 0.598242487343235
+    }
+   },
+   "clean_hours": 0.3333388888888889,
+   "clean_false_alarms": 0,
+   "clean_flagged_share": 0.0,
+   "clean_tracking_rmse_mps": {
+    "white": 0.0070359623660330595,
+    "wander": 0.012628940940193711
+   },
+   "clean_equivalent_wh_per_km": {
+    "white": 190.55358487407267,
+    "wander": 190.64377188689537
+   },
+   "late_control_steps": 0,
+   "worst_control_computation_us": 78,
+   "cells_over_dropped_limit": 0,
+   "max_dropped_frames": 3
+  }
+ }
+}

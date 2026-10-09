@@ -1,0 +1,35 @@
+{
+ "provenance": "SIMULATED on the laptop; the board campaign's fault cases, different noise draws",
+ "arms": {
+  "B6": {
+   "fault_runs": 40,
+   "detected_in_time": 24,
+   "worst_delay_s": 9.0,
+   "alarms_before_onset": 225,
+   "released_early": 2,
+   "still_flagged_at_end": 15,
+   "worst_peak_err_mps": 2.220184862295426,
+   "median_peak_err_mps": 0.718303397539783
+  },
+  "B7": {
+   "fault_runs": 40,
+   "detected_in_time": 38,
+   "worst_delay_s": 5.29,
+   "alarms_before_onset": 0,
+   "released_early": 14,
+   "still_flagged_at_end": 0,
+   "worst_peak_err_mps": 0.7252309670165786,
+   "median_peak_err_mps": 0.22988067362046394
+  },
+  "B7 + rule monitor": {
+   "fault_runs": 40,
+   "detected_in_time": 38,
+   "worst_delay_s": 5.29,
+   "alarms_before_onset": 0,
+   "released_early": 5,
+   "still_flagged_at_end": 0,
+   "worst_peak_err_mps": 0.6725194894652198,
+   "median_peak_err_mps": 0.25229968836210936
+  }
+ }
+}
