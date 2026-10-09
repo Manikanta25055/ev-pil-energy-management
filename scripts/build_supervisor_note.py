@@ -14,7 +14,7 @@ from scripts.corrected_campaign import load_corrected_a4, validate_campaign
 
 
 def build_note(sac, campaign=None, a4=None, robustness=None, board=None,
-               accel=None, week13=None):
+               accel=None, week13=None, week14=None):
     doc = Document()
     style = doc.styles["Normal"]
     style.font.name = "Calibri"
@@ -149,6 +149,9 @@ def build_note(sac, campaign=None, a4=None, robustness=None, board=None,
     if week13:
         from scripts import report_week13
         report_week13.note_block(doc, week13)
+    if week14:
+        from scripts import report_week14
+        report_week14.note_block(doc, week14)
     doc.add_paragraph("Draft for review; this script does not send the note.")
     return doc
 
@@ -175,12 +178,14 @@ def main():
         accel_path = args.robustness_docs / "week12-accel-channel-check.json"
         if accel_path.exists():
             accel = json.loads(accel_path.read_text())
-    week13 = None
+    week13 = week14 = None
     if args.robustness_docs:
         from scripts import report_week13
         week13 = report_week13.load_week13(args.robustness_docs)
+        from scripts import report_week14
+        week14 = report_week14.load_week14(args.robustness_docs)
     doc = build_note(sac, campaign, load_corrected_a4(docs), robustness, board,
-                     accel, week13)
+                     accel, week13, week14)
     path = Path(args.out)
     path.parent.mkdir(parents=True, exist_ok=True)
     doc.save(path)

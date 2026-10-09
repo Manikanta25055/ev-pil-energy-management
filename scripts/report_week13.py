@@ -142,9 +142,10 @@ def checker_section(doc, w, *, h1, para, table, bullets, note) -> None:
               f"the 10,000 available, and no control step finished late in "
               f"any run.")
     para(doc, "The rule helper in the last column is explained in the next "
-              "section. On the board it made a small difference in the "
-              "direction the simulation gave. With 40 runs per version, that "
-              "difference is not established.")
+              "section. In this single run it looked slightly better than "
+              "the checker alone. The runs were repeated in week 14 with "
+              "other draws of noise, and the difference did not hold: "
+              "section {ref}.", _ref="week14")
 
     doc.add_heading("What this does not cover", level=2)
     bullets(doc, [

@@ -26,7 +26,7 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Inches, Pt, RGBColor
 
-from scripts import report_week13
+from scripts import report_week13, report_week14
 
 DOCS = Path("docs")
 ACCENT = RGBColor(0x1F, 0x4E, 0x79)
@@ -237,7 +237,7 @@ def summary(doc: Document, ladder, tf, cost_rows, g3, a2, sac, onchip,
             a4=None, a4_on=None, a4_off=None, a4_on5=None,
             a4_off5=None, sac_corrected=None, pilc=None,
             a4_corrected=None,
-            week13=None) -> None:
+            week13=None, week14=None) -> None:
     h1(doc, "Summary")
 
     para(doc, "The project builds an energy-management controller for an "
@@ -413,6 +413,9 @@ def summary(doc: Document, ladder, tf, cost_rows, g3, a2, sac, onchip,
     if week13:
         doc.add_heading("Week 13 in brief", level=2)
         bullets(doc, report_week13.summary_bullets(week13, ref))
+    if week14:
+        doc.add_heading("Week 14 in brief", level=2)
+        bullets(doc, report_week14.summary_bullets(week14, ref))
 
     doc.add_heading("The state of the hardware for this report", level=2)
     para(doc, "The development board was attached when this report was "
@@ -3961,7 +3964,7 @@ def negatives_section(doc: Document) -> None:
 
 
 def remaining_section(doc: Document, pilc=None, a4_corrected=None,
-                      speed_arms=None, week13=None) -> None:
+                      speed_arms=None, week13=None, week14=None) -> None:
     h1(doc, "What is left to do")
 
     para(doc, "Corrected-model campaign: "
@@ -3984,11 +3987,19 @@ def remaining_section(doc: Document, pilc=None, a4_corrected=None,
                   "injected faults in section " + ref("week13checker")
                   + ". Still open after week 13: a real acceleration sensor "
                   "in place of the simulated drift; repeats of the board "
-                  "runs; a backup speed that does not drift while an alarm "
-                  "is raised; traffic in the speed-planning task of section "
+                  "runs, done in week 14; a backup speed that does not drift "
+                  "while an alarm is raised; traffic in the speed-planning "
+                  "task of section "
                   + ref("week13planning") + "; and a decision on Jev, which "
                   "section " + ref("week13helpers") + " does not recommend "
                   "for the sensor-fault task.")
+    if week14:
+        para(doc, "Week 14 repeated the board runs and tried a backup "
+                  "speed that does not drift and a traffic limit on the "
+                  "planner, all in section " + ref("week14") + ". Open "
+                  "after week 14: the backup speed's failure on a car "
+                  "heavier than its model, then a version for the chip and "
+                  "a board run; and still a real acceleration sensor.")
     para(doc, "The following week-by-week plan records the earlier project "
               "schedule. Current correction status is stated above.",
          italic=True, colour=MUTED)
@@ -4804,6 +4815,7 @@ def main() -> int:
     robust = load("week7-pid-robustness.json")
     speed_arms = load("week12-speed-arms.json")
     week13 = report_week13.load_week13(DOCS)
+    week14 = report_week14.load_week14(DOCS)
     rl = load("week7-rl-rampup.json")
     fb = load("week7-fallback.json")
     sac = load("week8-sac.json")
@@ -4848,7 +4860,7 @@ def main() -> int:
     cover(doc, args.date)
     summary(doc, ladder, tf, cost_rows, g3, a2, sac, onchip, a4,
             a4_on, a4_off, a4_on5, a4_off5, sac_corrected, pilc, a4_corrected,
-            week13)
+            week13, week14)
     background(doc)
     glossary_section(doc)
     charts_section(doc)
@@ -4880,9 +4892,12 @@ def main() -> int:
     report_week13.week13_sections(
         doc, week13, h1=h1, para=para, table=table, bullets=bullets, ref=ref,
         note=lambda d, text: para(d, text, size=9, italic=True, colour=MUTED))
+    report_week14.week14_section(
+        doc, week14, h1=h1, para=para, table=table, bullets=bullets, ref=ref,
+        note=lambda d, text: para(d, text, size=9, italic=True, colour=MUTED))
     negatives_section(doc)
     changes_section(doc)
-    remaining_section(doc, pilc, a4_corrected, speed_arms, week13)
+    remaining_section(doc, pilc, a4_corrected, speed_arms, week13, week14)
     reproduce_section(doc)
 
     resolve_refs(doc)
@@ -4907,6 +4922,7 @@ def main() -> int:
                ("PIL campaign on the corrected plant", pilc),
                ("speed-loop arms on the board", speed_arms),
                ("week 13: fault checker, helpers, planning", week13),
+               ("week 14: repeats, backup speed, traffic", week14),
                ("SAC retraining on the corrected plant", sac_corrected),
                ("A4 on the corrected plant", a4_corrected),
                ("on-chip deployment", fullstack),
