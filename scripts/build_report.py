@@ -26,6 +26,8 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Inches, Pt, RGBColor
 
+from scripts import report_week13
+
 DOCS = Path("docs")
 ACCENT = RGBColor(0x1F, 0x4E, 0x79)
 MUTED = RGBColor(0x59, 0x59, 0x59)
@@ -234,7 +236,8 @@ def cover(doc: Document, date: str) -> None:
 def summary(doc: Document, ladder, tf, cost_rows, g3, a2, sac, onchip,
             a4=None, a4_on=None, a4_off=None, a4_on5=None,
             a4_off5=None, sac_corrected=None, pilc=None,
-            a4_corrected=None) -> None:
+            a4_corrected=None,
+            week13=None) -> None:
     h1(doc, "Summary")
 
     para(doc, "The project builds an energy-management controller for an "
@@ -406,6 +409,10 @@ def summary(doc: Document, ladder, tf, cost_rows, g3, a2, sac, onchip,
                 f"safety mechanism, and it only repays its cost in the worst "
                 f"case. Section " + ref("a4") + ".",
             ])
+
+    if week13:
+        doc.add_heading("Week 13 in brief", level=2)
+        bullets(doc, report_week13.summary_bullets(week13, ref))
 
     doc.add_heading("The state of the hardware for this report", level=2)
     para(doc, "The development board was attached when this report was "
@@ -3852,8 +3859,9 @@ def speed_arms_section(doc: Document, sa) -> None:
 
     doc.add_heading("What this does not cover", level=2)
     bullets(doc, [
-        "Sensor faults. A stuck, dropped or offset speed reading was tested "
-        "in simulation only.",
+        "Sensor faults. A stuck, dropped or offset speed reading had been "
+        "tested in simulation only when this campaign was run. Section "
+        + ref("week13checker") + " puts them on the board.",
         "Twenty-five times the noise, and noise that changes during a drive.",
         "A car heavier than the model the filter carries.",
         "Repeats. Each cell is one run.",
@@ -3953,7 +3961,7 @@ def negatives_section(doc: Document) -> None:
 
 
 def remaining_section(doc: Document, pilc=None, a4_corrected=None,
-                      speed_arms=None) -> None:
+                      speed_arms=None, week13=None) -> None:
     h1(doc, "What is left to do")
 
     para(doc, "Corrected-model campaign: "
@@ -3970,6 +3978,17 @@ def remaining_section(doc: Document, pilc=None, a4_corrected=None,
                  "simulated."
                  if speed_arms else
                  ", with simulation evidence only."))
+    if week13:
+        para(doc, "Week 13 closed that open item: the detector was replaced "
+                  "by a new fault checker, measured on the board with "
+                  "injected faults in section " + ref("week13checker")
+                  + ". Still open after week 13: a real acceleration sensor "
+                  "in place of the simulated drift; repeats of the board "
+                  "runs; a backup speed that does not drift while an alarm "
+                  "is raised; traffic in the speed-planning task of section "
+                  + ref("week13planning") + "; and a decision on Jev, which "
+                  "section " + ref("week13helpers") + " does not recommend "
+                  "for the sensor-fault task.")
     para(doc, "The following week-by-week plan records the earlier project "
               "schedule. Current correction status is stated above.",
          italic=True, colour=MUTED)
@@ -4784,6 +4803,7 @@ def main() -> int:
     baselines = load("week7-control-baselines.json")
     robust = load("week7-pid-robustness.json")
     speed_arms = load("week12-speed-arms.json")
+    week13 = report_week13.load_week13(DOCS)
     rl = load("week7-rl-rampup.json")
     fb = load("week7-fallback.json")
     sac = load("week8-sac.json")
@@ -4827,7 +4847,8 @@ def main() -> int:
     reset_counters()
     cover(doc, args.date)
     summary(doc, ladder, tf, cost_rows, g3, a2, sac, onchip, a4,
-            a4_on, a4_off, a4_on5, a4_off5, sac_corrected, pilc, a4_corrected)
+            a4_on, a4_off, a4_on5, a4_off5, sac_corrected, pilc, a4_corrected,
+            week13)
     background(doc)
     glossary_section(doc)
     charts_section(doc)
@@ -4856,9 +4877,12 @@ def main() -> int:
     pil_repeat_section(doc, pil, pil2)
     correction_section(doc, corr, pilc, sac_corrected, a4_corrected)
     speed_arms_section(doc, speed_arms)
+    report_week13.week13_sections(
+        doc, week13, h1=h1, para=para, table=table, bullets=bullets, ref=ref,
+        note=lambda d, text: para(d, text, size=9, italic=True, colour=MUTED))
     negatives_section(doc)
     changes_section(doc)
-    remaining_section(doc, pilc, a4_corrected, speed_arms)
+    remaining_section(doc, pilc, a4_corrected, speed_arms, week13)
     reproduce_section(doc)
 
     resolve_refs(doc)
@@ -4882,6 +4906,7 @@ def main() -> int:
                ("plant correction", corr),
                ("PIL campaign on the corrected plant", pilc),
                ("speed-loop arms on the board", speed_arms),
+               ("week 13: fault checker, helpers, planning", week13),
                ("SAC retraining on the corrected plant", sac_corrected),
                ("A4 on the corrected plant", a4_corrected),
                ("on-chip deployment", fullstack),
