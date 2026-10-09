@@ -1,0 +1,159 @@
+{
+ "reason": "dropped_frames > 16 while the laptop was running simulations; taken again",
+ "runs": [
+  {
+   "split": "test",
+   "cycle": "us06",
+   "accel": "wander",
+   "noise_x": 1.0,
+   "mass": 1.0,
+   "seed": 102,
+   "fault": "dropout",
+   "onset_s": 177.14285714285714,
+   "steps": 4300,
+   "wall_s": 42.96694499999285,
+   "fault_step": 3000,
+   "alarms_seen": [
+    [
+     3019,
+     1,
+     1
+    ]
+   ],
+   "alarms_total": 1,
+   "alarms_before_onset": 0,
+   "delay_s": 0.19,
+   "flagged_steps_in_fault": 445,
+   "flagged_in_last_second": 0,
+   "flagged_steps": 535,
+   "peak_err_mps": 0.4062137287993295,
+   "tracking_rmse_mps": 0.05935391444991768,
+   "tracking_max_mps": 0.4062137287993295,
+   "equivalent_wh_per_km": 205.17651167211542,
+   "speed_est_mode": 6,
+   "actor_steps": 0,
+   "ctrl_late": 0,
+   "ctrl_wcet_us": 78,
+   "dropped_frames": 21,
+   "diag_frames": 86
+  },
+  {
+   "split": "test",
+   "cycle": "us06",
+   "accel": "wander",
+   "noise_x": 10.0,
+   "mass": 1.0,
+   "seed": 102,
+   "fault": "bias -0.5",
+   "onset_s": 177.14285714285714,
+   "steps": 4300,
+   "wall_s": 42.97918170799676,
+   "fault_step": 3000,
+   "alarms_seen": [
+    [
+     3047,
+     4,
+     1
+    ],
+    [
+     3544,
+     4,
+     1
+    ]
+   ],
+   "alarms_total": 2,
+   "alarms_before_onset": 0,
+   "delay_s": 0.47000000000000003,
+   "flagged_steps_in_fault": 76,
+   "flagged_in_last_second": 0,
+   "flagged_steps": 126,
+   "peak_err_mps": 0.627552362388279,
+   "tracking_rmse_mps": 0.186262757967308,
+   "tracking_max_mps": 0.627552362388279,
+   "equivalent_wh_per_km": 205.12084206917686,
+   "speed_est_mode": 6,
+   "actor_steps": 0,
+   "ctrl_late": 0,
+   "ctrl_wcet_us": 78,
+   "dropped_frames": 52,
+   "diag_frames": 86
+  },
+  {
+   "split": "test",
+   "cycle": "us06",
+   "accel": "wander",
+   "noise_x": 10.0,
+   "mass": 1.0,
+   "seed": 105,
+   "fault": "bias -0.5",
+   "onset_s": 418.85714285714283,
+   "steps": 4300,
+   "wall_s": 42.926862082997104,
+   "fault_step": 3001,
+   "alarms_seen": [
+    [
+     3042,
+     4,
+     1
+    ],
+    [
+     3546,
+     4,
+     1
+    ]
+   ],
+   "alarms_total": 2,
+   "alarms_before_onset": 0,
+   "delay_s": 0.41000000000000003,
+   "flagged_steps_in_fault": 50,
+   "flagged_in_last_second": 0,
+   "flagged_steps": 113,
+   "peak_err_mps": 0.6649004358749302,
+   "tracking_rmse_mps": 0.18965272243919856,
+   "tracking_max_mps": 0.6649004358749302,
+   "equivalent_wh_per_km": 189.4540249212626,
+   "speed_est_mode": 6,
+   "actor_steps": 0,
+   "ctrl_late": 0,
+   "ctrl_wcet_us": 77,
+   "dropped_frames": 39,
+   "diag_frames": 86
+  },
+  {
+   "split": "test",
+   "cycle": "us06",
+   "accel": "white",
+   "noise_x": 1.0,
+   "mass": 1.0,
+   "seed": 102,
+   "fault": "bias +3.0",
+   "onset_s": 177.14285714285714,
+   "steps": 4300,
+   "wall_s": 42.978007500001695,
+   "fault_step": 3000,
+   "alarms_seen": [
+    [
+     3019,
+     1,
+     1
+    ]
+   ],
+   "alarms_total": 1,
+   "alarms_before_onset": 0,
+   "delay_s": 0.19,
+   "flagged_steps_in_fault": 446,
+   "flagged_in_last_second": 0,
+   "flagged_steps": 535,
+   "peak_err_mps": 0.41559245315498217,
+   "tracking_rmse_mps": 0.05588760192792426,
+   "tracking_max_mps": 0.41559245315498217,
+   "equivalent_wh_per_km": 203.9367879295835,
+   "speed_est_mode": 6,
+   "actor_steps": 0,
+   "ctrl_late": 0,
+   "ctrl_wcet_us": 78,
+   "dropped_frames": 20,
+   "diag_frames": 86
+  }
+ ]
+}

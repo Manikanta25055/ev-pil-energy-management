@@ -1,0 +1,41 @@
+{
+ "reason": "dropped_frames > 16; taken again",
+ "runs": [
+  {
+   "split": "test",
+   "cycle": "us06",
+   "accel": "wander",
+   "noise_x": 1.0,
+   "mass": 1.0,
+   "seed": 102,
+   "fault": "dropout",
+   "onset_s": 177.14285714285714,
+   "steps": 4300,
+   "wall_s": 42.98340912500862,
+   "fault_step": 3000,
+   "alarms_seen": [
+    [
+     3019,
+     1,
+     1
+    ]
+   ],
+   "alarms_total": 1,
+   "alarms_before_onset": 0,
+   "delay_s": 0.19,
+   "flagged_steps_in_fault": 439,
+   "flagged_in_last_second": 0,
+   "flagged_steps": 548,
+   "peak_err_mps": 0.6662015264212577,
+   "tracking_rmse_mps": 0.15442048117889495,
+   "tracking_max_mps": 0.6662015264212577,
+   "equivalent_wh_per_km": 208.66936444016858,
+   "speed_est_mode": 5,
+   "actor_steps": 0,
+   "ctrl_late": 0,
+   "ctrl_wcet_us": 73,
+   "dropped_frames": 32,
+   "diag_frames": 86
+  }
+ ]
+}

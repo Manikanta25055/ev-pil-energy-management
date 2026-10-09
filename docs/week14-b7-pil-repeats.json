@@ -1,0 +1,204 @@
+{
+ "provenance": "MEASURED on the board (ESP32-S3); the laptop simulates the vehicle and injects the faults. Three draws of noise per case.",
+ "arms": {
+  "B7": {
+   "per_draw": {
+    "first": {
+     "detected_in_time": 40,
+     "fault_runs": 40,
+     "worst_delay_s": 0.32,
+     "median_delay_s": 0.13,
+     "alarms_before_onset": 0,
+     "released_early": 16,
+     "still_flagged_in_last_second": 0,
+     "worst_peak_err_mps": 0.6661796902556354,
+     "median_peak_err_mps": 0.25377398260331674,
+     "clean_false_alarms": 0,
+     "clean_hours": 0.3333388888888889,
+     "late_control_steps": 0,
+     "worst_control_computation_us": 74,
+     "max_dropped_frames": 10,
+     "cells_over_dropped_limit": 0
+    },
+    "repeat 1": {
+     "detected_in_time": 40,
+     "fault_runs": 40,
+     "worst_delay_s": 0.32,
+     "median_delay_s": 0.13,
+     "alarms_before_onset": 0,
+     "released_early": 15,
+     "still_flagged_in_last_second": 0,
+     "worst_peak_err_mps": 0.8322915958879129,
+     "median_peak_err_mps": 0.44443197492410036,
+     "clean_false_alarms": 0,
+     "clean_hours": 0.3333388888888889,
+     "late_control_steps": 0,
+     "worst_control_computation_us": 74,
+     "max_dropped_frames": 9,
+     "cells_over_dropped_limit": 0
+    },
+    "repeat 2": {
+     "detected_in_time": 40,
+     "fault_runs": 40,
+     "worst_delay_s": 0.31,
+     "median_delay_s": 0.13,
+     "alarms_before_onset": 0,
+     "released_early": 16,
+     "still_flagged_in_last_second": 0,
+     "worst_peak_err_mps": 0.6819115455532021,
+     "median_peak_err_mps": 0.44893343807092734,
+     "clean_false_alarms": 0,
+     "clean_hours": 0.3333388888888889,
+     "late_control_steps": 0,
+     "worst_control_computation_us": 74,
+     "max_dropped_frames": 8,
+     "cells_over_dropped_limit": 0
+    }
+   },
+   "pooled": {
+    "detected_in_time": 120,
+    "fault_runs": 120,
+    "worst_delay_s": 0.32,
+    "median_delay_s": 0.13,
+    "alarms_before_onset": 0,
+    "released_early": 47,
+    "still_flagged_in_last_second": 0,
+    "worst_peak_err_mps": 0.8322915958879129,
+    "median_peak_err_mps": 0.4250189720122677,
+    "clean_false_alarms": 0,
+    "clean_hours": 1.0000166666666666,
+    "late_control_steps": 0,
+    "worst_control_computation_us": 74,
+    "max_dropped_frames": 10,
+    "cells_over_dropped_limit": 0
+   },
+   "by_fault": {
+    "bias +0.5": {
+     "runs": 24,
+     "detected_in_time": 24,
+     "worst_peak_err_mps": 0.8322915958879129
+    },
+    "bias +3.0": {
+     "runs": 24,
+     "detected_in_time": 24,
+     "worst_peak_err_mps": 0.6626033873899608
+    },
+    "bias -0.5": {
+     "runs": 24,
+     "detected_in_time": 24,
+     "worst_peak_err_mps": 0.7236775765010037
+    },
+    "dropout": {
+     "runs": 24,
+     "detected_in_time": 24,
+     "worst_peak_err_mps": 0.6458485265518128
+    },
+    "stuck": {
+     "runs": 24,
+     "detected_in_time": 24,
+     "worst_peak_err_mps": 0.6182309113386815
+    }
+   }
+  },
+  "B7 + rule monitor": {
+   "per_draw": {
+    "first": {
+     "detected_in_time": 40,
+     "fault_runs": 40,
+     "worst_delay_s": 0.32,
+     "median_delay_s": 0.135,
+     "alarms_before_onset": 0,
+     "released_early": 10,
+     "still_flagged_in_last_second": 0,
+     "worst_peak_err_mps": 0.6072156826155428,
+     "median_peak_err_mps": 0.19715197854227107,
+     "clean_false_alarms": 0,
+     "clean_hours": 0.3333388888888889,
+     "late_control_steps": 0,
+     "worst_control_computation_us": 78,
+     "max_dropped_frames": 3,
+     "cells_over_dropped_limit": 0
+    },
+    "repeat 1": {
+     "detected_in_time": 40,
+     "fault_runs": 40,
+     "worst_delay_s": 0.33,
+     "median_delay_s": 0.13,
+     "alarms_before_onset": 0,
+     "released_early": 10,
+     "still_flagged_in_last_second": 1,
+     "worst_peak_err_mps": 1.3176649299099594,
+     "median_peak_err_mps": 0.5303791062630641,
+     "clean_false_alarms": 0,
+     "clean_hours": 0.3333388888888889,
+     "late_control_steps": 0,
+     "worst_control_computation_us": 78,
+     "max_dropped_frames": 16,
+     "cells_over_dropped_limit": 0
+    },
+    "repeat 2": {
+     "detected_in_time": 40,
+     "fault_runs": 40,
+     "worst_delay_s": 0.32,
+     "median_delay_s": 0.13,
+     "alarms_before_onset": 0,
+     "released_early": 10,
+     "still_flagged_in_last_second": 2,
+     "worst_peak_err_mps": 1.0253107446551724,
+     "median_peak_err_mps": 0.47358531678572646,
+     "clean_false_alarms": 0,
+     "clean_hours": 0.3333388888888889,
+     "late_control_steps": 0,
+     "worst_control_computation_us": 78,
+     "max_dropped_frames": 14,
+     "cells_over_dropped_limit": 0
+    }
+   },
+   "pooled": {
+    "detected_in_time": 120,
+    "fault_runs": 120,
+    "worst_delay_s": 0.33,
+    "median_delay_s": 0.13,
+    "alarms_before_onset": 0,
+    "released_early": 30,
+    "still_flagged_in_last_second": 3,
+    "worst_peak_err_mps": 1.3176649299099594,
+    "median_peak_err_mps": 0.3978580079454819,
+    "clean_false_alarms": 0,
+    "clean_hours": 1.0000166666666666,
+    "late_control_steps": 0,
+    "worst_control_computation_us": 78,
+    "max_dropped_frames": 16,
+    "cells_over_dropped_limit": 0
+   },
+   "by_fault": {
+    "bias +0.5": {
+     "runs": 24,
+     "detected_in_time": 24,
+     "worst_peak_err_mps": 0.7065280183125999
+    },
+    "bias +3.0": {
+     "runs": 24,
+     "detected_in_time": 24,
+     "worst_peak_err_mps": 1.0253107446551724
+    },
+    "bias -0.5": {
+     "runs": 24,
+     "detected_in_time": 24,
+     "worst_peak_err_mps": 1.3176649299099594
+    },
+    "dropout": {
+     "runs": 24,
+     "detected_in_time": 24,
+     "worst_peak_err_mps": 0.9826851012749991
+    },
+    "stuck": {
+     "runs": 24,
+     "detected_in_time": 24,
+     "worst_peak_err_mps": 0.6641908861035795
+    }
+   }
+  }
+ },
+ "board_restored_to": "actor"
+}
