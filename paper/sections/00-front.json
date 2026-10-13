@@ -1,0 +1,33 @@
+{
+ "title": "Learned Versus Rule-Based Energy Management for Electric Vehicles on a Microcontroller: A Processor-in-the-Loop Study With Pre-Registered Acceptance Gates",
+ "running_head": "M. Gonugondla et al.: Learned Versus Rule-Based Energy Management for Electric Vehicles on a Microcontroller",
+ "dates": "Received XX Month 2026, accepted XX Month 2026, date of publication XX Month 2026, date of current version XX Month 2026.",
+ "authors": [
+  {
+   "name": "Manikanta Gonugondla",
+   "mark": "1",
+   "membership": ""
+  },
+  {
+   "name": "[Co-author names to be confirmed]",
+   "mark": "1",
+   "membership": ""
+  }
+ ],
+ "affiliations": [
+  "1[Department and institution to be confirmed]"
+ ],
+ "notes": [
+  "Corresponding author: Manikanta Gonugondla (e-mail to be confirmed).",
+  "MOCK MANUSCRIPT prepared for internal review. Not submitted to any journal. Dates, volume and Digital Object Identifier are placeholders."
+ ],
+ "abstract": "Learned energy managers for electric vehicles are usually evaluated in simulation on a workstation, with the vehicle model and the baseline taken on trust. This paper reports a processor-in-the-loop study in which a rule-based energy manager, a Soft Actor-Critic policy and a power forecaster run on an ESP32-S3 microcontroller at 100 Hz against a longitudinal vehicle model identified from logged trips. Acceptance gates and their pass criteria were fixed before each experiment, the one criterion revised afterwards is reported, and every result is labelled as measured on the target or simulated on the host. The main result is negative. Over 36 runs and 2,282,832 control steps with no late step, the learned policy used less energy than the rules in 1 of 16 settings and 0.94% more on average, and tracked speed worse on the aggressive US06 cycle. An earlier apparent gain of 8.28% was traced to a power limit in the vehicle model that capped billed energy without reducing delivered torque, and is withdrawn. A Transformer forecaster improved on persistence by 16.6% at a 3 s horizon and ran in 36.46 ms of a 40 ms budget, yet removing the forecast from the policy changed nothing measurable. The gains came from estimation instead. A two-state Kalman speed estimator cut the energy lost at ten times the sensor-noise floor from 9.44 to 0.24 Wh/km, and a bias-aware detector caught 120 of 120 injected speed-sensor faults with no false alarm in one hour of clean driving. Two acceptance gates fail and are reported as failures.",
+ "index_terms": "Electric vehicles, energy management, fault detection, Kalman filters, microcontrollers, processor-in-the-loop, reinforcement learning, time series forecasting.",
+ "back": [],
+ "bios": [
+  [
+   "Manikanta Gonugondla",
+   "[Biography and photograph to be supplied.]"
+  ]
+ ]
+}

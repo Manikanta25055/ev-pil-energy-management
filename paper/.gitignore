@@ -1,0 +1,8 @@
+# Generated or local-only
+_render/
+figures/_eq/
+~$*
+__pycache__/
+# Third-party text kept locally as source material; not redistributed
+sources/seniors-*.txt
+sources/project-plan.txt

@@ -1,0 +1,599 @@
+[
+ {
+  "key": "tangi2025",
+  "authors": [
+   "S. Tangi",
+   "A. Vatsa",
+   "A. Opam",
+   "P. K. Bonthagorla",
+   "D. N. Gaonkar"
+  ],
+  "title": "Smart strategies for improving electric vehicle battery performance and efficiency",
+  "venue": "Scientific Reports",
+  "volume": "15",
+  "number": "",
+  "pages": "42070",
+  "month": "November",
+  "year": "2025",
+  "doi": "10.1038/s41598-025-25987-1",
+  "verified_url": "https://doi.org/10.1038/s41598-025-25987-1"
+ },
+ {
+  "key": "i3data",
+  "authors": [
+   "M. Steinstraeter",
+   "J. Buberger",
+   "D. Trifonov"
+  ],
+  "title": "Battery and Heating Data in Real Driving Cycles",
+  "venue": "IEEE DataPort (dataset)",
+  "volume": "",
+  "number": "",
+  "pages": "",
+  "month": "October",
+  "year": "2020",
+  "doi": "10.21227/6jr9-5235",
+  "verified_url": "https://doi.org/10.21227/6jr9-5235"
+ },
+ {
+  "key": "ved",
+  "authors": [
+   "G. Oh",
+   "D. J. LeBlanc",
+   "H. Peng"
+  ],
+  "title": "Vehicle Energy Dataset (VED), a large-scale dataset for vehicle energy consumption research",
+  "venue": "IEEE Transactions on Intelligent Transportation Systems",
+  "volume": "23",
+  "number": "4",
+  "pages": "3302-3312",
+  "month": "April",
+  "year": "2022",
+  "doi": "10.1109/TITS.2020.3035596",
+  "verified_url": "https://doi.org/10.1109/TITS.2020.3035596"
+ },
+ {
+  "key": "haarnoja2018",
+  "authors": [
+   "T. Haarnoja",
+   "A. Zhou",
+   "P. Abbeel",
+   "S. Levine"
+  ],
+  "title": "Soft actor-critic: Off-policy maximum entropy deep reinforcement learning with a stochastic actor",
+  "venue": "Proceedings of the 35th International Conference on Machine Learning (PMLR)",
+  "volume": "80",
+  "number": "",
+  "pages": "1861-1870",
+  "month": "July",
+  "year": "2018",
+  "doi": "",
+  "verified_url": "https://proceedings.mlr.press/v80/haarnoja18b.html"
+ },
+ {
+  "key": "kalman1960",
+  "authors": [
+   "R. E. Kalman"
+  ],
+  "title": "A new approach to linear filtering and prediction problems",
+  "venue": "Journal of Basic Engineering",
+  "volume": "82",
+  "number": "1",
+  "pages": "35-45",
+  "month": "March",
+  "year": "1960",
+  "doi": "10.1115/1.3662552",
+  "verified_url": "https://doi.org/10.1115/1.3662552"
+ },
+ {
+  "key": "vaswani2017",
+  "authors": [
+   "A. Vaswani",
+   "N. Shazeer",
+   "N. Parmar",
+   "J. Uszkoreit",
+   "L. Jones",
+   "A. N. Gomez",
+   "L. Kaiser",
+   "I. Polosukhin"
+  ],
+  "title": "Attention is all you need",
+  "venue": "Advances in Neural Information Processing Systems 30",
+  "volume": "30",
+  "number": "",
+  "pages": "5998-6008",
+  "month": "",
+  "year": "2017",
+  "doi": "",
+  "verified_url": "https://proceedings.neurips.cc/paper/7181-attention-is-all"
+ },
+ {
+  "key": "cho2014",
+  "authors": [
+   "K. Cho",
+   "B. van Merrienboer",
+   "C. Gulcehre",
+   "D. Bahdanau",
+   "F. Bougares",
+   "H. Schwenk",
+   "Y. Bengio"
+  ],
+  "title": "Learning phrase representations using RNN encoder-decoder for statistical machine translation",
+  "venue": "Proceedings of the 2014 Conference on Empirical Methods in Natural Language Processing (EMNLP)",
+  "volume": "",
+  "number": "",
+  "pages": "1724-1734",
+  "month": "",
+  "year": "2014",
+  "doi": "10.3115/v1/D14-1179",
+  "verified_url": "https://doi.org/10.3115/v1/D14-1179"
+ },
+ {
+  "key": "kusupati2018",
+  "authors": [
+   "A. Kusupati",
+   "M. Singh",
+   "K. Bhatia",
+   "A. Kumar",
+   "P. Jain",
+   "M. Varma"
+  ],
+  "title": "FastGRNN: A fast, accurate, stable and tiny kilobyte sized gated recurrent neural network",
+  "venue": "Advances in Neural Information Processing Systems 31",
+  "volume": "31",
+  "number": "",
+  "pages": "",
+  "month": "",
+  "year": "2018",
+  "doi": "",
+  "verified_url": "https://proceedings.neurips.cc/paper_files/paper/2018/file/ab013ca67cf2d50796b0c11d1b8bc95d-Paper.pdf"
+ },
+ {
+  "key": "raissi2019",
+  "authors": [
+   "M. Raissi",
+   "P. Perdikaris",
+   "G. E. Karniadakis"
+  ],
+  "title": "Physics-informed neural networks: A deep learning framework for solving forward and inverse problems involving nonlinear partial differential equations",
+  "venue": "Journal of Computational Physics",
+  "volume": "378",
+  "number": "",
+  "pages": "686-707",
+  "month": "February",
+  "year": "2019",
+  "doi": "10.1016/j.jcp.2018.10.045",
+  "verified_url": "https://doi.org/10.1016/j.jcp.2018.10.045"
+ },
+ {
+  "key": "hinton2015",
+  "authors": [
+   "G. Hinton",
+   "O. Vinyals",
+   "J. Dean"
+  ],
+  "title": "Distilling the knowledge in a neural network",
+  "venue": "arXiv preprint arXiv:1503.02531 (NIPS 2014 Deep Learning and Representation Learning Workshop)",
+  "volume": "",
+  "number": "",
+  "pages": "",
+  "month": "March",
+  "year": "2015",
+  "doi": "10.48550/arXiv.1503.02531",
+  "verified_url": "https://doi.org/10.48550/arXiv.1503.02531"
+ },
+ {
+  "key": "jacob2018",
+  "authors": [
+   "B. Jacob",
+   "S. Kligys",
+   "B. Chen",
+   "M. Zhu",
+   "M. Tang",
+   "A. Howard",
+   "H. Adam",
+   "D. Kalenichenko"
+  ],
+  "title": "Quantization and training of neural networks for efficient integer-arithmetic-only inference",
+  "venue": "Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)",
+  "volume": "",
+  "number": "",
+  "pages": "2704-2713",
+  "month": "June",
+  "year": "2018",
+  "doi": "10.1109/CVPR.2018.00286",
+  "verified_url": "https://doi.org/10.1109/CVPR.2018.00286"
+ },
+ {
+  "key": "bellman1957",
+  "authors": [
+   "R. Bellman"
+  ],
+  "title": "Dynamic Programming",
+  "venue": "Princeton University Press, Princeton, NJ",
+  "volume": "",
+  "number": "",
+  "pages": "",
+  "month": "",
+  "year": "1957",
+  "doi": "",
+  "verified_url": "https://mlanthology.org/misc/1957/bellman1957misc-dynamic"
+ },
+ {
+  "key": "esp32s3",
+  "authors": [
+   "Espressif Systems"
+  ],
+  "title": "ESP32-S3 Series Datasheet",
+  "venue": "Espressif Systems (datasheet)",
+  "volume": "",
+  "number": "",
+  "pages": "",
+  "month": "",
+  "year": "",
+  "doi": "",
+  "verified_url": "https://www.espressif.com/en/products/modules/esp32-s3-wroom-1"
+ },
+ {
+  "key": "epacycles",
+  "authors": [
+   "U.S. Environmental Protection Agency"
+  ],
+  "title": "Dynamometer drive schedules",
+  "venue": "U.S. EPA, Vehicle and Fuel Emissions Testing (web resource)",
+  "volume": "",
+  "number": "",
+  "pages": "",
+  "month": "",
+  "year": "",
+  "doi": "",
+  "verified_url": "https://www.epa.gov/vehicle-and-fuel-emissions-testing/dynamometer-drive-schedules"
+ },
+ {
+  "key": "zhang2020",
+  "authors": [
+   "J. Zhang",
+   "Z. Wang",
+   "P. Liu",
+   "Z. Zhang"
+  ],
+  "title": "Energy consumption analysis and prediction of electric vehicles based on real-world driving data",
+  "venue": "Applied Energy",
+  "volume": "275",
+  "number": "",
+  "pages": "115408",
+  "month": "October",
+  "year": "2020",
+  "doi": "10.1016/j.apenergy.2020.115408",
+  "verified_url": "https://doi.org/10.1016/j.apenergy.2020.115408"
+ },
+ {
+  "key": "baluch2026",
+  "authors": [
+   "M. B. Baluch",
+   "S. M. Sharkh",
+   "A. Madhusudhanan"
+  ],
+  "title": "Electric vehicle energy consumption modeling using real world driving data: System identification vs. machine learning",
+  "venue": "IEEE Transactions on Intelligent Vehicles",
+  "volume": "11",
+  "number": "3",
+  "pages": "401-414",
+  "month": "March",
+  "year": "2026",
+  "doi": "10.1109/TIV.2026.3656694",
+  "verified_url": "https://doi.org/10.1109/TIV.2026.3656694"
+ },
+ {
+  "key": "wu2018",
+  "authors": [
+   "J. Wu",
+   "H. He",
+   "J. Peng",
+   "Y. Li",
+   "Z. Li"
+  ],
+  "title": "Continuous reinforcement learning of energy management with deep Q network for a power split hybrid electric bus",
+  "venue": "Applied Energy",
+  "volume": "222",
+  "number": "",
+  "pages": "799-811",
+  "month": "July",
+  "year": "2018",
+  "doi": "10.1016/j.apenergy.2018.03.104",
+  "verified_url": "https://doi.org/10.1016/j.apenergy.2018.03.104"
+ },
+ {
+  "key": "xiong2018",
+  "authors": [
+   "R. Xiong",
+   "Y. Duan",
+   "J. Cao",
+   "Q. Yu"
+  ],
+  "title": "Battery and ultracapacitor in-the-loop approach to validate a real-time power management method for an all-climate electric vehicle",
+  "venue": "Applied Energy",
+  "volume": "217",
+  "number": "",
+  "pages": "153-165",
+  "month": "May",
+  "year": "2018",
+  "doi": "10.1016/j.apenergy.2018.02.128",
+  "verified_url": "https://doi.org/10.1016/j.apenergy.2018.02.128"
+ },
+ {
+  "key": "sun2022",
+  "authors": [
+   "W. Sun",
+   "Y. Zou",
+   "X. Zhang",
+   "N. Guo",
+   "B. Zhang",
+   "G. Du"
+  ],
+  "title": "High robustness energy management strategy of hybrid electric vehicle based on improved soft actor-critic deep reinforcement learning",
+  "venue": "Energy",
+  "volume": "258",
+  "number": "",
+  "pages": "124806",
+  "month": "November",
+  "year": "2022",
+  "doi": "10.1016/j.energy.2022.124806",
+  "verified_url": "https://doi.org/10.1016/j.energy.2022.124806"
+ },
+ {
+  "key": "hu2019",
+  "authors": [
+   "X. Hu",
+   "T. Liu",
+   "X. Qi",
+   "M. Barth"
+  ],
+  "title": "Reinforcement learning for hybrid and plug-in hybrid electric vehicle energy management: Recent advances and prospects",
+  "venue": "IEEE Industrial Electronics Magazine",
+  "volume": "13",
+  "number": "3",
+  "pages": "16-25",
+  "month": "September",
+  "year": "2019",
+  "doi": "10.1109/MIE.2019.2913015",
+  "verified_url": "https://doi.org/10.1109/MIE.2019.2913015"
+ },
+ {
+  "key": "biswas2019",
+  "authors": [
+   "A. Biswas",
+   "A. Emadi"
+  ],
+  "title": "Energy management systems for electrified powertrains: State-of-the-art review and future trends",
+  "venue": "IEEE Transactions on Vehicular Technology",
+  "volume": "68",
+  "number": "7",
+  "pages": "6453-6467",
+  "month": "July",
+  "year": "2019",
+  "doi": "10.1109/TVT.2019.2914457",
+  "verified_url": "https://doi.org/10.1109/TVT.2019.2914457"
+ },
+ {
+  "key": "sciarretta2004",
+  "authors": [
+   "A. Sciarretta",
+   "M. Back",
+   "L. Guzzella"
+  ],
+  "title": "Optimal control of parallel hybrid electric vehicles",
+  "venue": "IEEE Transactions on Control Systems Technology",
+  "volume": "12",
+  "number": "3",
+  "pages": "352-363",
+  "month": "May",
+  "year": "2004",
+  "doi": "10.1109/TCST.2004.824312",
+  "verified_url": "https://doi.org/10.1109/TCST.2004.824312"
+ },
+ {
+  "key": "paganelli2002",
+  "authors": [
+   "G. Paganelli",
+   "S. Delprat",
+   "T. M. Guerra",
+   "J. Rimaux",
+   "J. J. Santin"
+  ],
+  "title": "Equivalent consumption minimization strategy for parallel hybrid powertrains",
+  "venue": "Proceedings of the IEEE 55th Vehicular Technology Conference (VTC Spring 2002)",
+  "volume": "4",
+  "number": "",
+  "pages": "2076-2081",
+  "month": "",
+  "year": "2002",
+  "doi": "10.1109/VTC.2002.1002989",
+  "verified_url": "https://doi.org/10.1109/VTC.2002.1002989"
+ },
+ {
+  "key": "kim2011",
+  "authors": [
+   "N. Kim",
+   "S. Cha",
+   "H. Peng"
+  ],
+  "title": "Optimal control of hybrid electric vehicles based on Pontryagin's minimum principle",
+  "venue": "IEEE Transactions on Control Systems Technology",
+  "volume": "19",
+  "number": "5",
+  "pages": "1279-1287",
+  "month": "September",
+  "year": "2011",
+  "doi": "10.1109/TCST.2010.2061232",
+  "verified_url": "https://doi.org/10.1109/TCST.2010.2061232"
+ },
+ {
+  "key": "henderson2018",
+  "authors": [
+   "P. Henderson",
+   "R. Islam",
+   "P. Bachman",
+   "J. Pineau",
+   "D. Precup",
+   "D. Meger"
+  ],
+  "title": "Deep reinforcement learning that matters",
+  "venue": "Proceedings of the AAAI Conference on Artificial Intelligence",
+  "volume": "32",
+  "number": "1",
+  "pages": "3207-3214",
+  "month": "April",
+  "year": "2018",
+  "doi": "10.1609/aaai.v32i1.11694",
+  "verified_url": "https://doi.org/10.1609/aaai.v32i1.11694"
+ },
+ {
+  "key": "dulac2021",
+  "authors": [
+   "G. Dulac-Arnold",
+   "N. Levine",
+   "D. J. Mankowitz",
+   "J. Li",
+   "C. Paduraru",
+   "S. Gowal",
+   "T. Hester"
+  ],
+  "title": "Challenges of real-world reinforcement learning: Definitions, benchmarks and analysis",
+  "venue": "Machine Learning",
+  "volume": "110",
+  "number": "9",
+  "pages": "2419-2468",
+  "month": "April",
+  "year": "2021",
+  "doi": "10.1007/s10994-021-05961-4",
+  "verified_url": "https://doi.org/10.1007/s10994-021-05961-4"
+ },
+ {
+  "key": "david2021",
+  "authors": [
+   "R. David",
+   "J. Duke",
+   "A. Jain",
+   "V. Janapa Reddi",
+   "N. Jeffries",
+   "J. Li",
+   "N. Kreeger",
+   "I. Nappier",
+   "M. Natraj",
+   "T. Wang",
+   "P. Warden",
+   "R. Rhodes"
+  ],
+  "title": "TensorFlow Lite Micro: Embedded machine learning for TinyML systems",
+  "venue": "Proceedings of Machine Learning and Systems (MLSys)",
+  "volume": "3",
+  "number": "",
+  "pages": "",
+  "month": "",
+  "year": "2021",
+  "doi": "",
+  "verified_url": "https://proceedings.mlsys.org/paper_files/paper/2021/hash/6c44dc73014d66ba49b28d483a8f8b0d-Abstract.html"
+ },
+ {
+  "key": "lin2020",
+  "authors": [
+   "J. Lin",
+   "W.-M. Chen",
+   "Y. Lin",
+   "J. Cohn",
+   "C. Gan",
+   "S. Han"
+  ],
+  "title": "MCUNet: Tiny deep learning on IoT devices",
+  "venue": "Advances in Neural Information Processing Systems 33",
+  "volume": "33",
+  "number": "",
+  "pages": "",
+  "month": "",
+  "year": "2020",
+  "doi": "",
+  "verified_url": "https://papers.nips.cc/paper/2020/hash/86c51678350f656dcc7f490a43946ee5-Abstract.html"
+ },
+ {
+  "key": "seo2025",
+  "authors": [
+   "D. Seo",
+   "J. Kang"
+  ],
+  "title": "Dynamic-model-free vehicle velocity estimation using extended Kalman filter with IMU, steering angle, and wheel speed sensors",
+  "venue": "Measurement",
+  "volume": "242",
+  "number": "",
+  "pages": "115810",
+  "month": "January",
+  "year": "2025",
+  "doi": "10.1016/j.measurement.2024.115810",
+  "verified_url": "https://doi.org/10.1016/j.measurement.2024.115810"
+ },
+ {
+  "key": "isermann2005",
+  "authors": [
+   "R. Isermann"
+  ],
+  "title": "Model-based fault-detection and diagnosis: Status and applications",
+  "venue": "Annual Reviews in Control",
+  "volume": "29",
+  "number": "1",
+  "pages": "71-85",
+  "month": "",
+  "year": "2005",
+  "doi": "10.1016/j.arcontrol.2004.12.002",
+  "verified_url": "https://doi.org/10.1016/j.arcontrol.2004.12.002"
+ },
+ {
+  "key": "malhotra2015",
+  "authors": [
+   "P. Malhotra",
+   "L. Vig",
+   "G. Shroff",
+   "P. Agarwal"
+  ],
+  "title": "Long short term memory networks for anomaly detection in time series",
+  "venue": "Proceedings of the European Symposium on Artificial Neural Networks (ESANN)",
+  "volume": "",
+  "number": "",
+  "pages": "89-94",
+  "month": "April",
+  "year": "2015",
+  "doi": "",
+  "verified_url": "https://www.esann.org/sites/default/files/proceedings/legacy/es2015-56.pdf"
+ },
+ {
+  "key": "chandola2009",
+  "authors": [
+   "V. Chandola",
+   "A. Banerjee",
+   "V. Kumar"
+  ],
+  "title": "Anomaly detection: A survey",
+  "venue": "ACM Computing Surveys",
+  "volume": "41",
+  "number": "3",
+  "pages": "1-58",
+  "month": "July",
+  "year": "2009",
+  "doi": "10.1145/1541880.1541882",
+  "verified_url": "https://doi.org/10.1145/1541880.1541882"
+ },
+ {
+  "key": "inl2013leaf",
+  "authors": [
+   "Idaho National Laboratory and Intertek"
+  ],
+  "title": "2013 Nissan Leaf, advanced vehicle testing, baseline testing results",
+  "venue": "U.S. Department of Energy, Vehicle Technologies Program (technical report)",
+  "volume": "",
+  "number": "",
+  "pages": "",
+  "month": "",
+  "year": "",
+  "doi": "",
+  "verified_url": "from docs/ved-generalisation.md [L1]; not re-verified online"
+ }
+]
