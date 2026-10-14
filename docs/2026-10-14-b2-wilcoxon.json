@@ -1,0 +1,153 @@
+{
+ "source_manifest": "docs/2026-10-14-b2-manifest.json",
+ "condition_mean_d_pct": {
+  "driving_condition/urban": 0.6716806664201602,
+  "driving_condition/highway": 0.3028899258009791,
+  "driving_condition/aggressive_mixed": 0.2925067294202499,
+  "road_grade/uphill": 0.08685812526836312,
+  "road_grade/downhill": 6.419717580747575,
+  "battery_state/high": 0.5937810929578236,
+  "battery_state/medium": 0.4179308120592677,
+  "battery_state/low": 0.26115596533395163,
+  "sensor_noise/elevated": 0.9723678106506576,
+  "sensor_noise/severe": 4.658504592336832,
+  "driver_aggression/brisk": 0.4248313148638679,
+  "driver_aggression/aggressive": 0.5791876194379597
+ },
+ "n_conditions": 12,
+ "positive_conditions": 12,
+ "median_d_pct": 0.5020094671509138,
+ "mean_d_pct": 1.306784352941474,
+ "wilcoxon_exact": {
+  "n_nonzero": 12,
+  "w_plus": 78.0,
+  "w_minus": 0,
+  "T": 0,
+  "p_two_sided": 0.00048828125
+ },
+ "verdict": "learned policy used more energy",
+ "verdict_rule": "two-sided exact Wilcoxon p < 0.05 and positive median -> learned used more; otherwise no measurable difference (not equivalence)",
+ "per_offset": {
+  "0": {
+   "median_d_pct": 0.2571653743589697,
+   "mean_d_pct": 1.0827023669321645,
+   "positive": 11,
+   "wilcoxon_exact": {
+    "n_nonzero": 12,
+    "w_plus": 77.0,
+    "w_minus": 1.0,
+    "T": 1.0,
+    "p_two_sided": 0.0009765625
+   }
+  },
+  "100": {
+   "median_d_pct": 0.6549629078188679,
+   "mean_d_pct": 1.4459293809069351,
+   "positive": 12,
+   "wilcoxon_exact": {
+    "n_nonzero": 12,
+    "w_plus": 78.0,
+    "w_minus": 0,
+    "T": 0,
+    "p_two_sided": 0.00048828125
+   }
+  },
+  "200": {
+   "median_d_pct": 0.512420260752966,
+   "mean_d_pct": 1.3917213109853221,
+   "positive": 12,
+   "wilcoxon_exact": {
+    "n_nonzero": 12,
+    "w_plus": 78.0,
+    "w_minus": 0,
+    "T": 0,
+    "p_two_sided": 0.00048828125
+   }
+  }
+ },
+ "per_pair_d_pct_range": [
+  -0.017938107033943496,
+  6.843931380482515
+ ],
+ "condition_spread_d_pct": {
+  "driving_condition/urban": [
+   0.5807758261607621,
+   0.7386520909580252
+  ],
+  "driving_condition/highway": [
+   0.2861948441603257,
+   0.3305760932358126
+  ],
+  "driving_condition/aggressive_mixed": [
+   0.03488197758196865,
+   0.4440646953451699
+  ],
+  "road_grade/uphill": [
+   -0.017938107033943496,
+   0.1619163480399033
+  ],
+  "road_grade/downhill": [
+   5.707393668966709,
+   6.843931380482515
+  ],
+  "battery_state/high": [
+   0.22813590455761368,
+   1.2486703362445617
+  ],
+  "battery_state/medium": [
+   0.09510877490104264,
+   0.82709417639939
+  ],
+  "battery_state/low": [
+   0.20576007689396825,
+   0.3300305356214617
+  ],
+  "sensor_noise/elevated": [
+   0.7453815920895224,
+   1.3494978502346378
+  ],
+  "sensor_noise/severe": [
+   4.451204534366249,
+   4.996966027513761
+  ],
+  "driver_aggression/brisk": [
+   0.023593304523106262,
+   1.1413858063845428
+  ],
+  "driver_aggression/aggressive": [
+   0.1378531133622518,
+   1.0284360202719167
+  ]
+ },
+ "tracking_rmse_mps_mean": {
+  "rule": {
+   "driving_condition/urban": 0.015961899031482863,
+   "driving_condition/highway": 0.003928594349970385,
+   "driving_condition/aggressive_mixed": 0.028238952905668004,
+   "road_grade/uphill": 0.020523589544655035,
+   "road_grade/downhill": 0.0174784398486739,
+   "battery_state/high": 0.024912081790677575,
+   "battery_state/medium": 0.02747102309162355,
+   "battery_state/low": 0.025924987045013018,
+   "sensor_noise/elevated": 0.02790457940899259,
+   "sensor_noise/severe": 0.03842922363388812,
+   "driver_aggression/brisk": 0.042517757621400816,
+   "driver_aggression/aggressive": 0.08780937307975811
+  },
+  "actor": {
+   "driving_condition/urban": 0.01521001196301095,
+   "driving_condition/highway": 0.004952068635706301,
+   "driving_condition/aggressive_mixed": 0.22632743887154722,
+   "road_grade/uphill": 0.23805374192815237,
+   "road_grade/downhill": 0.19419153356860322,
+   "battery_state/high": 0.23813160541470352,
+   "battery_state/medium": 0.19421720647448293,
+   "battery_state/low": 0.16883465808469916,
+   "sensor_noise/elevated": 0.22183554807780884,
+   "sensor_noise/severe": 0.1910154926479283,
+   "driver_aggression/brisk": 0.3312366785458517,
+   "driver_aggression/aggressive": 0.5087037165785352
+  }
+ },
+ "note": "fixed scenario panel; seeds replay only the noise draw; not a fleet-population result"
+}

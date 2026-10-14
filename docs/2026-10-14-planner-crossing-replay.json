@@ -1,0 +1,386 @@
+{
+ "provenance": "SIMULATED on the host; frozen-price replay, no retraining, no bisection",
+ "head": "befecb801fdb2db49ca6e3bf917a497752acf94a",
+ "tree": "82f80ffd9d9909c294ebcf8f204d725e8030c223",
+ "blobs": {
+  "src/evpil/plan/planner.py": "039d29b985b521962aed46d4d520f4f3f3db4c74",
+  "src/evpil/plan/learned.py": "5a06463cb177ed96bdc3f23bc51197d03d1d970c",
+  "src/evpil/plan/route.py": "98e34a7a737ae866eafe4ce31835ea13acc8293c",
+  "src/evpil/control/sim.py": "7436dc7862955f582e506340a5230779595d7541",
+  "src/evpil/plant/plant.py": "595cb15843a114f24797ed4f47a4166cccddf5e2",
+  "src/evpil/control/rule_ems.py": "a34e6ba2f713def71c3f68faa00d399ec2d899ec",
+  "src/evpil/control/cycles.py": "4196c51d886454cc77aee2159577a950d5b99952",
+  "scripts/run_energy_planner.py": "7e5599225be51dcbb2e66a542a6e5af17d207ffb",
+  "data/i3_params.json": "622e6d60680b5acd6a333e60427b3c57b9fe76d1",
+  "models/planner/terminal_cost.npz": "a4300e8cbf9d23841860516fc0a8e8656255a291",
+  "models/planner/student.npz": "8b3ba058396ac01c2af3d42fccea8dc5e051c020",
+  "models/planner/training.json": "cf1b042b5bfc4c1207d88a2c8f7cb833b20720f9"
+ },
+ "sha256": {
+  "src/evpil/plan/planner.py": "37cee1312523df340cde0fa4c1909010911fde2e5b7998c52d20cf3fd1e79805",
+  "src/evpil/plan/learned.py": "4ea26cc246a0323f48999a84d0d9d8f11f11f103a78d82de928815aff3b8ae8e",
+  "src/evpil/plan/route.py": "304835134352c18470332682db624e2553979a8ee5506e9382e07f2765f321e7",
+  "src/evpil/control/sim.py": "022a8d61042c6afe37cf9d30e5701266a6029fc2defba68131992bf3855f5b59",
+  "src/evpil/plant/plant.py": "462e34a5b33a3d228a25c6f276815520a6fcd4a5d66d3042b0ec63d87ebe7bf4",
+  "src/evpil/control/rule_ems.py": "8688aaf6043239fa7ec951d034a9e7b887894ca6ab24aa86e71e591f0b2bb062",
+  "src/evpil/control/cycles.py": "07132f23774330a558c1bf4c79e5818df7cfadc6b7fabbf7cdce1b1af6bc9897",
+  "scripts/run_energy_planner.py": "0829660477f9bf7804355947b4adff8b23e21a5bd012dce5cac99339932f5dcf",
+  "data/i3_params.json": "e8eebad4b92eba008cc1f62bc2a5f4bbc51d307dd76eeb2a93ac1914c2f18ae0",
+  "models/planner/terminal_cost.npz": "f20bd32335e5651e611038d4affc347f8ec6387362bfaf5e3e7ae479852795b4",
+  "models/planner/student.npz": "eddc1cf9b02d70a8ef2ede37745c5b7bee006ff92e84b407852da27d37611095",
+  "models/planner/training.json": "d1b0f8cd0ee263126f954e8d32c53a71643dfae156c51487187c59b55497c82d"
+ },
+ "stored_table": "docs/week13-energy-planner.json",
+ "stored_table_sha256": "a10c35f6c3600b8bdff0eea16b5f05a3a545e101f79d3267a1ce6043bbe8b344",
+ "stored_commit_field": "fe48fb3",
+ "task_config": "dcc91be7d65af373",
+ "tolerances": {
+  "equivalent_wh_per_km_rel": 1e-06,
+  "distance_km_abs": 1e-09,
+  "arrival_s_abs": 1e-06
+ },
+ "routes": {
+  "us06": {
+   "duration_s": 600.1,
+   "distance_m": 12890.0,
+   "arrival_tolerance_s": 6.001,
+   "arms": {
+    "classical": {
+     "price_on_time_w": 12656.25,
+     "profile_sha256": "3a916533a21b4c7ef7203dffb5fd1f5558e4fcf63164dfcb51442a06af3ec0dc",
+     "planned_time_s": 598.9227827715629,
+     "reference_cycle_duration_s": 600.1,
+     "trace_duration_s": 599.9300000000001,
+     "route_endpoint_m": 12890.0,
+     "distance_km": 12.890036814521569,
+     "endpoint_distance_tolerance_m": 128.9,
+     "equivalent_wh_per_km": 170.57673635473722,
+     "energy_wh": 2198.7404113135026,
+     "aux_shed_wh": 0.0,
+     "reconstruction_check": {
+      "distance_m": 12890.036814524914,
+      "distance_err_m": 3.34512151312083e-09,
+      "energy_wh": 2198.7404113124335,
+      "energy_err_wh": -1.0691110219340771e-09
+     },
+     "crossing": {
+      "crossed": true,
+      "interval": 59268,
+      "fraction": 0.05948957848964576,
+      "crossing_time_s": 592.6805948957849,
+      "energy_to_crossing_wh": 2195.3451540200977,
+      "aux_shed_to_crossing_wh": 0.0,
+      "final_distance_m": 12890.036814521569
+     },
+     "planned_node_profile_diagnostics": {
+      "over_limit_nodes": 0,
+      "missed_stops": 0,
+      "over_accel_segments": 0,
+      "over_brake_segments": 0,
+      "late_or_early_s": 0.0
+     },
+     "stored": {
+      "equivalent_wh_per_km": 170.57673635473722,
+      "distance_km": 12.890036814521569,
+      "arrival_s": 598.9227827715629
+     },
+     "label": "frozen-snapshot reproduction"
+    },
+    "classical_short": {
+     "price_on_time_w": 50468.75,
+     "profile_sha256": "20d95f48c7094e02499df26c454833837e4f3af206e4562092c4f1150e8a2d6e",
+     "planned_time_s": 596.594706676485,
+     "reference_cycle_duration_s": 600.1,
+     "trace_duration_s": 597.6,
+     "route_endpoint_m": 12890.0,
+     "distance_km": 12.890036035815221,
+     "endpoint_distance_tolerance_m": 128.9,
+     "equivalent_wh_per_km": 172.44199482980832,
+     "energy_wh": 2222.7835274440913,
+     "aux_shed_wh": 0.0,
+     "reconstruction_check": {
+      "distance_m": 12890.036035808764,
+      "distance_err_m": -6.4574123825877905e-09,
+      "energy_wh": 2222.783527443029,
+      "energy_err_wh": -1.0622898116707802e-09
+     },
+     "crossing": {
+      "crossed": true,
+      "interval": 59035,
+      "fraction": 0.44612415214670453,
+      "crossing_time_s": 590.3544612415214,
+      "energy_to_crossing_wh": 2219.3900801135937,
+      "aux_shed_to_crossing_wh": 0.0,
+      "final_distance_m": 12890.036035815221
+     },
+     "planned_node_profile_diagnostics": {
+      "over_limit_nodes": 0,
+      "missed_stops": 0,
+      "over_accel_segments": 0,
+      "over_brake_segments": 0,
+      "late_or_early_s": 0.0
+     },
+     "stored": {
+      "equivalent_wh_per_km": 172.44199482980832,
+      "distance_km": 12.890036035815221,
+      "arrival_s": 596.594706676485
+     },
+     "label": "frozen-snapshot reproduction"
+    },
+    "terminal_cost": {
+     "price_on_time_w": 21679.6875,
+     "profile_sha256": "9ededf8bd6c42ca9088b2262980c8b47d2857800a350e39a9a5f57f96577b6d3",
+     "planned_time_s": 602.865501715877,
+     "reference_cycle_duration_s": 600.1,
+     "trace_duration_s": 603.87,
+     "route_endpoint_m": 12890.0,
+     "distance_km": 12.890036190321625,
+     "endpoint_distance_tolerance_m": 128.9,
+     "equivalent_wh_per_km": 170.64890208496288,
+     "energy_wh": 2199.670523713823,
+     "aux_shed_wh": 0.0,
+     "reconstruction_check": {
+      "distance_m": 12890.036190328392,
+      "distance_err_m": 6.766640581190586e-09,
+      "energy_wh": 2199.6705237142532,
+      "energy_err_wh": 4.3019099393859506e-10
+     },
+     "crossing": {
+      "crossed": true,
+      "interval": 59662,
+      "fraction": 0.4849508185453601,
+      "crossing_time_s": 596.6248495081854,
+      "energy_to_crossing_wh": 2196.2770754873522,
+      "aux_shed_to_crossing_wh": 0.0,
+      "final_distance_m": 12890.036190321625
+     },
+     "planned_node_profile_diagnostics": {
+      "over_limit_nodes": 0,
+      "missed_stops": 0,
+      "over_accel_segments": 0,
+      "over_brake_segments": 0,
+      "late_or_early_s": 0.0
+     },
+     "stored": {
+      "equivalent_wh_per_km": 170.64890208496288,
+      "distance_km": 12.890036190321625,
+      "arrival_s": 602.865501715877
+     },
+     "label": "frozen-snapshot reproduction"
+    },
+    "student": {
+     "price_on_time_w": 55625.0,
+     "profile_sha256": "5d8fdb07500d0f0866a4989604fcb9f8da3e13be65a1bad372376444ecf64226",
+     "planned_time_s": 600.7644571922611,
+     "reference_cycle_duration_s": 600.1,
+     "trace_duration_s": 601.77,
+     "route_endpoint_m": 12890.0,
+     "distance_km": 12.890037235671793,
+     "endpoint_distance_tolerance_m": 128.9,
+     "equivalent_wh_per_km": 190.41353726486628,
+     "energy_wh": 2454.4375855201047,
+     "aux_shed_wh": 0.0,
+     "reconstruction_check": {
+      "distance_m": 12890.037235671696,
+      "distance_err_m": -9.640643838793039e-11,
+      "energy_wh": 2454.437585519941,
+      "energy_err_wh": -1.6370904631912708e-10
+     },
+     "crossing": {
+      "crossed": true,
+      "interval": 59452,
+      "fraction": 0.12039963750567424,
+      "crossing_time_s": 594.521203996375,
+      "energy_to_crossing_wh": 2451.0426274241963,
+      "aux_shed_to_crossing_wh": 0.0,
+      "final_distance_m": 12890.037235671793
+     },
+     "planned_node_profile_diagnostics": {
+      "over_limit_nodes": 0,
+      "missed_stops": 0,
+      "over_accel_segments": 0,
+      "over_brake_segments": 0,
+      "late_or_early_s": 0.0
+     },
+     "stored": {
+      "equivalent_wh_per_km": 190.41353726486628,
+      "distance_km": 12.890037235671793,
+      "arrival_s": 600.7644571922611
+     },
+     "label": "frozen-snapshot reproduction"
+    }
+   }
+  },
+  "hwfet": {
+   "duration_s": 765.1,
+   "distance_m": 16510.0,
+   "arrival_tolerance_s": 7.651000000000001,
+   "arms": {
+    "classical": {
+     "price_on_time_w": 9648.4375,
+     "profile_sha256": "8f9ee2cf8e520c6f092a5741eed9a40d7c84936baa13352787cbe89973320554",
+     "planned_time_s": 764.3868188098915,
+     "reference_cycle_duration_s": 765.1,
+     "trace_duration_s": 765.39,
+     "route_endpoint_m": 16510.0,
+     "distance_km": 16.510002743743915,
+     "endpoint_distance_tolerance_m": 165.1,
+     "equivalent_wh_per_km": 152.07048917703713,
+     "energy_wh": 2510.684193555362,
+     "aux_shed_wh": 0.0,
+     "reconstruction_check": {
+      "distance_m": 16510.002743739016,
+      "distance_err_m": -4.896719474345446e-09,
+      "energy_wh": 2510.68419355574,
+      "energy_err_wh": 3.778950485866517e-10
+     },
+     "crossing": {
+      "crossed": true,
+      "interval": 76218,
+      "fraction": 0.7224826195464064,
+      "crossing_time_s": 762.1872248261956,
+      "energy_to_crossing_wh": 2509.181662577423,
+      "aux_shed_to_crossing_wh": 0.0,
+      "final_distance_m": 16510.002743743913
+     },
+     "planned_node_profile_diagnostics": {
+      "over_limit_nodes": 0,
+      "missed_stops": 0,
+      "over_accel_segments": 0,
+      "over_brake_segments": 0,
+      "late_or_early_s": 0.0
+     },
+     "stored": {
+      "equivalent_wh_per_km": 152.07048917703713,
+      "distance_km": 16.510002743743915,
+      "arrival_s": 764.3868188098915
+     },
+     "label": "frozen-snapshot reproduction"
+    },
+    "classical_short": {
+     "price_on_time_w": 47460.9375,
+     "profile_sha256": "712585c0ab4feff15d4ef7177c1b91609ecaf67b190e583c3bd1e072ae287ed5",
+     "planned_time_s": 761.9159763569012,
+     "reference_cycle_duration_s": 765.1,
+     "trace_duration_s": 762.92,
+     "route_endpoint_m": 16510.0,
+     "distance_km": 16.51000271102078,
+     "endpoint_distance_tolerance_m": 165.1,
+     "equivalent_wh_per_km": 152.7037218327688,
+     "energy_wh": 2521.1388614419757,
+     "aux_shed_wh": 0.0,
+     "reconstruction_check": {
+      "distance_m": 16510.002711025503,
+      "distance_err_m": 4.725734470412135e-09,
+      "energy_wh": 2521.1388614432967,
+      "energy_err_wh": 1.3210410543251783e-09
+     },
+     "crossing": {
+      "crossed": true,
+      "interval": 75972,
+      "fraction": 0.553310868783731,
+      "crossing_time_s": 759.7255331086878,
+      "energy_to_crossing_wh": 2519.64022972419,
+      "aux_shed_to_crossing_wh": 0.0,
+      "final_distance_m": 16510.002711020777
+     },
+     "planned_node_profile_diagnostics": {
+      "over_limit_nodes": 0,
+      "missed_stops": 0,
+      "over_accel_segments": 0,
+      "over_brake_segments": 0,
+      "late_or_early_s": 0.0
+     },
+     "stored": {
+      "equivalent_wh_per_km": 152.7037218327688,
+      "distance_km": 16.51000271102078,
+      "arrival_s": 761.9159763569012
+     },
+     "label": "frozen-snapshot reproduction"
+    },
+    "terminal_cost": {
+     "price_on_time_w": 16093.75,
+     "profile_sha256": "6e5750739d735075eba3ac154681c99cd6404c2687b69b85c2ca6649da383556",
+     "planned_time_s": 764.769503722708,
+     "reference_cycle_duration_s": 765.1,
+     "trace_duration_s": 765.77,
+     "route_endpoint_m": 16510.0,
+     "distance_km": 16.510002707029976,
+     "endpoint_distance_tolerance_m": 165.1,
+     "equivalent_wh_per_km": 152.2769043241681,
+     "energy_wh": 2514.09210261016,
+     "aux_shed_wh": 0.0,
+     "reconstruction_check": {
+      "distance_m": 16510.002707034255,
+      "distance_err_m": 4.2782630771398544e-09,
+      "energy_wh": 2514.0921026105884,
+      "energy_err_wh": 4.283720045350492e-10
+     },
+     "crossing": {
+      "crossed": true,
+      "interval": 76256,
+      "fraction": 0.9790451948648881,
+      "crossing_time_s": 762.5697904519487,
+      "energy_to_crossing_wh": 2512.5907778761143,
+      "aux_shed_to_crossing_wh": 0.0,
+      "final_distance_m": 16510.002707029977
+     },
+     "planned_node_profile_diagnostics": {
+      "over_limit_nodes": 0,
+      "missed_stops": 0,
+      "over_accel_segments": 0,
+      "over_brake_segments": 0,
+      "late_or_early_s": 0.0
+     },
+     "stored": {
+      "equivalent_wh_per_km": 152.2769043241681,
+      "distance_km": 16.510002707029976,
+      "arrival_s": 764.769503722708
+     },
+     "label": "frozen-snapshot reproduction"
+    },
+    "student": {
+     "price_on_time_w": 21250.0,
+     "profile_sha256": "d45028e24c54d1999854872e3471c9afb8d5b0026d24c12a124a8788e48abab2",
+     "planned_time_s": 764.1655061113112,
+     "reference_cycle_duration_s": 765.1,
+     "trace_duration_s": 765.1700000000001,
+     "route_endpoint_m": 16510.0,
+     "distance_km": 16.510002760805357,
+     "endpoint_distance_tolerance_m": 165.1,
+     "equivalent_wh_per_km": 153.42383277840466,
+     "energy_wh": 2533.0279027448005,
+     "aux_shed_wh": 0.0,
+     "reconstruction_check": {
+      "distance_m": 16510.002760805502,
+      "distance_err_m": 1.4551915228366852e-10,
+      "energy_wh": 2533.027902744942,
+      "energy_err_wh": 1.4142642612569034e-10
+     },
+     "crossing": {
+      "crossed": true,
+      "interval": 76196,
+      "fraction": 0.5186291097715298,
+      "crossing_time_s": 761.9651862910978,
+      "energy_to_crossing_wh": 2531.5244149331525,
+      "aux_shed_to_crossing_wh": 0.0,
+      "final_distance_m": 16510.002760805357
+     },
+     "planned_node_profile_diagnostics": {
+      "over_limit_nodes": 0,
+      "missed_stops": 0,
+      "over_accel_segments": 0,
+      "over_brake_segments": 0,
+      "late_or_early_s": 0.0
+     },
+     "stored": {
+      "equivalent_wh_per_km": 153.42383277840466,
+      "distance_km": 16.510002760805357,
+      "arrival_s": 764.1655061113112
+     },
+     "label": "frozen-snapshot reproduction"
+    }
+   }
+  }
+ }
+}
