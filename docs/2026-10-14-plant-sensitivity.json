@@ -1,0 +1,106 @@
+{
+ "provenance": "SIMULATED on the host; plant varied, controllers keep the nominal model; plan item H3",
+ "actor": "data/actors-corrected/sac-without-forecast-seed3.npz",
+ "rows": [
+  {
+   "cycle": "us06",
+   "variant": "nominal",
+   "rule_wh_per_km": 190.46729466350823,
+   "learned_wh_per_km": 191.15703435427065,
+   "diff_pct": 0.3621302502253565
+  },
+  {
+   "cycle": "us06",
+   "variant": "c_rr published 0.00878",
+   "rule_wh_per_km": 150.0893728400468,
+   "learned_wh_per_km": 151.13787449356047,
+   "diff_pct": 0.6985848722488086
+  },
+  {
+   "cycle": "us06",
+   "variant": "rotational factor 0",
+   "rule_wh_per_km": 187.9038802266295,
+   "learned_wh_per_km": 188.51751687288592,
+   "diff_pct": 0.3265694383300266
+  },
+  {
+   "cycle": "us06",
+   "variant": "regen ceiling x0.8",
+   "rule_wh_per_km": 190.7116553969192,
+   "learned_wh_per_km": 191.39561537324047,
+   "diff_pct": 0.3586356454710504
+  },
+  {
+   "cycle": "us06",
+   "variant": "regen ceiling x1.2",
+   "rule_wh_per_km": 190.46729466350823,
+   "learned_wh_per_km": 191.15703435427065,
+   "diff_pct": 0.3621302502253565
+  },
+  {
+   "cycle": "us06",
+   "variant": "drivetrain eta -0.03",
+   "rule_wh_per_km": 198.67938772502706,
+   "learned_wh_per_km": 199.37681931473503,
+   "diff_pct": 0.3510336918660206
+  },
+  {
+   "cycle": "us06",
+   "variant": "drivetrain eta +0.03",
+   "rule_wh_per_km": 182.67786412934674,
+   "learned_wh_per_km": 183.3638063643591,
+   "diff_pct": 0.3754928043863348
+  },
+  {
+   "cycle": "hwfet",
+   "variant": "nominal",
+   "rule_wh_per_km": 153.90155013996434,
+   "learned_wh_per_km": 154.21469358450582,
+   "diff_pct": 0.20346997431583969
+  },
+  {
+   "cycle": "hwfet",
+   "variant": "c_rr published 0.00878",
+   "rule_wh_per_km": 112.33580321935185,
+   "learned_wh_per_km": 113.24461422295487,
+   "diff_pct": 0.8090127791479329
+  },
+  {
+   "cycle": "hwfet",
+   "variant": "rotational factor 0",
+   "rule_wh_per_km": 153.27537566889507,
+   "learned_wh_per_km": 153.46270860594373,
+   "diff_pct": 0.12221985183931139
+  },
+  {
+   "cycle": "hwfet",
+   "variant": "regen ceiling x0.8",
+   "rule_wh_per_km": 153.90155013996434,
+   "learned_wh_per_km": 154.21469358450582,
+   "diff_pct": 0.20346997431583969
+  },
+  {
+   "cycle": "hwfet",
+   "variant": "regen ceiling x1.2",
+   "rule_wh_per_km": 153.90155013996434,
+   "learned_wh_per_km": 154.21469358450582,
+   "diff_pct": 0.20346997431583969
+  },
+  {
+   "cycle": "hwfet",
+   "variant": "drivetrain eta -0.03",
+   "rule_wh_per_km": 158.72945419676634,
+   "learned_wh_per_km": 159.03021574721083,
+   "diff_pct": 0.18948061780119652
+  },
+  {
+   "cycle": "hwfet",
+   "variant": "drivetrain eta +0.03",
+   "rule_wh_per_km": 149.35225539441902,
+   "learned_wh_per_km": 149.677645175976,
+   "diff_pct": 0.21786733698643257
+  }
+ ],
+ "sign_unchanged": true,
+ "learned_higher_everywhere": true
+}

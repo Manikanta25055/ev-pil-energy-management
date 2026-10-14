@@ -1,0 +1,1941 @@
+{
+ "provenance": "logged BMW i3 trips, no fault in the data; B7 with tuned default settings; plan docs/2026-10-14-measurement-plan.md item H2",
+ "standstill_mps": 0.5,
+ "summary": {
+  "trips": 70,
+  "hours": 30.408972222222225,
+  "hz10": {
+   "alarms_counted": 30,
+   "alarms_per_hour": 0.9865509357161583,
+   "frozen_at_standstill": 196,
+   "by_test": {
+    "gross": 23,
+    "frozen": 196,
+    "mean": 0,
+    "step": 7
+   },
+   "flagged_share": 0.5904908255725159,
+   "trips_with_no_counted_alarm": 42,
+   "meets_registered_limit": true
+  },
+  "hz100": {
+   "alarms_counted": 492,
+   "alarms_per_hour": 16.179435345744995,
+   "frozen_at_standstill": 0,
+   "by_test": {
+    "gross": 2,
+    "frozen": 0,
+    "mean": 0,
+    "step": 490
+   },
+   "flagged_share": 0.7175653567158087,
+   "trips_with_no_counted_alarm": 0,
+   "meets_registered_limit": false
+  }
+ },
+ "rows": [
+  {
+   "trip": "TripA01",
+   "minutes": 16.815,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 2,
+    "by_test": {
+     "gross": 0,
+     "frozen": 2,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.7808721506442022
+   },
+   "hz100": {
+    "alarms_counted": 2,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 2
+    },
+    "flagged_share": 0.98020616513034
+   }
+  },
+  {
+   "trip": "TripA02",
+   "minutes": 23.548333333333336,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 1,
+     "frozen": 0,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.27905166312809626
+   },
+   "hz100": {
+    "alarms_counted": 3,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 3
+    },
+    "flagged_share": 0.6630263996036521
+   }
+  },
+  {
+   "trip": "TripA03",
+   "minutes": 11.175,
+   "dt_s": 0.10000000000000142,
+   "hz10": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 2,
+    "by_test": {
+     "gross": 1,
+     "frozen": 2,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.05010438413361169
+   },
+   "hz100": {
+    "alarms_counted": 9,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 9
+    },
+    "flagged_share": 0.9030872483221477
+   }
+  },
+  {
+   "trip": "TripA04",
+   "minutes": 6.871666666666667,
+   "dt_s": 0.09999999999999432,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.0
+   },
+   "hz100": {
+    "alarms_counted": 2,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 2
+    },
+    "flagged_share": 0.002425418384671356
+   }
+  },
+  {
+   "trip": "TripA05",
+   "minutes": 22.776666666666664,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 1
+    },
+    "flagged_share": 0.9292456281554109
+   },
+   "hz100": {
+    "alarms_counted": 17,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 17
+    },
+    "flagged_share": 0.6392141080052686
+   }
+  },
+  {
+   "trip": "TripA06",
+   "minutes": 52.74,
+   "dt_s": 0.09999999999990905,
+   "hz10": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 9,
+    "by_test": {
+     "gross": 1,
+     "frozen": 9,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.08212987833781007
+   },
+   "hz100": {
+    "alarms_counted": 7,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 7
+    },
+    "flagged_share": 0.9713310580204778
+   }
+  },
+  {
+   "trip": "TripA07",
+   "minutes": 34.88666666666666,
+   "dt_s": 0.10000000000000142,
+   "hz10": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 2,
+    "by_test": {
+     "gross": 1,
+     "frozen": 2,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.03138585009315435
+   },
+   "hz100": {
+    "alarms_counted": 9,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 9
+    },
+    "flagged_share": 0.13839098031721767
+   }
+  },
+  {
+   "trip": "TripA08",
+   "minutes": 46.763333333333335,
+   "dt_s": 0.0999999999999659,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 16,
+    "by_test": {
+     "gross": 0,
+     "frozen": 16,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.5955308457179515
+   },
+   "hz100": {
+    "alarms_counted": 23,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 23
+    },
+    "flagged_share": 0.28868415425190674
+   }
+  },
+  {
+   "trip": "TripA09",
+   "minutes": 30.571666666666665,
+   "dt_s": 0.10000000000000853,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 6,
+    "by_test": {
+     "gross": 0,
+     "frozen": 6,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.7170737025730484
+   },
+   "hz100": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 1
+    },
+    "flagged_share": 0.960404513983536
+   }
+  },
+  {
+   "trip": "TripA10",
+   "minutes": 23.625,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 1
+    },
+    "flagged_share": 0.991676072234763
+   },
+   "hz100": {
+    "alarms_counted": 7,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 7
+    },
+    "flagged_share": 0.9758377425044091
+   }
+  },
+  {
+   "trip": "TripA11",
+   "minutes": 23.740000000000002,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 1,
+    "by_test": {
+     "gross": 0,
+     "frozen": 1,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.887048087048087
+   },
+   "hz100": {
+    "alarms_counted": 8,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 8
+    },
+    "flagged_share": 0.9299705139005897
+   }
+  },
+  {
+   "trip": "TripA12",
+   "minutes": 27.305,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 8,
+    "by_test": {
+     "gross": 0,
+     "frozen": 8,
+     "mean": 0,
+     "step": 1
+    },
+    "flagged_share": 0.220703125
+   },
+   "hz100": {
+    "alarms_counted": 4,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 4
+    },
+    "flagged_share": 0.994353903436489
+   }
+  },
+  {
+   "trip": "TripA13",
+   "minutes": 11.931666666666667,
+   "dt_s": 0.10000000000000853,
+   "hz10": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 3,
+    "by_test": {
+     "gross": 1,
+     "frozen": 3,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.3800279329608939
+   },
+   "hz100": {
+    "alarms_counted": 10,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 10
+    },
+    "flagged_share": 0.3447688224612376
+   }
+  },
+  {
+   "trip": "TripA14",
+   "minutes": 11.575,
+   "dt_s": 0.10000000000000853,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 5,
+    "by_test": {
+     "gross": 0,
+     "frozen": 5,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.04650158364526346
+   },
+   "hz100": {
+    "alarms_counted": 2,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 2
+    },
+    "flagged_share": 0.9852411807055436
+   }
+  },
+  {
+   "trip": "TripA15",
+   "minutes": 37.245,
+   "dt_s": 0.09999999999999787,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 4,
+    "by_test": {
+     "gross": 0,
+     "frozen": 4,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.39855915518167173
+   },
+   "hz100": {
+    "alarms_counted": 4,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 4
+    },
+    "flagged_share": 0.9522799480914664
+   }
+  },
+  {
+   "trip": "TripA16",
+   "minutes": 31.775,
+   "dt_s": 0.10000000000000853,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 6,
+    "by_test": {
+     "gross": 0,
+     "frozen": 6,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.09718871289205916
+   },
+   "hz100": {
+    "alarms_counted": 17,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 17
+    },
+    "flagged_share": 0.13837922895357985
+   }
+  },
+  {
+   "trip": "TripA17",
+   "minutes": 11.143333333333334,
+   "dt_s": 0.10000000000000142,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 2,
+    "by_test": {
+     "gross": 0,
+     "frozen": 2,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.0465081501420667
+   },
+   "hz100": {
+    "alarms_counted": 14,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 14
+    },
+    "flagged_share": 0.018157343703260543
+   }
+  },
+  {
+   "trip": "TripA18",
+   "minutes": 14.678333333333335,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 4,
+    "by_test": {
+     "gross": 0,
+     "frozen": 4,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.4036103542234332
+   },
+   "hz100": {
+    "alarms_counted": 16,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 16
+    },
+    "flagged_share": 0.31836039514022935
+   }
+  },
+  {
+   "trip": "TripA19",
+   "minutes": 26.458333333333332,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 1,
+    "by_test": {
+     "gross": 0,
+     "frozen": 1,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.9196900982615268
+   },
+   "hz100": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 1
+    },
+    "flagged_share": 0.9829732283464567
+   }
+  },
+  {
+   "trip": "TripA20",
+   "minutes": 28.658333333333335,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 10,
+    "by_test": {
+     "gross": 0,
+     "frozen": 10,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.13270528029774367
+   },
+   "hz100": {
+    "alarms_counted": 4,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 4
+    },
+    "flagged_share": 0.8453620238441407
+   }
+  },
+  {
+   "trip": "TripA21",
+   "minutes": 33.04666666666667,
+   "dt_s": 0.10000000000000853,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 1,
+    "by_test": {
+     "gross": 0,
+     "frozen": 1,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.9947551565888345
+   },
+   "hz100": {
+    "alarms_counted": 3,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 3
+    },
+    "flagged_share": 0.9983356869074037
+   }
+  },
+  {
+   "trip": "TripA22",
+   "minutes": 30.645,
+   "dt_s": 0.10000000000000853,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 3,
+    "by_test": {
+     "gross": 0,
+     "frozen": 3,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.9019469219055906
+   },
+   "hz100": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 1
+    },
+    "flagged_share": 0.9925327677163213
+   }
+  },
+  {
+   "trip": "TripA23",
+   "minutes": 17.375,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 1
+    },
+    "flagged_share": 0.7298100901592174
+   },
+   "hz100": {
+    "alarms_counted": 7,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 7
+    },
+    "flagged_share": 0.8187625899280575
+   }
+  },
+  {
+   "trip": "TripA24",
+   "minutes": 8.868333333333334,
+   "dt_s": 0.09999999999999964,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 2,
+    "by_test": {
+     "gross": 0,
+     "frozen": 2,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.012589252160841788
+   },
+   "hz100": {
+    "alarms_counted": 2,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 2
+    },
+    "flagged_share": 0.0020109002067280586
+   }
+  },
+  {
+   "trip": "TripA25",
+   "minutes": 12.71,
+   "dt_s": 0.10000000000000853,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 3,
+    "by_test": {
+     "gross": 0,
+     "frozen": 3,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.10017044709584372
+   },
+   "hz100": {
+    "alarms_counted": 16,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 16
+    },
+    "flagged_share": 0.11068712300026226
+   }
+  },
+  {
+   "trip": "TripA26",
+   "minutes": 26.868333333333332,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 2,
+    "by_test": {
+     "gross": 0,
+     "frozen": 2,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.885187941942687
+   },
+   "hz100": {
+    "alarms_counted": 2,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 2
+    },
+    "flagged_share": 0.9935239749395198
+   }
+  },
+  {
+   "trip": "TripA27",
+   "minutes": 33.34,
+   "dt_s": 0.10000000000000853,
+   "hz10": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 4,
+    "by_test": {
+     "gross": 1,
+     "frozen": 4,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.9167708072981755
+   },
+   "hz100": {
+    "alarms_counted": 7,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 7
+    },
+    "flagged_share": 0.765876824635073
+   }
+  },
+  {
+   "trip": "TripA28",
+   "minutes": 29.058333333333334,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 5,
+    "by_test": {
+     "gross": 0,
+     "frozen": 5,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.07169075476026611
+   },
+   "hz100": {
+    "alarms_counted": 3,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 3
+    },
+    "flagged_share": 0.9287639804989962
+   }
+  },
+  {
+   "trip": "TripA29",
+   "minutes": 22.315,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 1,
+     "frozen": 0,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.9324122479462286
+   },
+   "hz100": {
+    "alarms_counted": 4,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 4
+    },
+    "flagged_share": 0.8990888042422884
+   }
+  },
+  {
+   "trip": "TripA30",
+   "minutes": 23.288333333333334,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 1,
+     "frozen": 0,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.9860455130957493
+   },
+   "hz100": {
+    "alarms_counted": 3,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 3
+    },
+    "flagged_share": 0.9940170328490661
+   }
+  },
+  {
+   "trip": "TripA31",
+   "minutes": 19.78166666666667,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 1
+    },
+    "flagged_share": 0.8904802021903959
+   },
+   "hz100": {
+    "alarms_counted": 11,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 11
+    },
+    "flagged_share": 0.7289914904372735
+   }
+  },
+  {
+   "trip": "TripA32",
+   "minutes": 27.868333333333332,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 1,
+    "by_test": {
+     "gross": 0,
+     "frozen": 1,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.9878603037914125
+   },
+   "hz100": {
+    "alarms_counted": 2,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 2
+    },
+    "flagged_share": 0.9904730578314694
+   }
+  },
+  {
+   "trip": "TripB01",
+   "minutes": 54.195,
+   "dt_s": 0.09999999999990905,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 4,
+    "by_test": {
+     "gross": 0,
+     "frozen": 4,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.6794390798942125
+   },
+   "hz100": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 1
+    },
+    "flagged_share": 0.9908509395085647
+   }
+  },
+  {
+   "trip": "TripB02",
+   "minutes": 26.853333333333335,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 1,
+     "frozen": 0,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.9755476944082417
+   },
+   "hz100": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 1,
+     "frozen": 0,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.975651688182721
+   }
+  },
+  {
+   "trip": "TripB03",
+   "minutes": 26.321666666666665,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 6,
+    "by_test": {
+     "gross": 0,
+     "frozen": 6,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.506268203115107
+   },
+   "hz100": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 1
+    },
+    "flagged_share": 0.9401127081618439
+   }
+  },
+  {
+   "trip": "TripB04",
+   "minutes": 49.248333333333335,
+   "dt_s": 0.0999999999999659,
+   "hz10": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 1,
+     "frozen": 0,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.7040947546531303
+   },
+   "hz100": {
+    "alarms_counted": 2,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 2
+    },
+    "flagged_share": 0.9769806084808285
+   }
+  },
+  {
+   "trip": "TripB05",
+   "minutes": 16.99,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 1,
+    "by_test": {
+     "gross": 0,
+     "frozen": 1,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.9138793526238352
+   },
+   "hz100": {
+    "alarms_counted": 4,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 4
+    },
+    "flagged_share": 0.9287227781047676
+   }
+  },
+  {
+   "trip": "TripB06",
+   "minutes": 22.533333333333335,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 4,
+    "by_test": {
+     "gross": 0,
+     "frozen": 4,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.1934028548184306
+   },
+   "hz100": {
+    "alarms_counted": 2,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 2
+    },
+    "flagged_share": 0.9576775147928994
+   }
+  },
+  {
+   "trip": "TripB07",
+   "minutes": 38.163333333333334,
+   "dt_s": 0.09999999999999432,
+   "hz10": {
+    "alarms_counted": 2,
+    "frozen_at_standstill": 4,
+    "by_test": {
+     "gross": 2,
+     "frozen": 4,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.2595309838857592
+   },
+   "hz100": {
+    "alarms_counted": 4,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 4
+    },
+    "flagged_share": 0.9761463883308585
+   }
+  },
+  {
+   "trip": "TripB08",
+   "minutes": 48.565000000000005,
+   "dt_s": 0.0999999999999659,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 3,
+    "by_test": {
+     "gross": 0,
+     "frozen": 3,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.34238160603980783
+   },
+   "hz100": {
+    "alarms_counted": 3,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 3
+    },
+    "flagged_share": 0.971570747108686
+   }
+  },
+  {
+   "trip": "TripB09",
+   "minutes": 93.50166666666668,
+   "dt_s": 0.09999999999990905,
+   "hz10": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 1,
+    "by_test": {
+     "gross": 1,
+     "frozen": 1,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.9889843499340487
+   },
+   "hz100": {
+    "alarms_counted": 5,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 5
+    },
+    "flagged_share": 0.9877399689845101
+   }
+  },
+  {
+   "trip": "TripB10",
+   "minutes": 33.72,
+   "dt_s": 0.10000000000000853,
+   "hz10": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 1,
+    "by_test": {
+     "gross": 1,
+     "frozen": 1,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.013739929817624673
+   },
+   "hz100": {
+    "alarms_counted": 12,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 12
+    },
+    "flagged_share": 0.41405199683669436
+   }
+  },
+  {
+   "trip": "TripB11",
+   "minutes": 12.555,
+   "dt_s": 0.10000000000000853,
+   "hz10": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 1,
+     "frozen": 0,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.7924077515264136
+   },
+   "hz100": {
+    "alarms_counted": 4,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 1,
+     "frozen": 0,
+     "mean": 0,
+     "step": 3
+    },
+    "flagged_share": 0.8005177220230983
+   }
+  },
+  {
+   "trip": "TripB12",
+   "minutes": 53.75833333333333,
+   "dt_s": 0.09999999999990905,
+   "hz10": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 7,
+    "by_test": {
+     "gross": 1,
+     "frozen": 7,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.09700520833333333
+   },
+   "hz100": {
+    "alarms_counted": 2,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 2
+    },
+    "flagged_share": 0.13151139358239033
+   }
+  },
+  {
+   "trip": "TripB13",
+   "minutes": 5.906666666666666,
+   "dt_s": 0.09999999999999432,
+   "hz10": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 1,
+     "frozen": 0,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.8674188998589563
+   },
+   "hz100": {
+    "alarms_counted": 2,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 2
+    },
+    "flagged_share": 0.7410553047404064
+   }
+  },
+  {
+   "trip": "TripB14",
+   "minutes": 63.69833333333334,
+   "dt_s": 0.09999999999990905,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 1,
+    "by_test": {
+     "gross": 0,
+     "frozen": 1,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.9447148090005233
+   },
+   "hz100": {
+    "alarms_counted": 10,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 10
+    },
+    "flagged_share": 0.6942672492739214
+   }
+  },
+  {
+   "trip": "TripB15",
+   "minutes": 30.37,
+   "dt_s": 0.10000000000000853,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 4,
+    "by_test": {
+     "gross": 0,
+     "frozen": 4,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.7545409647149207
+   },
+   "hz100": {
+    "alarms_counted": 26,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 26
+    },
+    "flagged_share": 0.01299528043024915
+   }
+  },
+  {
+   "trip": "TripB16",
+   "minutes": 25.475,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 2,
+    "by_test": {
+     "gross": 0,
+     "frozen": 2,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.8367787517990318
+   },
+   "hz100": {
+    "alarms_counted": 17,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 17
+    },
+    "flagged_share": 0.39829898593392216
+   }
+  },
+  {
+   "trip": "TripB17",
+   "minutes": 26.015,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 1,
+    "by_test": {
+     "gross": 0,
+     "frozen": 1,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.9914798206278027
+   },
+   "hz100": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 1
+    },
+    "flagged_share": 0.9924786981869435
+   }
+  },
+  {
+   "trip": "TripB18",
+   "minutes": 18.490000000000002,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 7,
+    "by_test": {
+     "gross": 1,
+     "frozen": 7,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.16665164488508338
+   },
+   "hz100": {
+    "alarms_counted": 5,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 5
+    },
+    "flagged_share": 0.9371912745628268
+   }
+  },
+  {
+   "trip": "TripB19",
+   "minutes": 19.85,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 1,
+    "by_test": {
+     "gross": 0,
+     "frozen": 1,
+     "mean": 0,
+     "step": 1
+    },
+    "flagged_share": 0.8504743514398455
+   },
+   "hz100": {
+    "alarms_counted": 9,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 9
+    },
+    "flagged_share": 0.37750629722921913
+   }
+  },
+  {
+   "trip": "TripB20",
+   "minutes": 23.38,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 6,
+    "by_test": {
+     "gross": 0,
+     "frozen": 6,
+     "mean": 0,
+     "step": 1
+    },
+    "flagged_share": 0.8243638178059733
+   },
+   "hz100": {
+    "alarms_counted": 4,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 4
+    },
+    "flagged_share": 0.9701169090390648
+   }
+  },
+  {
+   "trip": "TripB21",
+   "minutes": 17.326666666666664,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 2,
+    "by_test": {
+     "gross": 0,
+     "frozen": 2,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.7486775031259018
+   },
+   "hz100": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 1
+    },
+    "flagged_share": 0.9004809542131589
+   }
+  },
+  {
+   "trip": "TripB22",
+   "minutes": 19.986666666666668,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 1,
+    "by_test": {
+     "gross": 0,
+     "frozen": 1,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.8686733928124739
+   },
+   "hz100": {
+    "alarms_counted": 4,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 4
+    },
+    "flagged_share": 0.9477735156771181
+   }
+  },
+  {
+   "trip": "TripB23",
+   "minutes": 18.553333333333335,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 2,
+    "frozen_at_standstill": 2,
+    "by_test": {
+     "gross": 2,
+     "frozen": 2,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.1293451899757478
+   },
+   "hz100": {
+    "alarms_counted": 3,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 3
+    },
+    "flagged_share": 0.2654329859863457
+   }
+  },
+  {
+   "trip": "TripB24",
+   "minutes": 16.298333333333332,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 2,
+    "by_test": {
+     "gross": 0,
+     "frozen": 2,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.9547034764826176
+   },
+   "hz100": {
+    "alarms_counted": 7,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 7
+    },
+    "flagged_share": 0.7774414561816136
+   }
+  },
+  {
+   "trip": "TripB25",
+   "minutes": 17.029999999999998,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 4,
+    "by_test": {
+     "gross": 1,
+     "frozen": 4,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.35727566298072216
+   },
+   "hz100": {
+    "alarms_counted": 5,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 5
+    },
+    "flagged_share": 0.38833431199843416
+   }
+  },
+  {
+   "trip": "TripB26",
+   "minutes": 13.415,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 1,
+     "frozen": 0,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.9591304347826087
+   },
+   "hz100": {
+    "alarms_counted": 3,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 3
+    },
+    "flagged_share": 0.9571748043235184
+   }
+  },
+  {
+   "trip": "TripB27",
+   "minutes": 24.48166666666667,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 7,
+    "by_test": {
+     "gross": 0,
+     "frozen": 7,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.35180394826412525
+   },
+   "hz100": {
+    "alarms_counted": 28,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 28
+    },
+    "flagged_share": 0.0545374089454694
+   }
+  },
+  {
+   "trip": "TripB28",
+   "minutes": 22.773333333333333,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 4,
+    "by_test": {
+     "gross": 0,
+     "frozen": 4,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.1711672155140871
+   },
+   "hz100": {
+    "alarms_counted": 14,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 14
+    },
+    "flagged_share": 0.6148053278688524
+   }
+  },
+  {
+   "trip": "TripB29",
+   "minutes": 16.141666666666666,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 3,
+    "by_test": {
+     "gross": 0,
+     "frozen": 3,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.3249019202973364
+   },
+   "hz100": {
+    "alarms_counted": 2,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 2
+    },
+    "flagged_share": 0.9522560660815694
+   }
+  },
+  {
+   "trip": "TripB30",
+   "minutes": 15.346666666666666,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 2,
+    "by_test": {
+     "gross": 0,
+     "frozen": 2,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.8973829948962971
+   },
+   "hz100": {
+    "alarms_counted": 7,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 7
+    },
+    "flagged_share": 0.9093397046046916
+   }
+  },
+  {
+   "trip": "TripB31",
+   "minutes": 18.279999999999998,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 3,
+    "by_test": {
+     "gross": 1,
+     "frozen": 3,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.07694411523384083
+   },
+   "hz100": {
+    "alarms_counted": 21,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 21
+    },
+    "flagged_share": 0.035858862144420134
+   }
+  },
+  {
+   "trip": "TripB32",
+   "minutes": 13.261666666666667,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 1,
+    "by_test": {
+     "gross": 0,
+     "frozen": 1,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.9576526765518975
+   },
+   "hz100": {
+    "alarms_counted": 5,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 5
+    },
+    "flagged_share": 0.3488626366721126
+   }
+  },
+  {
+   "trip": "TripB33",
+   "minutes": 9.131666666666666,
+   "dt_s": 0.10000000000000009,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 1,
+    "by_test": {
+     "gross": 0,
+     "frozen": 1,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.004197080291970803
+   },
+   "hz100": {
+    "alarms_counted": 15,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 15
+    },
+    "flagged_share": 0.018488775323964226
+   }
+  },
+  {
+   "trip": "TripB34",
+   "minutes": 12.228333333333333,
+   "dt_s": 0.10000000000000853,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 1,
+    "by_test": {
+     "gross": 0,
+     "frozen": 1,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.9781956936494958
+   },
+   "hz100": {
+    "alarms_counted": 8,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 8
+    },
+    "flagged_share": 0.02133024396892463
+   }
+  },
+  {
+   "trip": "TripB35",
+   "minutes": 22.708333333333332,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 1,
+    "by_test": {
+     "gross": 0,
+     "frozen": 1,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.9464993394980185
+   },
+   "hz100": {
+    "alarms_counted": 1,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 1
+    },
+    "flagged_share": 0.9532477064220184
+   }
+  },
+  {
+   "trip": "TripB36",
+   "minutes": 47.53666666666666,
+   "dt_s": 0.0999999999999659,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 5,
+    "by_test": {
+     "gross": 0,
+     "frozen": 5,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.3671072467832977
+   },
+   "hz100": {
+    "alarms_counted": 14,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 14
+    },
+    "flagged_share": 0.3303940817614473
+   }
+  },
+  {
+   "trip": "TripB37",
+   "minutes": 23.62,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 1,
+    "by_test": {
+     "gross": 0,
+     "frozen": 1,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.971495096309885
+   },
+   "hz100": {
+    "alarms_counted": 5,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 5
+    },
+    "flagged_share": 0.970787468247248
+   }
+  },
+  {
+   "trip": "TripB38",
+   "minutes": 27.38,
+   "dt_s": 0.10000000000002274,
+   "hz10": {
+    "alarms_counted": 0,
+    "frozen_at_standstill": 1,
+    "by_test": {
+     "gross": 0,
+     "frozen": 1,
+     "mean": 0,
+     "step": 0
+    },
+    "flagged_share": 0.9443666686955993
+   },
+   "hz100": {
+    "alarms_counted": 13,
+    "frozen_at_standstill": 0,
+    "by_test": {
+     "gross": 0,
+     "frozen": 0,
+     "mean": 0,
+     "step": 13
+    },
+    "flagged_share": 0.5314341368395422
+   }
+  }
+ ],
+ "posthoc_no_frozen_10hz": {
+  "diagnostic": "post-hoc: 10 Hz pass with the frozen test disabled",
+  "hours": 30.40897222222222,
+  "alarms": {
+   "gross": 44,
+   "frozen": 0,
+   "mean": 0,
+   "step": 14
+  },
+  "alarms_per_hour": 1.9073318090512394,
+  "flagged_share": 0.2074050894260654,
+  "trips_still_flagged_at_end": 36
+ }
+}
