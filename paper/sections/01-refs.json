@@ -597,6 +597,26 @@
   "verified_url": "from docs/ved-generalisation.md [L1]; not re-verified online"
  },
  {
+  "key": "amodei2016",
+  "authors": [
+   "D. Amodei",
+   "C. Olah",
+   "J. Steinhardt",
+   "P. Christiano",
+   "J. Schulman",
+   "D. Mané"
+  ],
+  "title": "Concrete problems in AI safety",
+  "venue": "arXiv preprint arXiv:1606.06565",
+  "volume": "",
+  "number": "",
+  "pages": "",
+  "month": "Jun.",
+  "year": "2016",
+  "doi": "10.48550/arXiv.1606.06565",
+  "verified_url": "https://arxiv.org/abs/1606.06565"
+ },
+ {
   "key": "sciarretta2015",
   "authors": [
    "A. Sciarretta",
@@ -649,26 +669,6 @@
   "year": "2021",
   "doi": "",
   "verified_url": "https://arxiv.org/abs/2108.13264"
- },
- {
-  "key": "amodei2016",
-  "authors": [
-   "D. Amodei",
-   "C. Olah",
-   "J. Steinhardt",
-   "P. Christiano",
-   "J. Schulman",
-   "D. Mane"
-  ],
-  "title": "Concrete problems in AI safety",
-  "venue": "arXiv preprint arXiv:1606.06565",
-  "volume": "",
-  "number": "",
-  "pages": "",
-  "month": "June",
-  "year": "2016",
-  "doi": "",
-  "verified_url": "https://arxiv.org/abs/1606.06565"
  },
  {
   "key": "skalse2022",
