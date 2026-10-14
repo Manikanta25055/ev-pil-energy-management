@@ -364,6 +364,25 @@ def check_speed_estimator(result: dict, expected: int | None) -> None:
             f"-DSPEED_KALMAN; these runs would be filed under the wrong arm.")
 
 
+def select_runs(controller: str, *, axes, cells, seed_offset: int):
+    """The runs one invocation is responsible for.
+
+    `axes` keeps whole axes; `cells` keeps named `axis/level` pairs. A seed
+    offset moves every noise seed by the same amount, so a repeat campaign
+    gets fresh noise draws for the same cells and files them under keys that
+    cannot collide with the first campaign's.
+    """
+    runs = [r for r in scenario_runs(controllers=(controller,))
+            if not axes or r.axis in axes]
+    if cells:
+        known = {f"{r.axis}/{r.level}" for r in runs}
+        unknown = set(cells) - known
+        if unknown:
+            raise SystemExit(f"unknown cell: {sorted(unknown)}")
+        runs = [r for r in runs if f"{r.axis}/{r.level}" in cells]
+    return [replace(r, seed=r.seed + seed_offset) for r in runs]
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--speed-est", type=int, default=None,
@@ -375,6 +394,10 @@ def main() -> int:
     ap.add_argument("--axis", action="append", default=None,
                     help="restrict to one axis; repeatable")
     ap.add_argument("--out-json", required=True)
+    ap.add_argument("--seed-offset", type=int, default=0,
+                    help="added to every noise seed; for repeat campaigns")
+    ap.add_argument("--cell", action="append", default=None,
+                    help="restrict to one axis/level pair; repeatable")
     ap.add_argument("--no-reset", action="store_true",
                     help="set by the re-exec; the board was just reset")
     ap.add_argument("--max-steps", type=int, default=None,
@@ -394,8 +417,8 @@ def main() -> int:
         if unknown:
             raise SystemExit(f"unknown axis: {sorted(unknown)}")
 
-    runs = [r for r in scenario_runs(controllers=(args.controller,))
-            if not args.axis or r.axis in args.axis]
+    runs = select_runs(args.controller, axes=args.axis, cells=args.cell,
+                       seed_offset=args.seed_offset)
     params = params_from_json(args.params)
 
     out_path = Path(args.out_json)

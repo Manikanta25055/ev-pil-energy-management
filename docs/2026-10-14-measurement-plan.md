@@ -21,6 +21,17 @@ board campaigns run under a relaunch wrapper because the board drops off the
 bus under reset-per-run. Any controller written in both Python and C gets a
 parity test before its board run.
 
+Board rules fixed before the first board run: every arm runs the rule-based
+manager unless it is the learned arm; a run with more than 16 dropped frames
+and tracking under 1 m/s is set aside and taken once more, the rule the
+corrected campaign used (paper Table 3); the low-pass arm uses
+`SPEED_FILTER_ALPHA=0.1`, the value the existing tuning on the training cycle
+chose for ten times the noise floor (`docs/week11-speed-arms-tuned.json`),
+and the baseline loop is built with `SPEED_FILTER_ALPHA=1.0` passed
+explicitly. The twelve distinct conditions for B2 are: urban, highway and the
+nominal US06 (driving-condition axis), uphill and downhill, SOC high, medium
+and low, noise 3x and 10x, driver aggression 1.25 and 1.5.
+
 ## H1. Headroom bound on the corrected plant (host, panel R1/S1 basis)
 
 The dynamic-programming (DP) optimum in the paper (rules within 0.01% to 0.16%)

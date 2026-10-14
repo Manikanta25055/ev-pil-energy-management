@@ -193,3 +193,35 @@ def test_a_run_on_the_wrong_speed_estimator_is_refused():
     check_speed_estimator({"speed_est_mode": 0}, None)
     with pytest.raises(SystemExit, match="speed_est_mode=0"):
         check_speed_estimator({"speed_est_mode": 0}, 4)
+
+
+# --- repeats: seed offset and cell selection (measurement round 2026-10-14) ---
+
+from scripts.run_pil_campaign import select_runs  # noqa: E402
+
+
+def test_select_runs_without_options_is_the_whole_arm():
+    runs = select_runs("rule", axes=None, cells=None, seed_offset=0)
+    assert len(runs) == 18
+    assert {r.seed for r in runs} == {0, 1, 2}
+
+
+def test_seed_offset_moves_every_seed_and_nothing_else():
+    base = select_runs("actor", axes=None, cells=None, seed_offset=0)
+    moved = select_runs("actor", axes=None, cells=None, seed_offset=100)
+    assert [(r.axis, r.level) for r in base] == [(r.axis, r.level) for r in moved]
+    assert [r.seed + 100 for r in base] == [r.seed for r in moved]
+    assert [r.scenario for r in base] == [r.scenario for r in moved]
+
+
+def test_cells_restrict_to_named_axis_levels():
+    runs = select_runs("rule", axes=None,
+                       cells=["sensor_noise/floor", "sensor_noise/severe"],
+                       seed_offset=200)
+    assert [(r.axis, r.level, r.seed) for r in runs] == [
+        ("sensor_noise", "floor", 200), ("sensor_noise", "severe", 202)]
+
+
+def test_an_unknown_cell_is_refused():
+    with pytest.raises(SystemExit):
+        select_runs("rule", axes=None, cells=["sensor_noise/loud"], seed_offset=0)
