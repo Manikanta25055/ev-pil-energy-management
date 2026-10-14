@@ -1,0 +1,101 @@
+{
+ "provenance": "MEASURED on the ESP32-S3, rule manager in every arm; plan item B1",
+ "arms": {
+  "b0": [
+   {
+    "seed_offset": 100,
+    "floor_wh_per_km": 191.15405917828102,
+    "floor_rmse_mps": 0.03462161847406612,
+    "floor_peak_current_a": 295.2180153277735,
+    "floor_dropped_frames": 11,
+    "severe_wh_per_km": 200.8015207785031,
+    "severe_rmse_mps": 0.03568559915074324,
+    "severe_peak_current_a": 341.22023755668994,
+    "severe_dropped_frames": 10,
+    "loss_10x_wh_per_km": 9.647461600222073
+   },
+   {
+    "seed_offset": 200,
+    "floor_wh_per_km": 190.89380493839016,
+    "floor_rmse_mps": 0.022980264297467454,
+    "floor_peak_current_a": 284.83222171423563,
+    "floor_dropped_frames": 7,
+    "severe_wh_per_km": 200.62513355616127,
+    "severe_rmse_mps": 0.02792591657382126,
+    "severe_peak_current_a": 341.17789244385085,
+    "severe_dropped_frames": 9,
+    "loss_10x_wh_per_km": 9.731328617771112
+   },
+   {
+    "seed_offset": 0,
+    "source": "docs/week12-speed-arms-b0.json",
+    "floor_wh_per_km": 190.97676848122356,
+    "severe_wh_per_km": 200.41966312658835,
+    "floor_rmse_mps": 0.027086097117078906,
+    "severe_rmse_mps": 0.02566298028966149,
+    "loss_10x_wh_per_km": 9.442894645364788
+   }
+  ],
+  "lowpass": [
+   {
+    "seed_offset": 100,
+    "floor_wh_per_km": 191.88669000256095,
+    "floor_rmse_mps": 0.10681585139977601,
+    "floor_peak_current_a": 311.91487927769185,
+    "floor_dropped_frames": 9,
+    "severe_wh_per_km": 192.00239559746547,
+    "severe_rmse_mps": 0.1109999442906089,
+    "severe_peak_current_a": 312.58954043732206,
+    "severe_dropped_frames": 13,
+    "loss_10x_wh_per_km": 0.1157055949045116
+   },
+   {
+    "seed_offset": 200,
+    "floor_wh_per_km": 191.91141127217549,
+    "floor_rmse_mps": 0.1067479358342358,
+    "floor_peak_current_a": 310.71303281719685,
+    "floor_dropped_frames": 9,
+    "severe_wh_per_km": 191.50708211738575,
+    "severe_rmse_mps": 0.09846576323030859,
+    "severe_peak_current_a": 323.4840553222351,
+    "severe_dropped_frames": 3,
+    "loss_10x_wh_per_km": -0.4043291547897354
+   }
+  ],
+  "kalman": [
+   {
+    "seed_offset": 100,
+    "floor_wh_per_km": 191.1402614705048,
+    "floor_rmse_mps": 0.03517639180844544,
+    "floor_peak_current_a": 294.19527471916825,
+    "floor_dropped_frames": 7,
+    "severe_wh_per_km": 190.78202600355786,
+    "severe_rmse_mps": 0.02536275540425231,
+    "severe_peak_current_a": 287.76680016226976,
+    "severe_dropped_frames": 0,
+    "loss_10x_wh_per_km": -0.35823546694695096
+   },
+   {
+    "seed_offset": 200,
+    "floor_wh_per_km": 191.47598199496883,
+    "floor_rmse_mps": 0.0449202610874231,
+    "floor_peak_current_a": 313.0043019272127,
+    "floor_dropped_frames": 14,
+    "severe_wh_per_km": 190.9997844222651,
+    "severe_rmse_mps": 0.038530571906064154,
+    "severe_peak_current_a": 294.4163825443833,
+    "severe_dropped_frames": 8,
+    "loss_10x_wh_per_km": -0.4761975727037395
+   },
+   {
+    "seed_offset": 0,
+    "source": "docs/week12-speed-arms-b5.json",
+    "floor_wh_per_km": 190.56374951163744,
+    "severe_wh_per_km": 190.7997737902593,
+    "floor_rmse_mps": 0.008625593622877056,
+    "severe_rmse_mps": 0.024902054899371376,
+    "loss_10x_wh_per_km": 0.23602427862186914
+   }
+  ]
+ }
+}
