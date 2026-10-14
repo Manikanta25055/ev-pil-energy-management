@@ -41,6 +41,17 @@ its tuned settings unchanged, on all 70 logged i3 trips (no injected fault),
 as `scripts/check_accel_channel.py` did for the first detector, at the logs'
 10 Hz, to `docs/2026-10-14-bias-aware-logged-replay.json`.
 
+Detail fixed before the run (2026-10-14, after H1 started, before any H2
+code ran): the detector is the Python `BiasAwareFaultKalman` with its default
+(tuned) settings and the B5 noise constants from
+`docs/week11-speed-arms-tuned.json`, fed logged speed and logged
+acceleration. Two passes: (a) at the logs' 10 Hz, like the first detector's
+replay, primary; (b) speed and acceleration interpolated to 100 Hz with the
+campaign's speed-noise floor added (seed 0), secondary. Logged speed is
+exactly repeated while the car stands still, which a sensor with noise never
+does; alarms from the frozen-reading test below 0.5 m/s are therefore counted
+separately and not charged to the criterion. All other alarms count.
+
 Decision, against its registered limit (under one false alarm per clean hour):
 report alarms per hour and share of time flagged. Below 1 per hour: the paper
 says the detector held on logged data at 10 Hz, with the rate caveat. At or
