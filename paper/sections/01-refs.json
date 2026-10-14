@@ -595,5 +595,25 @@
   "year": "",
   "doi": "",
   "verified_url": "from docs/ved-generalisation.md [L1]; not re-verified online"
+ },
+ {
+  "key": "amodei2016",
+  "authors": [
+   "D. Amodei",
+   "C. Olah",
+   "J. Steinhardt",
+   "P. Christiano",
+   "J. Schulman",
+   "D. Mané"
+  ],
+  "title": "Concrete problems in AI safety",
+  "venue": "arXiv preprint arXiv:1606.06565",
+  "volume": "",
+  "number": "",
+  "pages": "",
+  "month": "Jun.",
+  "year": "2016",
+  "doi": "10.48550/arXiv.1606.06565",
+  "verified_url": "https://arxiv.org/abs/1606.06565"
  }
 ]
