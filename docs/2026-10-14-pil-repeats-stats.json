@@ -1,0 +1,432 @@
+{
+ "provenance": "MEASURED on the ESP32-S3; seed offsets 0 (corrected campaign), 100, 200; plan item B2",
+ "rows": [
+  {
+   "cell": "driving_condition/urban",
+   "runs": [
+    {
+     "seed": 0,
+     "rule_wh_per_km": 168.13351529702965,
+     "learned_wh_per_km": 169.30307570623563,
+     "diff_pct": 0.6956140821416934,
+     "rule_rmse_mps": 0.013138004502137134,
+     "learned_rmse_mps": 0.015637951896920577
+    },
+    {
+     "seed": 100,
+     "rule_wh_per_km": 168.22864366138103,
+     "learned_wh_per_km": 169.47126805537613,
+     "diff_pct": 0.7386520909580252,
+     "rule_rmse_mps": 0.02317153281792847,
+     "learned_rmse_mps": 0.023853459142538953
+    },
+    {
+     "seed": 200,
+     "rule_wh_per_km": 168.1100946267624,
+     "learned_wh_per_km": 169.0864374176906,
+     "diff_pct": 0.5807758261607621,
+     "rule_rmse_mps": 0.011576159774382982,
+     "learned_rmse_mps": 0.006138624849573317
+    }
+   ],
+   "mean_diff_pct": 0.6716806664201602,
+   "min_diff_pct": 0.5807758261607621,
+   "max_diff_pct": 0.7386520909580252,
+   "learned_higher_in_seeds": 3,
+   "rule_seed_range_pct": 0.0705186888876844
+  },
+  {
+   "cell": "driving_condition/highway",
+   "runs": [
+    {
+     "seed": 1,
+     "rule_wh_per_km": 153.9605020994651,
+     "learned_wh_per_km": 154.4011291185171,
+     "diff_pct": 0.2861948441603257,
+     "rule_rmse_mps": 0.0036306565305256333,
+     "learned_rmse_mps": 0.0035143584936951854
+    },
+    {
+     "seed": 101,
+     "rule_wh_per_km": 153.97183010412428,
+     "learned_wh_per_km": 154.48082416476618,
+     "diff_pct": 0.3305760932358126,
+     "rule_rmse_mps": 0.00479857858276827,
+     "learned_rmse_mps": 0.008043417993574253
+    },
+    {
+     "seed": 201,
+     "rule_wh_per_km": 153.95823510676237,
+     "learned_wh_per_km": 154.40763740913394,
+     "diff_pct": 0.291898840006799,
+     "rule_rmse_mps": 0.00335654793661725,
+     "learned_rmse_mps": 0.0032984294198494667
+    }
+   ],
+   "mean_diff_pct": 0.3028899258009791,
+   "min_diff_pct": 0.2861948441603257,
+   "max_diff_pct": 0.3305760932358126,
+   "learned_higher_in_seeds": 3,
+   "rule_seed_range_pct": 0.008830315151689564
+  },
+  {
+   "cell": "driving_condition/aggressive_mixed",
+   "runs": [
+    {
+     "seed": 2,
+     "rule_wh_per_km": 191.40966477909822,
+     "learned_wh_per_km": 191.4764322554562,
+     "diff_pct": 0.03488197758196865,
+     "rule_rmse_mps": 0.04360680985166178,
+     "learned_rmse_mps": 0.22621142344430312
+    },
+    {
+     "seed": 102,
+     "rule_wh_per_km": 190.97830219984994,
+     "learned_wh_per_km": 191.73949113245232,
+     "diff_pct": 0.3985735153336112,
+     "rule_rmse_mps": 0.03049580805842705,
+     "learned_rmse_mps": 0.22636109985319086
+    },
+    {
+     "seed": 202,
+     "rule_wh_per_km": 190.6704520145769,
+     "learned_wh_per_km": 191.51715217642868,
+     "diff_pct": 0.4440646953451699,
+     "rule_rmse_mps": 0.010614240806915186,
+     "learned_rmse_mps": 0.2264097933171477
+    }
+   ],
+   "mean_diff_pct": 0.2925067294202499,
+   "min_diff_pct": 0.03488197758196865,
+   "max_diff_pct": 0.4440646953451699,
+   "learned_higher_in_seeds": 3,
+   "rule_seed_range_pct": 0.38769130544925695
+  },
+  {
+   "cell": "road_grade/uphill",
+   "runs": [
+    {
+     "seed": 0,
+     "rule_wh_per_km": 305.2622642020138,
+     "learned_wh_per_km": 305.207505930327,
+     "diff_pct": -0.017938107033943496,
+     "rule_rmse_mps": 0.03900167655447763,
+     "learned_rmse_mps": 0.2366431834823921
+    },
+    {
+     "seed": 100,
+     "rule_wh_per_km": 304.9799361449013,
+     "learned_wh_per_km": 305.4737485197615,
+     "diff_pct": 0.1619163480399033,
+     "rule_rmse_mps": 0.015496078120803605,
+     "learned_rmse_mps": 0.24061667759160396
+    },
+    {
+     "seed": 200,
+     "rule_wh_per_km": 304.89662386317565,
+     "learned_wh_per_km": 305.2521215417332,
+     "diff_pct": 0.11659613479912956,
+     "rule_rmse_mps": 0.007073013958683873,
+     "learned_rmse_mps": 0.23690136471046108
+    }
+   ],
+   "mean_diff_pct": 0.08685812526836312,
+   "min_diff_pct": -0.017938107033943496,
+   "max_diff_pct": 0.1619163480399033,
+   "learned_higher_in_seeds": 2,
+   "rule_seed_range_pct": 0.11992272469446275
+  },
+  {
+   "cell": "road_grade/downhill",
+   "runs": [
+    {
+     "seed": 2,
+     "rule_wh_per_km": 79.30093250282104,
+     "learned_wh_per_km": 83.82694890391862,
+     "diff_pct": 5.707393668966709,
+     "rule_rmse_mps": 0.010078279372453824,
+     "learned_rmse_mps": 0.19306222342813087
+    },
+    {
+     "seed": 102,
+     "rule_wh_per_km": 79.74925873527644,
+     "learned_wh_per_km": 85.20724327956222,
+     "diff_pct": 6.843931380482515,
+     "rule_rmse_mps": 0.03280490096267681,
+     "learned_rmse_mps": 0.1937251879404279
+    },
+    {
+     "seed": 202,
+     "rule_wh_per_km": 79.30516825377462,
+     "learned_wh_per_km": 84.62482229171779,
+     "diff_pct": 6.7078276927935,
+     "rule_rmse_mps": 0.009552139210891071,
+     "learned_rmse_mps": 0.19578718933725092
+    }
+   ],
+   "mean_diff_pct": 6.419717580747575,
+   "min_diff_pct": 5.707393668966709,
+   "max_diff_pct": 6.843931380482515,
+   "learned_higher_in_seeds": 3,
+   "rule_seed_range_pct": 0.5653479956738867
+  },
+  {
+   "cell": "battery_state/high",
+   "runs": [
+    {
+     "seed": 0,
+     "rule_wh_per_km": 190.930037717944,
+     "learned_wh_per_km": 191.365617686564,
+     "diff_pct": 0.22813590455761368,
+     "rule_rmse_mps": 0.026333426539134206,
+     "learned_rmse_mps": 0.23316787441187767
+    },
+    {
+     "seed": 100,
+     "rule_wh_per_km": 190.70763641067174,
+     "learned_wh_per_km": 193.08894609548494,
+     "diff_pct": 1.2486703362445617,
+     "rule_rmse_mps": 0.01356388341122774,
+     "learned_rmse_mps": 0.24530616608532066
+    },
+    {
+     "seed": 200,
+     "rule_wh_per_km": 191.06989483410962,
+     "learned_wh_per_km": 191.65177343248337,
+     "diff_pct": 0.3045370380712953,
+     "rule_rmse_mps": 0.034838935421670776,
+     "learned_rmse_mps": 0.23592077574691223
+    }
+   ],
+   "mean_diff_pct": 0.5937810929578236,
+   "min_diff_pct": 0.22813590455761368,
+   "max_diff_pct": 1.2486703362445617,
+   "learned_higher_in_seeds": 3,
+   "rule_seed_range_pct": 0.1899548598346572
+  },
+  {
+   "cell": "battery_state/medium",
+   "runs": [
+    {
+     "seed": 1,
+     "rule_wh_per_km": 191.00027373614463,
+     "learned_wh_per_km": 191.63361055994068,
+     "diff_pct": 0.3315894848773704,
+     "rule_rmse_mps": 0.026533583898966887,
+     "learned_rmse_mps": 0.19548148192088718
+    },
+    {
+     "seed": 101,
+     "rule_wh_per_km": 190.8120605476376,
+     "learned_wh_per_km": 192.3902559882948,
+     "diff_pct": 0.82709417639939,
+     "rule_rmse_mps": 0.020351951002103963,
+     "learned_rmse_mps": 0.19312814665483707
+    },
+    {
+     "seed": 201,
+     "rule_wh_per_km": 191.24345793778323,
+     "learned_wh_per_km": 191.42534724770627,
+     "diff_pct": 0.09510877490104264,
+     "rule_rmse_mps": 0.035527534373799796,
+     "learned_rmse_mps": 0.19404199084772453
+    }
+   ],
+   "mean_diff_pct": 0.4179308120592677,
+   "min_diff_pct": 0.09510877490104264,
+   "max_diff_pct": 0.82709417639939,
+   "learned_higher_in_seeds": 3,
+   "rule_seed_range_pct": 0.22608497015728843
+  },
+  {
+   "cell": "battery_state/low",
+   "runs": [
+    {
+     "seed": 2,
+     "rule_wh_per_km": 190.8044046328878,
+     "learned_wh_per_km": 191.19700392257752,
+     "diff_pct": 0.20576007689396825,
+     "rule_rmse_mps": 0.020637032073665244,
+     "learned_rmse_mps": 0.16776255160250142
+    },
+    {
+     "seed": 102,
+     "rule_wh_per_km": 191.35762330416117,
+     "learned_wh_per_km": 191.98916189330438,
+     "diff_pct": 0.3300305356214617,
+     "rule_rmse_mps": 0.0395562527523897,
+     "learned_rmse_mps": 0.16893337026999114
+    },
+    {
+     "seed": 202,
+     "rule_wh_per_km": 190.7666822832795,
+     "learned_wh_per_km": 191.23916801975588,
+     "diff_pct": 0.24767728348642493,
+     "rule_rmse_mps": 0.017581676308984114,
+     "learned_rmse_mps": 0.16980805238160493
+    }
+   ],
+   "mean_diff_pct": 0.26115596533395163,
+   "min_diff_pct": 0.20576007689396825,
+   "max_diff_pct": 0.3300305356214617,
+   "learned_higher_in_seeds": 3,
+   "rule_seed_range_pct": 0.30977160886205113
+  },
+  {
+   "cell": "sensor_noise/elevated",
+   "runs": [
+    {
+     "seed": 1,
+     "rule_wh_per_km": 191.33003255321043,
+     "learned_wh_per_km": 192.9031939802256,
+     "diff_pct": 0.8222239896278127,
+     "rule_rmse_mps": 0.014476359123334042,
+     "learned_rmse_mps": 0.21751913614287824
+    },
+    {
+     "seed": 101,
+     "rule_wh_per_km": 191.84803674981936,
+     "learned_wh_per_km": 194.43702188147554,
+     "diff_pct": 1.3494978502346378,
+     "rule_rmse_mps": 0.03307268369602941,
+     "learned_rmse_mps": 0.22507895362246277
+    },
+    {
+     "seed": 201,
+     "rule_wh_per_km": 191.8654767436601,
+     "learned_wh_per_km": 193.29560668888215,
+     "diff_pct": 0.7453815920895224,
+     "rule_rmse_mps": 0.03616469540761431,
+     "learned_rmse_mps": 0.22290855446808547
+    }
+   ],
+   "mean_diff_pct": 0.9723678106506576,
+   "min_diff_pct": 0.7453815920895224,
+   "max_diff_pct": 1.3494978502346378,
+   "learned_higher_in_seeds": 3,
+   "rule_seed_range_pct": 0.2798537079121489
+  },
+  {
+   "cell": "sensor_noise/severe",
+   "runs": [
+    {
+     "seed": 2,
+     "rule_wh_per_km": 201.55349154978654,
+     "learned_wh_per_km": 210.5250497048241,
+     "diff_pct": 4.451204534366249,
+     "rule_rmse_mps": 0.05477599556353592,
+     "learned_rmse_mps": 0.1921200196652852
+    },
+    {
+     "seed": 102,
+     "rule_wh_per_km": 200.81588972867985,
+     "learned_wh_per_km": 209.90751428721515,
+     "diff_pct": 4.527343215130486,
+     "rule_rmse_mps": 0.030441187330329144,
+     "learned_rmse_mps": 0.19804677065989754
+    },
+    {
+     "seed": 202,
+     "rule_wh_per_km": 200.7516022127498,
+     "learned_wh_per_km": 210.78309157501047,
+     "diff_pct": 4.996966027513761,
+     "rule_rmse_mps": 0.0300704880077993,
+     "learned_rmse_mps": 0.1828796876186022
+    }
+   ],
+   "mean_diff_pct": 4.658504592336832,
+   "min_diff_pct": 4.451204534366249,
+   "max_diff_pct": 4.996966027513761,
+   "learned_higher_in_seeds": 3,
+   "rule_seed_range_pct": 0.3994435552185231
+  },
+  {
+   "cell": "driver_aggression/brisk",
+   "runs": [
+    {
+     "seed": 1,
+     "rule_wh_per_km": 197.16218558034166,
+     "learned_wh_per_km": 197.37810741996762,
+     "diff_pct": 0.10951483368395465,
+     "rule_rmse_mps": 0.04498429549793351,
+     "learned_rmse_mps": 0.3306368813981053
+    },
+    {
+     "seed": 101,
+     "rule_wh_per_km": 197.51332438427406,
+     "learned_wh_per_km": 197.55992430436976,
+     "diff_pct": 0.023593304523106262,
+     "rule_rmse_mps": 0.05761251925107392,
+     "learned_rmse_mps": 0.3345817467536983
+    },
+    {
+     "seed": 201,
+     "rule_wh_per_km": 196.19979088115136,
+     "learned_wh_per_km": 198.43918744642497,
+     "diff_pct": 1.1413858063845428,
+     "rule_rmse_mps": 0.024956458115195018,
+     "learned_rmse_mps": 0.32849140748575156
+    }
+   ],
+   "mean_diff_pct": 0.4248313148638679,
+   "min_diff_pct": 0.023593304523106262,
+   "max_diff_pct": 1.1413858063845428,
+   "learned_higher_in_seeds": 3,
+   "rule_seed_range_pct": 0.6694877182200341
+  },
+  {
+   "cell": "driver_aggression/aggressive",
+   "runs": [
+    {
+     "seed": 2,
+     "rule_wh_per_km": 204.46487803654298,
+     "learned_wh_per_km": 204.7467392366487,
+     "diff_pct": 0.1378531133622518,
+     "rule_rmse_mps": 0.09810439400653824,
+     "learned_rmse_mps": 0.5042485562557253
+    },
+    {
+     "seed": 102,
+     "rule_wh_per_km": 203.58100970232323,
+     "learned_wh_per_km": 204.74401451919024,
+     "diff_pct": 0.5712737246797106,
+     "rule_rmse_mps": 0.08115645805298508,
+     "learned_rmse_mps": 0.5025007915173657
+    },
+    {
+     "seed": 202,
+     "rule_wh_per_km": 203.69470198038994,
+     "learned_wh_per_km": 205.78957166694178,
+     "diff_pct": 1.0284360202719167,
+     "rule_rmse_mps": 0.08416726717975104,
+     "learned_rmse_mps": 0.5193618019625145
+    }
+   ],
+   "mean_diff_pct": 0.5791876194379597,
+   "min_diff_pct": 0.1378531133622518,
+   "max_diff_pct": 1.0284360202719167,
+   "learned_higher_in_seeds": 3,
+   "rule_seed_range_pct": 0.4341605022551713
+  }
+ ],
+ "conditions": 12,
+ "conditions_learned_higher_on_average": 12,
+ "median_of_condition_means_pct": 0.5020094671509138,
+ "mean_of_condition_means_pct": 1.306784352941474,
+ "bootstrap95_median_pct": [
+  0.29769832761061454,
+  0.8220242385354088
+ ],
+ "bootstrap95_mean_pct": [
+  0.4060574449166675,
+  2.538516069198079
+ ],
+ "wilcoxon_exact": {
+  "w_minus": 0,
+  "p_two_sided": 0.00048828125
+ },
+ "runs_learned_higher": "35 of 36",
+ "verdict_rule": "learned uses more energy if p < 0.05 and median > 0",
+ "verdict_stands": true
+}
