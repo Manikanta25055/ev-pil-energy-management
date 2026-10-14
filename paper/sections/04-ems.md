@@ -10,7 +10,7 @@ The rule-based energy manager is a pure function of state of charge (SOC) and sp
 
 ## Headroom Under a Fixed Speed Profile
 
-An offline dynamic-programming (DP) optimum [@bellman1957] was computed on the WLTC class 3b cycle and the three dynamometer schedules UDDS, HWFET and US06 [@epacycles], at a starting SOC of 0.80 and 12 degrees C. The rule-based manager sits within 0.01% to 0.16% of it: 153.90 against 153.89 Wh/km on the highway cycle (HWFET), 167.93 against 167.67 on the urban cycle (UDDS), 190.47 against 190.39 on the aggressive cycle (US06) and 175.99 against 175.94 on WLTC class 3b (SIMULATED). The optimum is a constant instruction: recover as much braking energy as the pack accepts. The DP held the discharge ceiling at its maximum, and the HWFET rule value is unchanged on the corrected model.
+An offline dynamic-programming (DP) optimum [@bellman1957] was computed on the WLTC class 3b cycle and the three dynamometer schedules UDDS, HWFET and US06 [@epacycles], at a starting SOC of 0.80 and 12 degrees C. The rule-based manager sits within 0.01% to 0.16% of it: 153.90 against 153.89 Wh/km on the highway cycle (HWFET), 167.93 against 167.67 on the urban cycle (UDDS), 190.47 against 190.39 on the aggressive cycle (US06) and 175.99 against 175.94 on WLTC class 3b (SIMULATED). The optimum is a constant instruction: recover as much braking energy as the pack accepts. The DP was run again on the corrected model and the gaps did not change, because the discharge ceiling never binds in its solution.
 
 The bound follows from the structure. Acceleration depends on torque and grade alone, so regeneration blend and shedding cannot alter the speed trajectory, and a ceiling can only remove power the speed loop needs, which the tracking constraint forbids. Shedding is priced at the energy it saves, which makes it neutral. A learned policy in this task therefore has at most 0.16% to gain, and the experiment cannot tell a good learner from a poor one by energy alone. A gain needs a task with headroom, and Section @sec:planning shows where one exists.
 
@@ -79,7 +79,7 @@ Caption: Corrected campaign, 16 valid settings: (a) paired energy difference of 
 
 On tracking, the learned policy has a root-mean-square error (RMSE) of 0.17 to 0.24 m/s on most US06-based settings, 0.33 m/s at driver aggression 1.25 and 0.504 m/s at 1.5, against 0.010 to 0.098 m/s for the rules. On UDDS and HWFET the learned policy stays at 0.016 and 0.004 m/s. US06 was held out of training, but it was also the cycle of the earlier campaign that led to the model fix, so it was not unseen by the authors, and the deficit appears on the cycles built on it.
 
-The verdict covers this task only: one vehicle model at one ambient temperature, one board, one learned algorithm with one reward design, and speed fixed by the tracking loop.
+The verdict covers this task only: one vehicle model at one ambient temperature, one board, one learned algorithm with one reward design, and speed fixed by the tracking loop. Varying the plant one parameter at a time (rolling coefficient, rotational factor, regeneration ceiling, drivetrain efficiency) left the learned policy higher in all 14 variants on US06 and HWFET, by 0.12% to 0.81% (SIMULATED, one policy seed, host loop without noise).
 
 ## The Earlier Campaign
 

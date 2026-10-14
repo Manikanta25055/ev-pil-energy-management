@@ -47,6 +47,11 @@
 | +0.240, -0.669 to +1.228 | A3 on original model | spec section 4 / docs/week8-sac.md; paper 04 | SIMULATED |
 | 0.0 percent | A1 accuracy change | docs/transformer-a1.md | SIMULATED |
 
+| 0.01% to 0.16%, 0.5% | headroom on corrected plant | docs/2026-10-14-control-baselines-corrected.json (WLTC3b 0.031, UDDS 0.16, HWFET 0.01, US06 0.04 pct); plan docs/2026-10-14-measurement-plan.md | SIMULATED |
+| 0.99/h, 196, 59%, 70 trips, 30.4 h, 16.2/h, 72% | bias-aware on logged trips | docs/2026-10-14-bias-aware-logged-replay.json | SIMULATED |
+| 1.9/h, 21% | frozen test disabled (post hoc) | lead's update note UPDATE-R2B.md (not in the JSON summary; unverified by me) | SIMULATED |
+| 14 variants, 0.12% to 0.81% | plant sensitivity | docs/2026-10-14-plant-sensitivity.json (nominal +0.362 US06, +0.203 HWFET; max 0.809 HWFET c_rr) | SIMULATED |
+
 ## Panel items
 
 - R3 (one table of every criterion with outcome, including estimator clean-tracking 0.0193 against 0.0104 and the bias-aware 551 and 533 of 560): Table tab:platform-gates, now 14 rows covering gates, A1/A3, estimator, first detector, bias-aware detector.
@@ -90,4 +95,4 @@
 
 ## Linter and words (final)
 Before (previous draft): prose_lint clean, 1276 prose words, 65 sentences; measure.py SD 9.8, n 66, short 12, long 10.
-After: prose_lint clean (1236 prose words, 65 sentences); measure.py SD 10.6, n 66, short 14, long 11. Body words excluding headings, tables and captions: 1147 (budget 1000 to 1150).
+After round 2b: prose_lint clean (1297 prose words), SD 10.9, body words about 1200 (over budget by tables of new rows' text). Earlier: prose_lint clean (1236 prose words, 65 sentences); measure.py SD 10.6, n 66, short 14, long 11. Body words excluding headings, tables and captions: 1147 (budget 1000 to 1150).

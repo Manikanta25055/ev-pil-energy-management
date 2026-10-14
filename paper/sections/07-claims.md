@@ -54,8 +54,17 @@
 - (e) limitations: one vehicle model, one board, one algorithm and reward design, one run per cell except the nominal repeats, plant fidelity (R7, firm statement, no sensitivity study), simulated faults, US06 not unseen (S5), G3 failure and dropped-frame relation (S6), Kalman baseline only raw (S4), detector not replayed on logged trips.
 - Conclusion 236 words, no numbers beyond the abstract's (8.28%, 14 of 16, 1 of 16, 0.94%, 0.01% to 0.16%, 9.44 to 0.24, 120 of 120, 5% to 10%).
 
-## Linter and measure
+## Update 2b (host results)
 
-Before: prose_lint clean (1327 prose words); measure SD 10.6 (n=60).
-After: prose_lint clean (1647 prose words); measure SD 10.6 (n=83).
-Body words: Section VIII 422, Section IX 965, Section X 236 (budget 350/850/220; IX and VIII run over, IX by about 115).
+| Number | Fragment | Source | Status |
+|---|---|---|---|
+| DP bound re-run on corrected model, unchanged, 0.01% to 0.16% | Why the Rules Held | docs/2026-10-14-control-baselines-corrected.json | SIMULATED |
+| 14 of 14 variants learned higher, 0.12% to 0.81% | fourth audit check, Limitations | docs/2026-10-14-plant-sensitivity.json | SIMULATED (one seed, no noise) |
+| 0.99 alarms per hour (10 Hz), 196 frozen-test alarms set aside, flag up 59% | safety scope | docs/2026-10-14-bias-aware-logged-replay.json | SIMULATED replay on logged data |
+| 16.2 per hour at interpolated 100 Hz | safety scope | same | SIMULATED |
+
+Changes: removed "no sensitivity study" and "not replayed on logged trips"; future work no longer lists the sweep (now asks for board runs with noise and more seeds); Discussion trimmed; Conclusion adds that the detector does not hold on logged channels. The 0.61 against 0.67 m/s monitor sentence was dropped from the Discussion.
+
+## Linter and measure (final)
+
+prose_lint clean; SD 11.1 (was 10.6 before round 2 edits). Body words: VIII 422, IX 960, X about 218.

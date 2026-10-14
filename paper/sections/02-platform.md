@@ -46,9 +46,9 @@ Anything written twice, in Python and in C, has a parity test that drives both t
 
 ## Criteria Fixed in Advance, and What Was Decided Afterwards
 
-A criterion is written down before the experiment it governs. A result that misses it is reported as a miss. The version history gives the dates. The five gate criteria were committed on 2026-08-30 with the design specification, before the commit that records the first gate measurement later that day. The criteria for the speed estimator and the first fault detector were committed on 2026-10-06, before any arm was run. Those for the bias-aware detector were committed on 2026-10-08 in the same commit as its code, so they preceded every learned reviewer but not the detector itself, whose step threshold was tuned on training data only.
+A criterion is written down before the experiment it governs. A result that misses it is reported as a miss. The five gate criteria were committed on 2026-08-30 with the design specification, before the commit that records the first gate measurement later that day. The criteria for the speed estimator and the first fault detector were committed on 2026-10-06, before any arm was run. Those for the bias-aware detector were committed on 2026-10-08 in the same commit as its code, so they preceded every learned reviewer but not the detector itself, whose step threshold was tuned on training data only. The 2026-10-14 measurement round was planned and committed before its runs.
 
-Table @tab:platform-gates holds every such criterion in the paper. Five are missed. They are G2, the zero-drop part of G3, the estimator's clean-tracking bound, the first detector's false-alarm limit and the bias-aware detector's simulated detection limit. The comparison of the two energy managers had no outcome criterion; its acceptance rule, dated 2026-09-21, required only that the 36 runs be recorded, and no later record adds one, so the comparison is descriptive (Section @sec:ems). Gate G4 was passed by a ridge regression before any proposed forecaster existed, which makes passing it weak evidence for the proposed model.
+Table @tab:platform-gates holds every such criterion in the paper. Six are missed. They are G2, the zero-drop part of G3, the estimator's clean-tracking bound, the first detector's false-alarm limit, the bias-aware detector's simulated detection limit and its alarm rate on interpolated 100 Hz logged trips. At the logs' own 10 Hz rate the detector meets its limit, but only after 196 alarms at standstill were set aside as the plan allowed. The comparison of the two energy managers had no outcome criterion; its acceptance rule, dated 2026-09-21, required only that the 36 runs be recorded, and no later record adds one, so the comparison is descriptive (Section @sec:ems). A ridge regression passed G4 before any proposed forecaster existed.
 
 Table: tab:platform-gates | Every criterion fixed in advance in the paper, with the date of its record and its outcome. | width=page
 | Id | Criterion fixed in advance | Fixed | Outcome | Label |
@@ -60,6 +60,10 @@ Table: tab:platform-gates | Every criterion fixed in advance in the paper, with 
 | G4 | 10% lower RMSE than persistence at 3 s | 2026-08-30 | Pass: 14.5% for the weakest fitted model | SIMULATED |
 | G5 | 40 ms or less; model plus arena 300 KB or less | 2026-08-30 | Timing and memory pass: 36.46 ms, 35.03 ms; 28,894 B. Converted model not yet run on target | MEASURED |
 | Ablations | Null result accepted in advance for physics loss and for forecast in the policy state | 2026-08-30 | Both null; forecast ablation on the corrected model +0.262 Wh/km, interval -0.698 to +0.982 | SIMULATED |
+| Headroom | Rule-based manager within 0.5% of the DP optimum on the corrected plant | 2026-10-14 | Met: 0.01% to 0.16%, unchanged by the fix | SIMULATED |
+| Bias-aware detector, logged trips, 10 Hz | Under 1 false alarm per clean hour on 70 trips (30.4 h), standstill alarms set apart | 2026-10-14 | Met narrowly: 0.99 per hour; flag up 59% of driving | SIMULATED |
+| Bias-aware detector, logged trips, 100 Hz | Same limit, logs interpolated to 100 Hz | 2026-10-14 | Fail: 16.2 per hour; flag up 72% | SIMULATED |
+| Plant sensitivity | Sign of learned minus rules unchanged in every plant variant | 2026-10-14 | Met: learned worse in all 14 variants, by 0.12% to 0.81% | SIMULATED |
 | Speed estimator | Clean energy within 0.2% of the baseline loop | 2026-10-06 | Pass | MEASURED |
 | Speed estimator | Clean tracking within 0.005 m/s of the baseline loop | 2026-10-06 | Fail: 0.0193 against 0.0104 m/s on UDDS | MEASURED |
 | Speed estimator | At least half of the 10x-noise penalty recovered | 2026-10-06 | Pass: 9.44 to 0.24 Wh/km | MEASURED |
@@ -79,3 +83,4 @@ Table: tab:platform-revisions | Rules and revisions made after results were seen
 | Plant fix and added checks | 2026-10-06 | Anomalies in campaign tables, not a gate | 8.28% gain withdrawn; limit-invariance sweep and optimum check added |
 | Second fault detector | 2026-10-08 | First detector assumed an acceleration channel that logged trips did not match | Offset state added; criteria recorded with it |
 | Fused backup speed | 2026-10-09 | Checker with rule monitor failed on a heavier car | 18 candidates on one training cycle; rule fixed before runs |
+| Frozen test disabled in log replay | 2026-10-14 | Standstill alarms dominated the 10 Hz count | Diagnostic outside the plan: 1.9 alarms per hour, flag up 21%; not a criterion |

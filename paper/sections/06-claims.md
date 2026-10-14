@@ -4,7 +4,7 @@
 
 | Item | Where handled | How |
 |---|---|---|
-| R4 (detector result restated) | Bias-Aware Fault Detector, last two paragraphs | Faults injected in software; simulated accelerometer; 120 of 120 stated as 40 faults times 3 noise draws, "not independent events"; one clean hour bounded below about 3 per hour at 95% (rule of three, 3/1.00 h); simulated criteria not met (551 and 533 of 560, nine late on validation, 27 on test uncharacterised); not replayed on the 70 logged trips (only the slow disagreement of four logged trips per split was added to the simulated channel, per week13-sensor-architectures.md section 2). |
+| R4 (detector result restated) | Bias-Aware Fault Detector, last two paragraphs | Faults injected in software; simulated accelerometer; 120 of 120 stated as 40 faults times 3 noise draws, "not independent events"; one clean hour bounded below about 3 per hour at 95% (rule of three, 3/1.00 h); simulated criteria not met (551 and 533 of 560, nine late on validation, 27 on test uncharacterised); replayed on the 70 logged trips in update 2b, see the H2 rows in Numbers (before: only the slow disagreement of four logged trips per split was added to the simulated channel, per week13-sensor-architectures.md section 2). |
 | S4 (Kalman baseline) | Estimator, paragraph after Table | Comparison is with the raw-reading loop only; no low-pass filter was run. |
 | 0.24 floor arithmetic | Estimator, paragraph after Table | See Mismatches 1. Uses the second US06 floor run; first-floor result also given; baseline floor runs differ by 0.19; residual within run-to-run spread. |
 | Failed clean-tracking criterion | Estimator, last paragraph | Kept as a failure (0.0193 against 0.0104 m/s). "Pre-registered" removed. |
@@ -56,6 +56,15 @@
 | 0.62 vs 3.74; 2.59; six of seven; two stuck | fused fallback | week14-b8-val.json, -test.json | SIMULATED |
 | 70 to 1000 ms; 100 ms; twelve inputs | supervisory slot | week13-sensor-architectures.md sections 2 and 5 | SIMULATED |
 
+## Update 2b numbers (H2)
+
+| Number | Fragment | Source | Label |
+|---|---|---|---|
+| 70 trips, 30.4 h | logged replay | docs/2026-10-14-bias-aware-logged-replay.json summary | SIMULATED, logged data |
+| 30 alarms, 0.99 per hour, 196 frozen at standstill, 59%, 42 of 70 | 10 Hz | summary.hz10 | SIMULATED |
+| 1.9 per hour, 21% | frozen test disabled, post-hoc | posthoc_no_frozen_10hz (1.907 per hour, 0.2074) | SIMULATED |
+| 492 alarms, 16.2 per hour, 72% | 100 Hz interpolated | summary.hz100 | SIMULATED |
+
 ## Gaps
 
 - Training settings of the final ("v3") reviewers other than hidden size, optimiser and learning rate (epochs, batch size, class-weight mode, seed) are not recorded in a file I could read; `data/reviewer/` is absent. The script defaults are 40 epochs and square-root weighting, but the v3 run may have used other flags. The text omits them.
@@ -68,3 +77,5 @@
 
 Before editing: prose_lint.py 1689 prose words, 66 sentences, clean; measure.py n=71, mean 20.8, SD 9.8. Body words (excluding tables, equations, captions): 1475.
 After editing: prose_lint.py 1706 prose words, 71 sentences, clean; measure.py n=76, mean 19.8, SD 9.9 (short 14, long 16). Body words: 1502 by the same count, about 50 over the 1450 budget.
+
+Update 2b: lint clean, 1720 prose words before the edit, SD 10.0 (n=76); final lint clean, 1880 prose words, SD 10.0 (n=82).

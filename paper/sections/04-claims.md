@@ -33,15 +33,20 @@
 | 14 of 16, 8.28% | earlier campaign | week10-pil-campaign.json | MEASURED (withdrawn) |
 | outage numbers | unchanged from previous draft | week11-a4-{on,off}-*s.json | MEASURED |
 
+| 14 variants, +0.12% to +0.81% | plant sensitivity | docs/2026-10-14-plant-sensitivity.json | SIMULATED |
+| DP re-run on corrected plant, unchanged | headroom | docs/2026-10-14-control-baselines-corrected.json | SIMULATED |
+
 ## Mismatches
-- The DP bound (week 7) predates the plant correction; the DP held the ceiling at maximum and the HWFET rule value is unchanged (153.90), but the DP was not re-run on the corrected plant. Text says so.
+- Resolved in update 2b: the DP was re-run on the corrected plant (docs/2026-10-14-control-baselines-corrected.json); gaps 0.03, 0.16, 0.01 (0.006), 0.04% unchanged.
 - Table tab:ems-campaign "Mixed" and the four other R rows were reached through different axes but share the nominal condition; SOC 0.85 starts at 0.85, not 0.80, so it is not a repeat.
 - Episode length 300 is the run_sac.py default; the week-11 record does not store the command line used for the corrected retraining.
 
 ## Gaps
 - How the SAC reward weights and the numeric rule constants (0.85, 0.20, 40 kW, 0.15, 0.30) were chosen: no record found beyond the code comments; text says none was tuned and no sweep was run.
 - Stable-Baselines3 version at training time (2.9.0 is the installed version); library defaults assumed.
-- Equivalence margin and plant sensitivity: none exist.
+- Equivalence margin: none set. Plant sensitivity now covered by H3 (limits stated in text).
 
 ## Lint and measure
 Before: prose_lint clean (1595 words); sentence SD 12.4 (n=75). After: prose_lint clean (1911 words incl. table and captions); SD 12.6 (n=90). Body about 1,650 words, above the 1,400-1,600 budget by about 50.
+
+Update 2b: lint clean before and after; SD 12.7 before, 12.7 after (see message).
