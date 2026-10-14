@@ -135,7 +135,7 @@ class Numbers:
     def __init__(self, blocks):
         self.fig, self.tab, self.eq, self.sec = {}, {}, {}, {}
         self.cites = []
-        nsec = 0
+        nsec = nsub = 0
         for b in blocks:
             if b["t"] == "fig":
                 self.fig[b["id"]] = len(self.fig) + 1
@@ -145,8 +145,13 @@ class Numbers:
                 self.eq[b["id"]] = len(self.eq) + 1
             elif b["t"] == "h" and b["level"] == 1:
                 nsec += 1
+                nsub = 0
                 if b["id"]:
                     self.sec[b["id"]] = ROMAN[nsec]
+            elif b["t"] == "h" and b["level"] == 2:
+                nsub += 1
+                if b["id"]:
+                    self.sec[b["id"]] = f"{ROMAN[nsec]}-{chr(64 + nsub)}"
         for b in blocks:
             texts = [b.get("text", ""), b.get("cap", "")]
             for row in b.get("rows", []):

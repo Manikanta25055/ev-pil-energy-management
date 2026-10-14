@@ -53,7 +53,7 @@ G2 checks the model along logged trajectories: logged torque goes in, and batter
 
 The model was rebuilt around a 2013 Nissan Leaf from the battery-electric subset of VED and run on 89 validation trips. Arm A carried every i3 parameter across, arm B replaced the chassis coefficients with the Leaf's coastdown values, and arm C refitted the chassis. Median trip energy error was 16.9%, 14.4% and 13.4% (SIMULATED against logged trips).
 
-## The Earlier Campaign and the Apparent Gain
+## The Earlier Campaign and the Apparent Gain {#sec:artefact}
 
 The first processor-in-the-loop (PIL) campaign ran both energy managers on the ESP32-S3 target [@esp32s3] against this model, over six factors at three levels each: 36 runs, 32 of them valid (Section @sec:ems). The Soft Actor-Critic (SAC) policy [@haarnoja2018] used less energy than the rule-based manager in 14 of 16 valid settings, by 8.28% on average and by up to 21.6% at driver aggression 1.5, on the comparable energy scale of Section @sec:platform (MEASURED). Fig. @fig:plant-reversal shows each setting.
 
@@ -77,9 +77,9 @@ Caption: A constant battery power ceiling held over US06, before and after the f
 
 ## How It Was Found
 
-The gates did not find it. G2 never exercised the ceiling path. The campaign tables carried three cues. The learned policy finished 7% below the offline dynamic-programming (DP) optimum of 190.39 Wh/km at equal tracking, which should not be possible; its advantage grew with demand; and it vanished on UDDS and HWFET, where demand stays under the 40 kW floor of the ceiling range. The fault was found 15 days after the first campaign.
+The gates did not find it. G2 never exercised the ceiling path. The campaign tables carried three cues. The learned policy finished 7% below the dynamic-programming (DP) reference of 190.39 Wh/km at equal tracking, a feasible policy the rules matched within 0.04%; its advantage grew with demand; and it vanished on UDDS and HWFET, where demand stays under the 40 kW floor of the ceiling range. The fault was found 15 days after the first campaign.
 
-Two explanations were recorded on the way and both were wrong. The first campaign's note read the cues as peak-current shaving and marked the reading as inferred, because the ceiling had not been logged. The repeat campaign showed that both controllers used the same 40 to 125 kW range, which corrected a belief that only the learned policy limited power, but it did not reveal the fault. The controller-free sweep did.
+The standing safeguards could not see it. G2 replays trips with a ceiling that never binds, the DP held the ceiling at the motor maximum by design, the plant's unit test asserted only that billed power met the ceiling, and the test that speed is unaffected by the energy action ran with a 300 kW ceiling. Two explanations recorded on the way, peak-current shaving and power limiting by the learned policy alone, were both wrong; the repeat campaign showed both controllers using the same 40 to 125 kW range but did not reveal the fault. The controller-free sweep did.
 
 The audit began with a result that favoured the learned policy. A fault that made it look worse would not have drawn the same scrutiny, and no symmetric audit was run.
 
@@ -87,9 +87,9 @@ The audit began with a result that favoured the learned policy. A fault that mad
 
 The fix gives the motor the power the pack delivered less the auxiliary load, reduces torque to match, and computes acceleration from the reduced torque. Four unit tests and one cycle-level test were added. Two limits that never bind give bit-identical outputs, and a starving ceiling must cost distance and tracking, not only the bill.
 
-On the corrected model a 5 kW ceiling gives 156.16 Wh/km over 4.453 km with 16.15 m/s tracking error, and a 40 kW ceiling gives 189.80 Wh/km against 174.85 before (SIMULATED). The rule-based manager and the DP optimum did not change, since their ceiling never bound. The learned policy on US06 moved from 176.71 to 190.71 Wh/km, against 190.47 for the rules, with tracking error 0.48 m/s against 0.0013 m/s. On the target, across 16 valid settings, the corrected rule arm differed from the repeat campaign by +0.07% on average (95% interval -0.03 to +0.17%), 0.46% at worst, against 0.57% at worst between two campaigns that differed only in the day (MEASURED). The corrected comparison is in Section @sec:ems.
+On the corrected model a 5 kW ceiling gives 156.16 Wh/km over 4.453 km with 16.15 m/s tracking error, and a 40 kW ceiling gives 189.80 Wh/km against 174.85 before (SIMULATED). The rule-based manager and the DP reference did not change, since their ceiling never bound. The learned policy on US06 moved from 176.71 to 190.71 Wh/km, against 190.47 for the rules, with tracking error 0.48 m/s against 0.0013 m/s. On the target, across 16 valid settings, the corrected rule arm differed from the repeat campaign by +0.07% on average (95% interval -0.03 to +0.17%), 0.46% at worst, against 0.57% at worst between two campaigns that differed only in the day (MEASURED). The corrected comparison is in Section @sec:ems.
 
-## Checks the Case Implies
+## Checks the Case Implies {#sec:checks}
 
 Table @tab:plant-checks lists three checks that fail on the faulty model. All three were written after the fault and applied to the pre-fix model; none was a gate fixed in advance.
 
@@ -97,10 +97,12 @@ Table: tab:plant-checks | Audit checks and their outcome on the faulty model. SI
 | Check | Test | Faulty model |
 |---|---|---|
 | Billing against motion | Constant ceiling over a cycle; energy and distance must fall together | Fails: 8.05 Wh/km, distance unchanged |
-| Learner against optimum | Learned energy at equal tracking must not beat the DP optimum on the same model | Fails: 176.71 against 190.39 Wh/km |
+| Learner against reference | A learned result far below a DP reference on the same model triggers an audit | Triggered: 176.71 against 190.39 Wh/km |
 | Limits act on motion | A binding limit must reduce delivered traction; a non-binding one must change nothing | Fails: tracking stayed at 0.0013 m/s |
 
-The second check applies to any learned controller: a learner that beats an optimum computed on the same model has found either a larger search space or a hole in the model.
+Stated for reuse, the procedure has four parts. A reference is computed before learning, and a learned result past it is treated as a model fault until shown otherwise, since the learner may have found a larger action space, a weakness of the reference, or a hole in the model. Every command the policy sets is swept with no controller in the loop, and each saving must carry a physical cost. Traction never exceeds what the battery supplied. A fix leaves non-binding arms bit-identical. Only the discharge ceiling was swept; the regeneration blend and heater derate are tested only for leaving the speed trace unchanged, so that part is proposed. The pack current limit had the same fault and was fixed in the same commit.
+
+The existing plant tests cover the five paths through which energy is billed: discharge-power and discharge-current limits, regenerative charge and SOC limits, auxiliary accounting, and energy integration. One gap was a plant-level check of the regeneration boundary. It was added with an oracle that does not call the helpers it checks; its seven cases pass. The faulty plant, loaded from the version history, still gives 8.05 Wh/km at 5 kW, while the corrected plant reproduces its binding controls (156.16 Wh/km over 4.453 km) and leaves the 250 kW control and the rule arm unchanged; all 28 stored results were reproduced (SIMULATED).
 
 ## Limits of Plant Fidelity
 
@@ -108,6 +110,6 @@ The three identified chassis coefficients do not measure what they are named aft
 
 These limits threaten absolute figures first: Wh/km values in this paper belong to this model, not to a car. Setting the rolling coefficient to the published 0.00878 lowers the rule arm's energy from 190.47 to 150.09 Wh/km on US06 and from 153.90 to 112.34 Wh/km on HWFET (SIMULATED).
 
-A one-at-a-time sweep tested the ranking. The vehicle model was varied while both controllers kept the nominal one: the published rolling coefficient, a rotational factor of 0, the regeneration ceiling at 0.8 and 1.2 times its value, and drivetrain efficiency 3 points lower and higher, on US06 and HWFET (SIMULATED, host loop, no sensor noise, the deployed learned policy of one seed). The learned policy used more energy than the rules in all 14 cases, by 0.12% (HWFET, rotational factor 0) to 0.81% (HWFET, published rolling coefficient), against 0.36% on US06 and 0.20% on HWFET for the unchanged model. Raising the regeneration ceiling changed nothing, because the ceiling does not bind upward. The sign of the verdict survived every variant tried.
+A one-at-a-time sweep tested the ranking, varying the vehicle model while both controllers kept the nominal one: the published rolling coefficient, a rotational factor of 0, the regeneration ceiling at 0.8 and 1.2 times its value, and drivetrain efficiency 3 points either side, on US06 and HWFET (SIMULATED, no sensor noise, one policy seed). The learned policy used more energy in all 14 cases, by 0.12% to 0.81%, against 0.36% and 0.20% for the unchanged model. Raising the regeneration ceiling changed nothing, because it does not bind upward.
 
-The sweep has three limits: one policy seed, no sensor noise, and one parameter at a time, so interactions are untested. It also varies only four parameters. The drag coefficient, the battery resistance at its lower bound and the temperature dependence were left alone, and the sweep does not reach the winter-only envelope. The headroom bound of Section @sec:ems comes from the same model and inherits its limits.
+Interactions are untested; the drag coefficient, the battery resistance at its lower bound and the temperature dependence were left alone, and the sweep does not reach the winter-only envelope. The DP reference of Section @sec:ems comes from the same model and inherits its limits.

@@ -50,3 +50,10 @@
 Before: prose_lint clean (1595 words); sentence SD 12.4 (n=75). After: prose_lint clean (1911 words incl. table and captions); SD 12.6 (n=90). Body about 1,650 words, above the 1,400-1,600 budget by about 50.
 
 Update 2b: lint clean before and after; SD 12.7 before, 12.7 after (see message).
+
+## Repeats with new noise draws (B2, 2026-10-14)
+
+- 12 of 12 conditions and 35 of 36 paired runs learned higher; median of condition means +0.50% (bootstrap 95% 0.30 to 0.82); exact two-sided Wilcoxon W- = 0, p = 0.00049. MEASURED. Source: `docs/2026-10-14-pil-repeats-stats.json` (cross-checked by `docs/2026-10-14-b2-wilcoxon.json`).
+- Per-condition three-seed means and learned range in Table tab:ems-repeats: same stats file, from `docs/2026-10-14-pil-repeats-{rule,actor}-s{100,200}.json` and the first-campaign runs. Nominal uses the Mixed setting (seeds 2, 102, 202).
+- Rule arm against its first campaign: max 0.57%, median absolute 0.15% over 24 runs. Same stats file.
+- Set-aside runs over 16 dropped frames: learned 8 of 24 (6 at offset 100, 2 at 200), rules 4 of 24; two learned retakes stand at 23 and 55 frames. Source: `docs/2026-10-14-pil-repeats-*-disturbed.json`, `docs/2026-10-14-b2-manifest.json`.

@@ -19,7 +19,7 @@ The target has two Xtensa LX7 cores at 240 MHz and 8 MB of PSRAM, and its FreeRT
 
 Which energy manager runs is a compile-time choice: the firmware builds the learned policy when its generated weight header exists and the rule-based manager otherwise. A campaign therefore needs one image per controller, and a diagnostic counter of policy steps, which cannot be non-zero in the rule-based image, confirms the choice.
 
-The firmware was first built with the vendor framework and later moved to the Arduino core, which yields a different binary from the same source, so every gate was measured again. Throughput stayed at 29.82 million integer multiply-accumulates per second. The forecaster took 35.03 ms instead of 36.46 ms; the policy took 0.123 ms instead of 0.121 ms. The Arduino image carries radio stacks that cannot be removed. Nothing starts them, but supply current was not re-measured on this image.
+The firmware moved from the vendor framework to the Arduino core, which yields a different binary from the same source, so every gate was measured again: the forecaster took 35.03 ms instead of 36.46 ms and the policy 0.123 ms instead of 0.121 ms. The Arduino image carries radio stacks that nothing starts; supply current was not re-measured.
 
 ## Real-Time Behaviour
 
@@ -28,9 +28,9 @@ Gate G3 was measured over 59,650 control loops, ten minutes, against the target'
 ![fig:platform-jitter](paper/figures/fig-platform-jitter.png){width=col}
 Caption: Deviation of the control period from 10 ms on the Arduino-core build (MEASURED). Empty bins are marked 0. The five pooled runs use the shipped image with the learned policy.
 
-The frame criterion fails. A dropped frame is a reply that misses the 1 ms window. The first run had 9. The link itself was clean. All 121,208 frames arrived, none malformed or lost, and the record attributes the misses to the host operating system answering late in bursts. Torque is ramped down only after more than five consecutive stale steps. That happened once.
+The frame criterion fails. A dropped frame is a reply that misses the 1 ms window. The first run had 9. All 121,208 frames arrived intact; the record attributes the misses to the host operating system answering late in bursts. Torque is ramped down only after more than five consecutive stale steps. That happened once.
 
-Five repeats of the shipped image gave 16, 4, 6, 9 and 9 dropped frames, or 8.8 per run with a Poisson 95% interval of 6.4 to 11.8; the events cluster, so the true interval is wider. Late control steps were 0 in every run. The criterion was not loosened. Zero drops against a non-real-time host may simply not be reachable.
+Five repeats of the shipped image gave 16, 4, 6, 9 and 9 dropped frames, or 8.8 per run with a Poisson 95% interval of 6.4 to 11.8; the events cluster, so the true interval is wider. Late control steps were 0 in every run, and the criterion was not loosened.
 
 A stale state could bias the energy comparison of Section @sec:ems. Across the 16 valid settings, the learned-minus-rules difference in dropped frames correlated with the energy difference at r = -0.03; no relation shows at this sample size, though a small effect is not excluded.
 
@@ -40,15 +40,15 @@ An arm is a controller under test, and a setting (or cell) is one scenario level
 
 Energy is reported on the comparable scale: cabin heating that a controller sheds is added back at the energy it saved, and arms are ranked on the sum in Wh/km. Raw consumption would reward switching the heating off.
 
-Seed 0, 1 or 2 is paired with the three levels of each factor and both arms receive the same draw, so within a factor the noise level is confounded with the seed, and the five nominal repeats hold at most three distinct draws. The plant and both controllers are deterministic, which means a repeat with the same seed replays the same noise draw and differs mainly in link timing, so it is not an independent repeat of anything the noise drives. The later fault campaign adds seed offsets of 100 and 200.
+Seed 0, 1 or 2 is paired with the three levels of each factor and both arms receive the same draw, so within a factor the noise level is confounded with the seed, and the five nominal repeats hold at most three distinct draws. The plant and both controllers are deterministic, which means a repeat with the same seed replays the same noise draw and differs mainly in link timing, so it is not an independent repeat of anything the noise drives. The later fault campaign and the corrected-campaign repeats (Section @sec:ems) add seed offsets of 100 and 200, giving three independent draws per condition.
 
-Anything written twice, in Python and in C, has a parity test that drives both through the same inputs; a policy network of the deployed shape, exported from an earlier seed, matches its NumPy original to 2.12e-06 with an identical weight checksum. The host is kept idle during a campaign.
+Anything written twice, in Python and in C, has a parity test; a policy network of the deployed shape matches its NumPy original to 2.12e-06. The host is kept idle during a campaign.
 
 ## Criteria Fixed in Advance, and What Was Decided Afterwards
 
 A criterion is written down before the experiment it governs. A result that misses it is reported as a miss. The five gate criteria were committed on 2026-08-30 with the design specification, before the commit that records the first gate measurement later that day. The criteria for the speed estimator and the first fault detector were committed on 2026-10-06, before any arm was run. Those for the bias-aware detector were committed on 2026-10-08 in the same commit as its code, so they preceded every learned reviewer but not the detector itself, whose step threshold was tuned on training data only. The 2026-10-14 measurement round was planned and committed before its runs.
 
-Table @tab:platform-gates holds every such criterion in the paper. Six are missed. They are G2, the zero-drop part of G3, the estimator's clean-tracking bound, the first detector's false-alarm limit, the bias-aware detector's simulated detection limit and its alarm rate on interpolated 100 Hz logged trips. At the logs' own 10 Hz rate the detector meets its limit, but only after 196 alarms at standstill were set aside as the plan allowed. The comparison of the two energy managers had no outcome criterion; its acceptance rule, dated 2026-09-21, required only that the 36 runs be recorded, and no later record adds one, so the comparison is descriptive (Section @sec:ems). A ridge regression passed G4 before any proposed forecaster existed.
+Table @tab:platform-gates holds every such criterion in the paper. Six are missed. They are G2, the zero-drop part of G3, the estimator's clean-tracking bound, the first detector's false-alarm limit, the bias-aware detector's simulated detection limit and its alarm rate on interpolated 100 Hz logged trips. At the logs' own 10 Hz rate the detector meets its count limit, with 196 alarms at standstill set apart as the plan fixed. The comparison of the two energy managers had no outcome criterion; its acceptance rule, dated 2026-09-21, required only that the 36 runs be recorded, and no later record adds one, so the comparison is descriptive (Section @sec:ems). A ridge regression passed G4 before any proposed forecaster existed.
 
 Table: tab:platform-gates | Every criterion fixed in advance in the paper, with the date of its record and its outcome. | width=page
 | Id | Criterion fixed in advance | Fixed | Outcome | Label |
@@ -60,10 +60,12 @@ Table: tab:platform-gates | Every criterion fixed in advance in the paper, with 
 | G4 | 10% lower RMSE than persistence at 3 s | 2026-08-30 | Pass: 14.5% for the weakest fitted model | SIMULATED |
 | G5 | 40 ms or less; model plus arena 300 KB or less | 2026-08-30 | Timing and memory pass: 36.46 ms, 35.03 ms; 28,894 B. Converted model not yet run on target | MEASURED |
 | Ablations | Null result accepted in advance for physics loss and for forecast in the policy state | 2026-08-30 | Both null; forecast ablation on the corrected model +0.262 Wh/km, interval -0.698 to +0.982 | SIMULATED |
-| Headroom | Rule-based manager within 0.5% of the DP optimum on the corrected plant | 2026-10-14 | Met: 0.01% to 0.16%, unchanged by the fix | SIMULATED |
-| Bias-aware detector, logged trips, 10 Hz | Under 1 false alarm per clean hour on 70 trips (30.4 h), standstill alarms set apart | 2026-10-14 | Met narrowly: 0.99 per hour; flag up 59% of driving | SIMULATED |
-| Bias-aware detector, logged trips, 100 Hz | Same limit, logs interpolated to 100 Hz | 2026-10-14 | Fail: 16.2 per hour; flag up 72% | SIMULATED |
+| Headroom | Rule-based manager within 0.5% of the DP reference on the corrected plant | 2026-10-14 | Met: 0.01% to 0.16%, unchanged by the fix | SIMULATED |
+| Bias-aware detector, logged trips, 10 Hz | Under 1 false alarm per clean hour on 70 trips (30.4 h), standstill alarms set apart | 2026-10-14 | Met numerically: 0.99 per hour on channels assumed healthy; flag up 59% of recorded time | SIMULATED |
+| Bias-aware detector, logged trips, 100 Hz | Same limit, logs interpolated to 100 Hz | 2026-10-14 | Fail: 16.2 per hour; synthetic diagnostic | SIMULATED |
 | Plant sensitivity | Sign of learned minus rules unchanged in every plant variant | 2026-10-14 | Met: learned worse in all 14 variants, by 0.12% to 0.81% | SIMULATED |
+| Low-pass comparator | Credit filtering in general if the low-pass recovers at least as much 10x loss as the Kalman estimator | 2026-10-14 | Not met: less in both blocks, by 0.47 and 0.07 Wh/km | MEASURED |
+| Corrected comparison, three draws | Learned used more if exact two-sided Wilcoxon p < 0.05 with positive median over 12 conditions | 2026-10-14 | Met: higher in 12 of 12, median +0.50%, p = 0.0005 | MEASURED |
 | Speed estimator | Clean energy within 0.2% of the baseline loop | 2026-10-06 | Pass | MEASURED |
 | Speed estimator | Clean tracking within 0.005 m/s of the baseline loop | 2026-10-06 | Fail: 0.0193 against 0.0104 m/s on UDDS | MEASURED |
 | Speed estimator | At least half of the 10x-noise penalty recovered | 2026-10-06 | Pass: 9.44 to 0.24 Wh/km | MEASURED |
@@ -80,7 +82,8 @@ Table: tab:platform-revisions | Rules and revisions made after results were seen
 | G2 split into three parts | 2026-08-30 | Pooled form failed all 7 trips | Both thresholds kept, a torque bound added; gate fails 1 of 7 |
 | Delay settings excluded | 2026-09-21 | Neither arm followed the cycle (25.7 to 43.4 m/s) | Rule: tracking error 1 m/s or more; 4 of 36 runs dropped |
 | Re-run above 16 dropped frames | 2026-10-07 | Four rule cells run beside other jobs (21 to 54) | Looser than G3; 8 cells later set aside |
-| Plant fix and added checks | 2026-10-06 | Anomalies in campaign tables, not a gate | 8.28% gain withdrawn; limit-invariance sweep and optimum check added |
+| Plant fix and added checks | 2026-10-06 | Anomalies in campaign tables, not a gate | 8.28% gain withdrawn; limit-invariance sweep and reference check added |
 | Second fault detector | 2026-10-08 | First detector assumed an acceleration channel that logged trips did not match | Offset state added; criteria recorded with it |
 | Fused backup speed | 2026-10-09 | Checker with rule monitor failed on a heavier car | 18 candidates on one training cycle; rule fixed before runs |
 | Frozen test disabled in log replay | 2026-10-14 | Standstill alarms dominated the 10 Hz count | Diagnostic outside the plan: 1.9 alarms per hour, flag up 21%; not a criterion |
+| Nominal row of the three-draw test | 2026-10-14 | Final plan review | Bookkeeping: the nominal condition is the aggressive-mixed cell, seeds 2, 102 and 202; the other four original nominal rows stay descriptive |
