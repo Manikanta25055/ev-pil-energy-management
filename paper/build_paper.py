@@ -595,7 +595,7 @@ def build():
                 cap_cell = tbl.cell(0, 0).merge(tbl.cell(0, ncol - 1))
                 caption("TABLE", num.tab[b["id"]], b["cap"], above=True,
                         par=cap_cell.paragraphs[0])
-                float_table(tbl, top=False)
+                float_table(tbl, top=len(rows) > 10)
             for i, row in enumerate(rows):
                 for j in range(ncol):
                     cell = tbl.cell(i + off, j)

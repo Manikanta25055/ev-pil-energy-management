@@ -27,6 +27,49 @@
 | 2.12e-06, same checksum | actor parity | docs/week10-arduino-port.md | MEASURED |
 | 21 to 54 dropped frames, 4 cells | disturbed | docs/week11-plant-correction.md | MEASURED |
 | 16 frames, 8 cells | set aside | docs/week14-fused-backup-traffic-repeats.md | MEASURED |
+| 0.2%, 0.005 m/s, half of 10x penalty, 0.1 m/s | speed-estimator criteria, fixed 2026-10-06 | docs/superpowers/specs/2026-10-06-decision-model-design.md 7.3 (commit 9f0a663); docs/week12-speed-arms.md section 7 | MEASURED |
+| 0.0193 vs 0.0104 m/s | clean tracking, UDDS | docs/week12-speed-arms.md section 7 | MEASURED |
+| 9.44 to 0.24 Wh/km | 10x noise penalty recovered | docs/week12-speed-arms.md; paper 06 | MEASURED |
+| 1 false alarm | first detector on the target | docs/week12-speed-arms.md section 7 | MEASURED |
+| 551, 533 of 560 | bias-aware detector, validation, test | docs/week13-sensor-architectures.md section 4; paper 06 | SIMULATED |
+| 120 of 120, 0.32 s, 0 alarms in 1 h | bias-aware detector on target | paper 06, docs/week14-fused-backup-traffic-repeats.md | MEASURED |
+| criteria dated 2026-08-30 | gates G1 to G5 first committed | git log: 1c42f45 (20:39, spec with gate table) before 59b8a26 (21:26, G1 result) | n/a |
+| 2026-10-06 17:15 | estimator and first-detector criteria | git log: 9f0a663, before c543285, 07419f6, 2de0f49 | n/a |
+| 2026-10-08 21:36 | bias-aware registered cases and criteria | git log: c10d2c1 (sensor_eval.py and B7 in one commit) | n/a |
+| 2026-09-21 | PIL acceptance rule: record 36 runs, no direction | git show f5feb51:.claude/night/GOAL.md, criterion 2 | n/a |
+| 2026-08-30 | G2 split; one revision permitted by the spec; thresholds 10% and 2 points kept; torque bound 50% added | spec 6.1 at 207b224; docs/g2-plant-validation.md | SIMULATED |
+| 2026-09-21 | delay exclusion, tracking 1 m/s or more; 25.7 to 43.4 m/s | commit b1fee30; paper 04 | MEASURED |
+| 2026-10-07; 16 | re-run rule; 4 rule cells at 21 to 54 | scripts/finalize_corrected_campaign.py line 79; docs/week11-plant-correction.md; commit 2b928aa | MEASURED |
+| 2026-10-06 | plant fix and DP guard recorded | commit 82ca2fe; spec 7.3 "Guard against a repeat of the week-10 error" | SIMULATED |
+| 2026-10-09; 18 candidates | fused backup speed, rule fixed before runs | docs/week14-fused-backup-traffic-repeats.md | SIMULATED |
+| 32 runs, 16 settings, 12 conditions, 5 nominal repeats | counts | docs/paper-table5-stats.json | MEASURED |
+| r = -0.03 | dropped frames vs energy difference over 16 settings | docs/paper-table5-stats.json dropped_frames_vs_energy_corr -0.028 | MEASURED |
+| +0.240, -0.669 to +1.228 | A3 on original model | spec section 4 / docs/week8-sac.md; paper 04 | SIMULATED |
+| 0.0 percent | A1 accuracy change | docs/transformer-a1.md | SIMULATED |
+
+## Panel items
+
+- R3 (one table of every criterion with outcome, including estimator clean-tracking 0.0193 against 0.0104 and the bias-aware 551 and 533 of 560): Table tab:platform-gates, now 14 rows covering gates, A1/A3, estimator, first detector, bias-aware detector.
+- R3 (list of rules made after results were seen): Table tab:platform-revisions, six rows: G2 split, delay exclusion, 16-frame re-run rule, plant fix with added checks, second detector, fused backup speed.
+- Dated records: git log shows dated commits, so the text says the dates come from the version history. Wording "pre-registered" is not used; "fixed in advance" is.
+- Arm, cell/setting, comparable energy scale: defined in "Terms and Repetition".
+- S6: dropped frames against energy difference r = -0.03, in "Real-Time Behaviour".
+- Seeds replay only the noise draw: stated, plus the seed-level confound (DA m4) and at most three distinct draws among five nominal repeats.
+- General-purpose, not automotive-qualified microcontroller: one sentence in the first subsection, pointing to the discussion.
+- 36 runs, 32 valid: stated in "Terms and Repetition".
+- DA M4: the energy-manager comparison had no outcome criterion; said in the text.
+- Not done in this file: a repository or availability statement (lead's back matter).
+
+## Git history findings (read-only)
+
+- Gate criteria: the design spec with the gate table is in the first commit, 2026-08-30 20:39 +0530; the G1 result commit is 21:26 the same evening. G2 revision commit 22:58 (spec says one revision allowed, text of the permission is in the first commit).
+- Estimator and detector (B5/B6) criteria: 2026-10-06 17:15, the first commit of the decision-model branch work; arms followed afterwards.
+- Bias-aware detector: criteria file and detector were added in one commit, 2026-10-08 21:36. The commit message and docs say criteria were fixed before any learned arm was trained; there is no record that they preceded the detector itself.
+- PIL campaign: the 2026-09-21 anchor (GOAL.md) states the acceptance rule as recorded-not-directional. No outcome criterion for learned versus rules exists anywhere in the history.
+- The 16-frame threshold first appears in code on 2026-10-07 (scripts/finalize_corrected_campaign.py); an earlier docs mention is in the speed-arm record of 2026-10-07. Its origin is not recorded.
+- The commit dates are author dates; they can be set by the author. No external timestamp or registry exists.
+
+
 
 ## Mismatches
 - BRIEF says 99.9% within 25 µs; JSON shows all 59,650 loops in the first bin (p99.9 25 µs). Text says every loop.
@@ -37,9 +80,14 @@
 - "Dropped" counts: report gives 3 (vendor) and 9 (Arduino); not compared as a rate change (record: open).
 
 ## Gaps
+- Origin of the 16-dropped-frame threshold not recorded; no record of a statistical analysis plan.
+- No evidence the B7 criteria preceded the B7 detector (same commit).
+- Bias-aware on-target criterion: the on-target run used the same 0.5 s and false-alarm limits by reading of the registered criteria; the record does not state a separate on-target criterion.
+- Dates in the version history are author-controlled; no external registry.
 - G5 is the deployed graph with fixed weights, not a converted trained model (docs/g5-latency.md); stated in text.
 - Supply current on the Arduino image not measured; stated.
 - Jitter figure is from the CSV files; no external (logic analyser) timing was used in these records.
 
-## Linter and words
-prose_lint: 1245 prose words, 65 sentences, clean, no machine-writing tells. Body words excluding headings, table and caption lines: about 1190.
+## Linter and words (final)
+Before (previous draft): prose_lint clean, 1276 prose words, 65 sentences; measure.py SD 9.8, n 66, short 12, long 10.
+After: prose_lint clean (1236 prose words, 65 sentences); measure.py SD 10.6, n 66, short 14, long 11. Body words excluding headings, tables and captions: 1147 (budget 1000 to 1150).

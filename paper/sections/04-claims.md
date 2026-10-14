@@ -1,37 +1,47 @@
-# Claims, Section V (04-forecast)
+# Claims, Section V (04-ems), round 2
 
+## Panel items
+- R2: replicate structure (5 nominal repeats, 12 distinct conditions, noise seeds 1,0,0,0,2), paired statistics, median and mean, "1 of 16" kept inside it, uphill exception stated against the repeat range. Where: subsection "Corrected Campaign on the Target"; Table tab:ems-campaign marks repeats with R; Fig. fig:ems-campaign remade (paired differences, repeats hatched, repeat range as band).
+- R5: forecast ablation stated as two reference-derived channels, not the Transformer. Where: "Forecast Ablation", second sentence.
+- R8: hyperparameter and reward-weight table (tab:ems-hyper); rule-constant origin in the "Control Structure" paragraph; no-sweep statement in "The Learned Policy". Gaps below.
+- S5: US06 not unseen; tracking deficit 0.17 to 0.50 m/s on US06-based settings, 0.016 and 0.004 on UDDS and HWFET. Where: after Fig. fig:ems-campaign.
+- S6: dropped frames against energy difference, r = -0.03.
+- S3: outage subsection describes behaviour, no safety claim; crossover at 4 to 5 s stated.
+- Minor: "Mixed" defined in the table caption; "36 runs, 32 of them in the valid set".
+- Order as asked: control structure and rules, headroom, learned policy, forecast ablation, campaign, earlier campaign (pointer to Section @sec:plant), outage.
+
+## Numbers
 | Number | Fragment | Source | Status |
 |---|---|---|---|
-| 30 samples, 3.0 s, 10 Hz; 32 samples, 3.2 s; 8 signals | task window | src/evpil/forecast/windows.py FEATURE_COLUMNS; docs/forecast-guards.md | SIMULATED |
-| 55,125 / 29,252 windows; 19 / 7 trips | splits | docs/forecast-ladder.json n_windows; forecast-guards.md | SIMULATED |
-| R2 0.4018 real, -0.0044 shuffled; 257 parameters | shuffled-label check | forecast-guards.md Guard 2 | SIMULATED |
-| 13.219 kW; 26.172 kW; 11.897 kW | persistence, drift, G4 bar | forecast-ladder.json final_step_rmse_w; forecast-guards.md | SIMULATED |
-| 11.308 / 11.290 / 11.120 / 11.029 kW; 14.5 / 14.6 / 15.9 / 16.6 % | table | forecast-deploy-cost.csv (final_rmse_w, skill) | SIMULATED |
-| 7.5, 20.4, 17.9, ~3,658 KB | sizes | forecast-deploy-cost.csv int8_bytes; transformer-a1.md | SIMULATED (estimates) |
-| 0.26 ms, 0.6 % (ridge estimate); 19.84 ms; 22.28 ms | estimates | forecast-deploy-cost.csv | estimate |
-| 35.07 ms, 36.46 ms, 88 %, 91 % | on target | docs/g5-latency.md | MEASURED |
-| 11.007 kW five-LSTM mean | ensemble | forecast-ladder.json | SIMULATED |
-| 87 %; 1.2 % | share of benefit; compute | (13.219-11.308)/(13.219-11.029)=87.3 %; 0.26/22.28 = 1.17 % | derived |
-| 0.038 to 0.174 kW seed spread | transformer-a1.md | SIMULATED |
-| 10.926 kW | 3-model mean at 3 s | transformer-a1.json arms.plain-1ch.final_rmse_w | SIMULATED |
-| 21,336 params; 11.057 / 11.052 kW; lambda 0.1 | ablation | transformer-a1.json | SIMULATED |
-| 24.5 -> 2.5 %; 373 -> 139 W; 8.40 -> 5.00 V; 500 W tolerance | consistency | transformer-a1.json violation, mean_abs_residual, tolerances | SIMULATED |
-| 95.8 %; 0.00022; 11.542 kW; 4.4 %; 0.988 -> 0.966 | charge constraint | transformer-a1.md | SIMULATED |
-| 1,024 exponentials, 4 heads, 2 layers; 7.25 ms; 0.64 ms; 64 % | cost gap | g5-latency.md | MEASURED |
-| 11.051 -> 11.156 kW; 0.95 %; 71.7 -> 20.2 KB; 3.6x | quantisation | a2-quantisation.json; g5-latency.md | SIMULATED |
-| 17,600 B; 11,294 B; 28,894 B; 9.4 % | memory | g5-latency.md, g5-arduino.json | MEASURED |
-| 136,414 / 18,366 / 5,102 params; +21.9 W, 0.20 %; +99.2 W, 0.89 % | distillation | a2-distillation.json/md | SIMULATED |
-| 26.7x params, 23.1x memory; 11.212 vs 11.148 kW; 64.3 W; 99.2 W; 6.1 KB; 6.75 ms | teacher | a2-distillation.md | SIMULATED (6.75 ms estimate) |
+| 0.01% to 0.16%; 153.90/153.89, 167.93/167.67, 190.47/190.39, 175.99/175.94 | headroom | docs/week7-control.md table; week7-control-baselines.json | SIMULATED |
+| 0.80 SOC, 12 degrees C | DP and campaign ambient | week7-control.md; scripts/run_pil_campaign.py T_AMBIENT_C | design |
+| 0.85, 0.94, 2 m/s, 125/40 kW, 0.20, 0.07, 0.15, 30% | rule constants | src/evpil/control/rule_ems.py | design |
+| 0.0003, 256, 1,000,000, 0.99, 0.005, auto | SAC library defaults | stable_baselines3 2.9.0 SAC signature | design |
+| 1,000; 64,64; 200,000; 5; 300 | script settings | scripts/run_sac.py | design |
+| 1.0, 1.0, 5.0, 2.0, 50.0, floor+0.02 | reward weights | src/evpil/control/env.py RewardWeights, step() | design |
+| 154.86 +- 0.51; 155.12 +- 0.82; 153.90; seed 3 154.21 | retraining | docs/week11-sac-corrected.json | SIMULATED |
+| 0.121 ms, 19.3 KB, 2e-06/2e-05, 0.84 ms | on-target cost | docs/week8-actor-onchip.json | MEASURED |
+| +0.240 [-0.669, +1.228]; +0.262 [-0.698, +0.982] | forecast ablation | week8-sac.json a3; week11-sac-corrected.json a3 | SIMULATED |
+| 36 runs, 32 valid, 2,282,832 steps, 0 late | campaign | week11-pil-corrected.json | MEASURED |
+| 25.7 to 43.4 m/s; 0.504 m/s | excluded and largest valid error | week11-pil-corrected.json | MEASURED |
+| 190.73 to 191.41 (0.36%); 191.43 to 191.98 (0.29%); +0.40, SD 0.22, [0.13, 0.67], n=5 | repeats | docs/paper-table5-stats.json nominal_replicates | MEASURED |
+| +0.94% mean, +0.35% median (16); 11 of 12; +1.11% [0.27, 2.27]; +0.31% [0.17, 0.76]; Wilcoxon p 0.001; sign p 0.006 | paired statistics | paper-table5-stats.json | MEASURED |
+| r = -0.03 | dropped frames vs energy | paper-table5-stats.json | MEASURED |
+| seeds 1,0,0,0,2 | noise seeds of repeats | week11-pil-corrected.json, seed field | MEASURED |
+| +5.71, +4.45, -0.02, 0.05 gap to lowest repeat | extremes | paper-table5-stats.json (0.035 - (-0.018)) | MEASURED |
+| 0.17 to 0.24, 0.33, 0.504, 0.010 to 0.098, 0.016, 0.004 | tracking | week11-pil-corrected.json | MEASURED |
+| 14 of 16, 8.28% | earlier campaign | week10-pil-campaign.json | MEASURED (withdrawn) |
+| outage numbers | unchanged from previous draft | week11-a4-{on,off}-*s.json | MEASURED |
 
 ## Mismatches
-- The ladder JSON/CSV per-horizon curves for LSTM and Transformer are ensemble (mean-prediction) values, 11.007 and 10.926 kW at 3 s; the headline 11.120 and 11.029 kW are means of single-model RMSEs. Figure caption states this.
-- docs/g5-arduino.json (Arduino core) gives 35.03 ms for the Transformer; the report and g5-latency.md give 36.46 ms (earlier toolchain). The brief's 36.46 ms is used.
-- Brief says G4 passes for "four models"; the record counts three fitted arms in the ladder and four with the Transformer. Text says every fitted model.
-- Report quotes 15,103 trees; JSON "params" for XGBoost is the same tree count, not parameters.
+- The DP bound (week 7) predates the plant correction; the DP held the ceiling at maximum and the HWFET rule value is unchanged (153.90), but the DP was not re-run on the corrected plant. Text says so.
+- Table tab:ems-campaign "Mixed" and the four other R rows were reached through different axes but share the nominal condition; SOC 0.85 starts at 0.85, not 0.80, so it is not a repeat.
+- Episode length 300 is the run_sac.py default; the week-11 record does not store the command line used for the corrected retraining.
 
 ## Gaps
-- No per-horizon values for XGBoost; no on-target timing for linear regression or XGBoost.
-- Quantised model not run through an embedded runtime (gate G5 not closed in full).
+- How the SAC reward weights and the numeric rule constants (0.85, 0.20, 40 kW, 0.15, 0.30) were chosen: no record found beyond the code comments; text says none was tuned and no sweep was run.
+- Stable-Baselines3 version at training time (2.9.0 is the installed version); library defaults assumed.
+- Equivalence margin and plant sensitivity: none exist.
 
-## Linter
-paper/sections/04-forecast.md (1309 prose words, 62 sentences): clean - no machine-writing tells detected. Word count (prose): 1309.
+## Lint and measure
+Before: prose_lint clean (1595 words); sentence SD 12.4 (n=75). After: prose_lint clean (1911 words incl. table and captions); SD 12.6 (n=90). Body about 1,650 words, above the 1,400-1,600 budget by about 50.

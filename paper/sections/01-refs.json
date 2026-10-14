@@ -595,5 +595,170 @@
   "year": "",
   "doi": "",
   "verified_url": "from docs/ved-generalisation.md [L1]; not re-verified online"
+ },
+ {
+  "key": "sciarretta2015",
+  "authors": [
+   "A. Sciarretta",
+   "G. De Nunzio",
+   "L. L. Ojeda"
+  ],
+  "title": "Optimal ecodriving control: Energy-efficient driving of road vehicles as an optimal control problem",
+  "venue": "IEEE Control Systems Magazine",
+  "volume": "35",
+  "number": "5",
+  "pages": "71-90",
+  "month": "October",
+  "year": "2015",
+  "doi": "10.1109/MCS.2015.2449688",
+  "verified_url": "https://doi.org/10.1109/MCS.2015.2449688"
+ },
+ {
+  "key": "liu2017",
+  "authors": [
+   "T. Liu",
+   "X. Hu",
+   "S. E. Li",
+   "D. Cao"
+  ],
+  "title": "Reinforcement learning optimized look-ahead energy management of a parallel hybrid electric vehicle",
+  "venue": "IEEE/ASME Transactions on Mechatronics",
+  "volume": "22",
+  "number": "4",
+  "pages": "1497-1507",
+  "month": "August",
+  "year": "2017",
+  "doi": "10.1109/TMECH.2017.2707338",
+  "verified_url": "https://doi.org/10.1109/TMECH.2017.2707338"
+ },
+ {
+  "key": "agarwal2021",
+  "authors": [
+   "R. Agarwal",
+   "M. Schwarzer",
+   "P. S. Castro",
+   "A. Courville",
+   "M. G. Bellemare"
+  ],
+  "title": "Deep reinforcement learning at the edge of the statistical precipice",
+  "venue": "Advances in Neural Information Processing Systems (NeurIPS)",
+  "volume": "34",
+  "number": "",
+  "pages": "",
+  "month": "December",
+  "year": "2021",
+  "doi": "",
+  "verified_url": "https://arxiv.org/abs/2108.13264"
+ },
+ {
+  "key": "amodei2016",
+  "authors": [
+   "D. Amodei",
+   "C. Olah",
+   "J. Steinhardt",
+   "P. Christiano",
+   "J. Schulman",
+   "D. Mane"
+  ],
+  "title": "Concrete problems in AI safety",
+  "venue": "arXiv preprint arXiv:1606.06565",
+  "volume": "",
+  "number": "",
+  "pages": "",
+  "month": "June",
+  "year": "2016",
+  "doi": "",
+  "verified_url": "https://arxiv.org/abs/1606.06565"
+ },
+ {
+  "key": "skalse2022",
+  "authors": [
+   "J. Skalse",
+   "N. H. R. Howe",
+   "D. Krasheninnikov",
+   "D. Krueger"
+  ],
+  "title": "Defining and characterizing reward gaming",
+  "venue": "Advances in Neural Information Processing Systems (NeurIPS)",
+  "volume": "35",
+  "number": "",
+  "pages": "",
+  "month": "December",
+  "year": "2022",
+  "doi": "",
+  "verified_url": "https://proceedings.neurips.cc/paper_files/paper/2022/hash/3d719fee332caa23d5038b8a90e81796-Abstract-Conference.html"
+ },
+ {
+  "key": "lehman2020",
+  "authors": [
+   "J. Lehman",
+   "J. Clune",
+   "D. Misevic",
+   "et al."
+  ],
+  "title": "The surprising creativity of digital evolution: A collection of anecdotes from the evolutionary computation and artificial life research communities",
+  "venue": "Artificial Life",
+  "volume": "26",
+  "number": "2",
+  "pages": "274-306",
+  "month": "",
+  "year": "2020",
+  "doi": "10.1162/artl_a_00319",
+  "verified_url": "https://doi.org/10.1162/artl_a_00319"
+ },
+ {
+  "key": "tobin2017",
+  "authors": [
+   "J. Tobin",
+   "R. Fong",
+   "A. Ray",
+   "J. Schneider",
+   "W. Zaremba",
+   "P. Abbeel"
+  ],
+  "title": "Domain randomization for transferring deep neural networks from simulation to the real world",
+  "venue": "Proceedings of the IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)",
+  "volume": "",
+  "number": "",
+  "pages": "",
+  "month": "September",
+  "year": "2017",
+  "doi": "10.1109/IROS.2017.8202133",
+  "verified_url": "https://doi.org/10.1109/IROS.2017.8202133"
+ },
+ {
+  "key": "zhao2020",
+  "authors": [
+   "W. Zhao",
+   "J. P. Queralta",
+   "T. Westerlund"
+  ],
+  "title": "Sim-to-real transfer in deep reinforcement learning for robotics: a survey",
+  "venue": "Proceedings of the IEEE Symposium Series on Computational Intelligence (SSCI)",
+  "volume": "",
+  "number": "",
+  "pages": "737-744",
+  "month": "December",
+  "year": "2020",
+  "doi": "10.1109/SSCI47803.2020.9308468",
+  "verified_url": "https://doi.org/10.1109/SSCI47803.2020.9308468"
+ },
+ {
+  "key": "wegener2021",
+  "authors": [
+   "M. Wegener",
+   "L. Koch",
+   "M. Eisenbarth",
+   "J. Andert"
+  ],
+  "title": "Automated eco-driving in urban scenarios using deep reinforcement learning",
+  "venue": "Transportation Research Part C: Emerging Technologies",
+  "volume": "126",
+  "number": "",
+  "pages": "102967",
+  "month": "",
+  "year": "2021",
+  "doi": "10.1016/j.trc.2021.102967",
+  "verified_url": "https://doi.org/10.1016/j.trc.2021.102967"
  }
 ]

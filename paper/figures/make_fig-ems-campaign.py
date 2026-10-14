@@ -1,9 +1,15 @@
-"""Corrected PIL campaign: energy difference and tracking error, 16 valid settings."""
+"""Corrected PIL campaign: paired energy difference per setting and tracking error.
+
+Panel (a) reads docs/paper-table5-stats.json (paired differences, nominal
+repeats); panel (b) reads docs/week11-pil-corrected.json (tracking RMSE).
+"""
 import json
 import sys; sys.path.insert(0, "paper")
 import numpy as np
+import matplotlib.patches as mp
 import figstyle as fs
 
+stats = json.load(open("docs/paper-table5-stats.json"))
 runs = json.load(open("docs/week11-pil-corrected.json"))["runs"]
 cell = {}
 for r in runs:
@@ -27,29 +33,41 @@ order = [
     ("driver_aggression", "brisk", "driver 1.25"),
     ("driver_aggression", "aggressive", "driver 1.5"),
 ]
-labels, diff, trk_r, trk_a, cyc = [], [], [], [], []
+nominal = {tuple(k) for k in stats["nominal_us06_replicates"]}
+assert len(order) == 16 and len(nominal) == 5
+
+labels, diff, is_nom, trk_r, trk_a = [], [], [], [], []
 for ax_, lv, lab in order:
     c = cell[(ax_, lv)]
     rule, act = c["rule"], c["actor"]
     assert max(rule["tracking_rmse_mps"], act["tracking_rmse_mps"]) < 1.0
     labels.append(lab)
-    diff.append(100 * (act["equivalent_wh_per_km"] / rule["equivalent_wh_per_km"] - 1))
+    diff.append(stats["paired_diff_pct_by_setting"][f"{ax_}/{lv}"])
+    is_nom.append((ax_, lv) in nominal)
     trk_r.append(rule["tracking_rmse_mps"])
     trk_a.append(act["tracking_rmse_mps"])
-    cyc.append(rule["cycle"])
-assert len(order) == 16
+lo, hi = min(stats["nominal_replicates"]["paired_diff_pct"]), max(stats["nominal_replicates"]["paired_diff_pct"])
 
-fig, axs = fs.figure("page", nrows=2, ncols=1, height=4.3)
+fig, axs = fs.figure("page", nrows=2, ncols=1, height=4.6)
 x = np.arange(16)
 a0, a1 = axs
-a0.bar(x, diff, width=0.65, **fs.bar(0))
+a0.axhspan(lo, hi, color=fs.C[4], alpha=0.25, lw=0, zorder=0)
+for i, d in enumerate(diff):
+    kw = fs.bar(2) if is_nom[i] else fs.bar(0)
+    a0.bar(i, d, width=0.65, **kw)
 a0.axhline(0, color="black", lw=0.6)
 a0.set_ylabel("Learned minus rules (%)")
 a0.set_xticks(x); a0.set_xticklabels([])
-a0.set_ylim(-1, 6.6)
+a0.set_ylim(-0.6, 7.4)
 for i, d in enumerate(diff):
     if d > 2:
         a0.text(i, d + 0.12, f"{d:+.2f}", ha="center", va="bottom", fontsize=8)
+a0.text(0.9, 1.0, f"shaded band: range of the five\nnominal repeats ({lo:.2f} to {hi:.2f}%)",
+        ha="left", va="bottom", fontsize=8)
+handles = [mp.Patch(facecolor=fs.C[0], edgecolor="black", linewidth=0.4, label="Single condition"),
+           mp.Patch(facecolor=fs.C[2], edgecolor="black", linewidth=0.4, hatch=fs.HATCHES[2],
+                    label="Nominal US06 repeat")]
+a0.legend(handles=handles, loc="upper left", ncol=1, bbox_to_anchor=(0.0, 0.88))
 fs.panel_label(a0, "(a)")
 
 w = 0.38
@@ -62,11 +80,10 @@ a1.legend(loc="upper left", ncol=2)
 a1.set_ylim(1e-3, 3)
 fs.panel_label(a1, "(b)")
 
-# cycle brackets under panel (a): UDDS, HWFET, US06
 for ax_ in (a0, a1):
     ax_.axvline(1.5, color="#7a7a7a", lw=0.5, ls=":")
     ax_.axvline(0.5, color="#7a7a7a", lw=0.5, ls=":")
-a0.text(0, 6.2, "UDDS", ha="center", fontsize=8)
-a0.text(1, 6.2, "HWFET", ha="center", fontsize=8)
-a0.text(8.5, 6.2, "US06 (14 settings)", ha="center", fontsize=8)
+a0.text(0, 6.95, "UDDS", ha="center", fontsize=8)
+a0.text(1, 6.95, "HWFET", ha="center", fontsize=8)
+a0.text(8.5, 6.95, "US06 (14 settings)", ha="center", fontsize=8)
 fs.save(fig, "fig-ems-campaign")

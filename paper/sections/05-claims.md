@@ -1,42 +1,48 @@
-# Claims, Section VI (05-ems)
+# Claims, Section VI (05-forecast), revised round 2
 
-## Mismatches and notes (read first)
-- A3 interval: the brief gives +0.240 Wh/km. That value (CI -0.669 to +1.228) is `docs/week8-sac.json` a3, on the UNCORRECTED model (HWFET, no ceiling binds). The corrected retraining in `docs/week11-sac-corrected.json` gives +0.262 (CI -0.698 to +0.982). The text gives both, labelled.
-- Rule tracking on US06-based settings: the week-11 record says "0.02 to 0.05"; the JSON gives 0.010 to 0.098 m/s (0.098 at driver 1.5). The text uses the JSON range.
-- The brief mentions vehicle mass as a disturbance; the campaign has no mass axis (axes: driving condition, road grade, battery state, sensor noise, communication delay, driver aggression). The text says mass was not an axis.
-- Actor latency: 0.121 ms is `docs/week8-actor-onchip.json` (first build); the Arduino-build file `week8-actor-onchip-arduino.json` gives 0.1233 ms. Text quotes 0.121 as in the brief.
-- Mean difference 0.935% computed from JSON (0.9350), matches 0.94%. Old campaign mean -8.276% (first), -8.292% (repeat); text uses 8.28%.
-- "Late steps" = ctrl_late = 0 in all 36 runs; dropped frames are not zero in the delay rows and are not late steps.
-- Seed-level validation selection: seed 3 at 154.21 Wh/km (week11-sac-corrected.json rows).
-- Not read in detail: `src/evpil/control/speed estimator` files and `scripts/plot_*.py` beyond plot_a4_sweep; SAC hyper-parameters other than net_arch, steps, seeds are library defaults (not stated in text). Gap: training-reward weights quoted only qualitatively.
-
-## Numbers
 | Number | Fragment | Source | Status |
 |---|---|---|---|
-| 100 Hz, 10 Hz | speed loop, manager rate | tasks.h CTRL/EMS_PERIOD_MS=100; sim.py OUTER_DECIMATION=10 | design |
-| 0.85, 0.94, 2 m/s, 125 kW, 40 kW, 0.20, 0.07, 0.15, 30% | rule thresholds | src/evpil/control/rule_ems.py | design |
-| 153.90/153.89, 167.93/167.67, 190.47/190.39 | headroom | status-report s16 (week7-control-baselines) | SIMULATED |
-| 0.01% to 0.16%, 0.16% | gap range | status-report s16 table (0.01 to 0.16) | SIMULATED |
-| 8 inputs, 3 outputs, 4,931, 8-64-64-3 | policy | env.py OBS_NAMES; week11-sac-corrected.json actor_cost | design |
-| 200,000 steps, 5 seeds, WLTC3B/UDDS train, HWFET val, US06 sealed | training | run_sac.py; cycles.py CONTROL_SPLIT | SIMULATED |
-| 154.86 +- 0.51; 155.12 +- 0.82; 153.90 | retraining | week11-sac-corrected.json summary | SIMULATED |
-| seed 3, 154.21 | deployed seed | week11-sac-corrected.json rows | SIMULATED |
-| 0.121 ms, 19.3 KB, 2.1e-06, 2e-05 | on-target cost | week8-actor-onchip.json | MEASURED |
-| +0.240 [-0.669, +1.228] | A3 original | week8-sac.json a3 | SIMULATED |
-| +0.262 [-0.698, +0.982] | A3 corrected | week11-sac-corrected.json a3 | SIMULATED |
-| 36 runs, 2,282,832 steps, 0 late | campaign | week11-pil-corrected.json (sum steps, ctrl_late) | MEASURED |
-| 16 valid, 1 lower, +0.94% | result | computed from week11-pil-corrected.json; finalization.json | MEASURED |
-| table values | tab:ems-campaign | week11-pil-corrected.json equivalent_wh_per_km, tracking_rmse_mps | MEASURED |
-| 25.7 to 43.4 m/s | excluded delay rows | week11-pil-corrected.json | MEASURED |
-| 0.504 m/s, 0.010 to 0.098 | tracking ranges | week11-pil-corrected.json | MEASURED |
-| +5.71%, +4.45%, 0.03% to 0.82%, -0.02% | extremes | week11-pil-corrected.json | MEASURED |
-| 0.16% (identical campaigns) | repeat spread | week11-rule-arm-check.json | MEASURED |
-| 14 of 16, 8.28%, 21.6% | withdrawn campaign | week10-pil-campaign.json, docs/week10-pil-campaign.md 6.2 | MEASURED (withdrawn) |
-| 5 kW, 8.05 Wh/km, 12.89 km | ceiling artefact | week11-plant-correction.md s1 / .json | SIMULATED |
-| +0.07% [-0.03, +0.17] | rule arm moved | week11-rule-arm-check.json | MEASURED |
-| 300 ms, 5 periods, 50 ms, 10 N m/step | fallback | firmware/main/tasks.h, tasks.c | design |
-| 0.2 to 10 s, 8 onsets | sweep | week11-a4-{on,off}-*s.json | MEASURED |
-| 0.18 v 0.23; 3.73 v 6.67; 7.97 v 7.40; 18.2 v 13.3; 3.72 v 5.33 | worst/median errors | week11-a4-*.json err_peak_mps | MEASURED |
+| 30 samples, 3.0 s, 10 Hz; 32 samples, 3.2 s; 8 signals | task window | src/evpil/forecast/windows.py FEATURE_COLUMNS; docs/forecast-guards.md | SIMULATED |
+| 55,125 / 29,252 windows; 19 / 7 trips | splits | docs/forecast-ladder.json n_windows; forecast-guards.md | SIMULATED |
+| R2 0.4018 real, -0.0044 shuffled; 257 parameters | shuffled-label check | forecast-guards.md Guard 2 | SIMULATED |
+| 13.219 kW; 26.172 kW; 11.897 kW | persistence, drift, G4 bar | forecast-ladder.json final_step_rmse_w; forecast-guards.md | SIMULATED |
+| 11.308 / 11.290 / 11.120 / 11.029 kW; 14.5 / 14.6 / 15.9 / 16.6 % | table | forecast-deploy-cost.csv (final_rmse_w, skill) | SIMULATED |
+| 7.5, 20.4, 17.9, ~3,658 KB | sizes | forecast-deploy-cost.csv int8_bytes; transformer-a1.md | SIMULATED (estimates) |
+| 0.26 ms, 0.6 % (ridge estimate); 19.84 ms; 22.28 ms | estimates | forecast-deploy-cost.csv | estimate |
+| 35.07 ms, 36.46 ms, 88 %, 91 % | on target | docs/g5-latency.md | MEASURED |
+| 87 %; 1.2 % | share of benefit; compute | (13.219-11.308)/(13.219-11.029)=87.3 %; 0.26/22.28 = 1.17 % | derived |
+| 0.038 to 0.174 kW seed spread | transformer-a1.md | SIMULATED |
+| 21,336 params; 11.057 / 11.052 kW; lambda 0.1 | ablation | transformer-a1.json | SIMULATED |
+| 24.5 -> 2.5 %; 373 -> 139 W; 8.40 -> 5.00 V; 500 W tolerance | consistency | transformer-a1.json violation, mean_abs_residual, tolerances | SIMULATED |
+| 1,024 exponentials, 4 heads, 2 layers; 7.25 ms; 0.64 ms; 64 % | cost gap | g5-latency.md | MEASURED |
+| 11.051 -> 11.156 kW; 0.95 %; 71.7 -> 20.2 KB; 3.6x | quantisation | a2-quantisation.json; g5-latency.md | SIMULATED |
+| 17,600 B; 11,294 B; 28,894 B; 9.4 % | memory | g5-latency.md, g5-arduino.json | MEASURED |
+
+| 0.038 to 0.174 kW seed spread | seed spread | transformer-a1.md | SIMULATED |
+| 24.5 -> 2.5 %; 500 W; 11.057 / 11.052 kW | physics-informed loss, one sentence | transformer-a1.json violation, tolerances | SIMULATED |
+| 0.20 %, 0.89 % | distillation, one sentence | a2-distillation.json/md | SIMULATED |
+| 7.89 ms of 14.18 ms | softmax 7.25 + layer norm 0.64 vs 36.46-22.28 | g5-latency.md | MEASURED, derived |
+
+Cut in round 2: horizon figure (fig-forecast-horizon, no other section references it), charge-conservation paragraph, five-LSTM average, distillation detail, physics-loss detail, parameter counts. Numbers for those remain in the earlier rows only where still used.
+
+## Panel items (W5, REFRAME Section 5)
+- Cut to 600-750 words: body 728 by the linter count.
+- Kept: task and safeguards, ladder table, latency estimate against measurement (22.28, 36.46, 35.03 ms; 64%), quantisation cost, one figure, one table.
+- Physics-informed training and distillation: one sentence each.
+- Energy manager did not use this forecaster: second sentence of the opening paragraph; the ablation channels are described in Section @sec:ems (R5).
+- Perspective and EIC notes: figure caption and text now name the vendor-framework build for 36.46 ms and give 35.03 ms for the Arduino core; label overlap in the cost figure fixed.
+
+## Mismatches
+- docs/g5-arduino.json (Arduino core) gives 35.03 ms for the Transformer; the report and g5-latency.md give 36.46 ms (earlier toolchain). The brief's 36.46 ms is used.
+- Brief says G4 passes for "four models"; the record counts three fitted arms in the ladder and four with the Transformer. Text says every fitted model.
+- Report quotes 15,103 trees; JSON "params" for XGBoost is the same tree count, not parameters.
+
+## Gaps
+- No per-horizon values for XGBoost; no on-target timing for linear regression or XGBoost.
+- Quantised model not run through an embedded runtime (gate G5 not closed in full).
+
+- New citations chen2016 (XGBoost) and hochreiter1997 (LSTM) are not in 01-refs.json; entries written to 05-refs.json, verified by WebSearch (arXiv record and DOI; Neural Computation record). Lead should merge.
 
 ## Linter
-prose_lint.py: clean, no machine-writing tells (final run, see message). Body word count about 1,500 excluding table, captions and headings.
+Before (old 04-forecast.md, 1428 prose words): clean; sentence-length SD 11.9.
+After (05-forecast.md, 728 prose words, 37 sentences): clean; SD 12.2 (measure.py).

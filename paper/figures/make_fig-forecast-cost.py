@@ -30,7 +30,7 @@ for name, arm, ci, pos in rows:
                 va="center", ha="left", arrowprops=arrow)
 xe = cost.loc["xgboost", "final_rmse_w"] / 1000.0
 ax.plot(250, xe, marker="D", color=fs.C[4], ls="none", ms=5)
-ax.annotate("XGBoost (no latency;\n3,658 KB)", (250, xe), xytext=(380, 11.62), textcoords="data",
+ax.annotate("XGBoost\n(no latency,\n3,658 KB)", (250, xe), xytext=(390, 11.7), textcoords="data",
             fontsize=8, va="center", ha="right", arrowprops=arrow)
 ax.axhline(persist, color="black", lw=0.9)
 ax.text(0.14, persist + 0.05, "Persistence", fontsize=8, va="bottom")

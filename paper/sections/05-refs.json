@@ -1,0 +1,4 @@
+[
+ {"key":"chen2016","authors":["T. Chen","C. Guestrin"],"title":"XGBoost: A scalable tree boosting system","venue":"Proc. 22nd ACM SIGKDD Int. Conf. Knowledge Discovery and Data Mining","volume":"","number":"","pages":"785-794","month":"Aug.","year":"2016","doi":"10.1145/2939672.2939785","verified_url":"https://arxiv.org/abs/1603.02754"},
+ {"key":"hochreiter1997","authors":["S. Hochreiter","J. Schmidhuber"],"title":"Long short-term memory","venue":"Neural Computation","volume":"9","number":"8","pages":"1735-1780","month":"Nov.","year":"1997","doi":"10.1162/neco.1997.9.8.1735","verified_url":"https://mlanthology.org/neco/1997/hochreiter1997neco-long"}
+]
