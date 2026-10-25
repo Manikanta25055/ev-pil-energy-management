@@ -9,7 +9,7 @@
    "membership": ""
   },
   {
-   "name": "[Co-author names to be confirmed]",
+   "name": "Swathi Tangi",
    "mark": "1",
    "membership": ""
   }
@@ -18,7 +18,7 @@
   "1[Department and institution to be confirmed]"
  ],
  "notes": [
-  "Corresponding author: Manikanta Gonugondla (e-mail to be confirmed).",
+  "Corresponding author: Dr Swathi Tangi",
   "MOCK MANUSCRIPT prepared for internal review. Not submitted to any journal. Dates, volume and Digital Object Identifier are placeholders."
  ],
  "abstract": "A learned electric-vehicle energy manager is trained and scored against a simulated vehicle, so a fault in that model can be read as a gain. This paper reports one case and the checks that exposed it. A Soft Actor-Critic policy and a rule-based energy manager ran on an ESP32-S3 microcontroller at 100 Hz in a processor-in-the-loop arrangement, against a longitudinal vehicle model identified from logged trips. In a first campaign the policy used less energy than the rules in 14 of 16 settings, by 8.28% on average, and a repeat campaign reproduced it. The gain came from the model, which capped billed battery power at the policy's ceiling but computed acceleration from the uncapped torque. Repetition reproduced the fault, and trip replays never imposed a binding ceiling, so neither detected it. It was caught when the policy finished 7% below a dynamic-programming reference computed beforehand, at equal tracking, and a sweep of fixed ceilings with no controller drove US06 on 8.05 Wh/km at 5 kW. After correction and retraining, over 36 runs and 2,282,832 control steps, none late, the policy used less energy in 1 of 16 settings and 0.94% more on average, with worse speed tracking on the target. The 8.28% result is withdrawn. Measured gains came from estimation: a two-state Kalman speed estimator cut the energy lost at ten times the sensor-noise floor from 9.44 to 0.24 Wh/km, and a bias-aware detector caught 120 of 120 injected speed-sensor faults with no false alarm in one clean hour.",
@@ -32,7 +32,7 @@
  "bios": [
   [
    "Manikanta Gonugondla",
-   "[Biography and photograph to be supplied.]"
+   "Biography to be written."
   ]
  ]
 }
