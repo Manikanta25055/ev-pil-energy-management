@@ -1,0 +1,43 @@
+{
+ "provenance": "bookkeeping over committed MEASURED records; review items R2 and R9",
+ "frame_limit": 16,
+ "rules": {
+  "excluded_delay": "tracking RMSE >= 1 m/s, fixed 2026-09-21 after the delay runs were seen",
+  "set_aside_frames": "dropped frames > 16, recorded 2026-10-07; one retake, which stands",
+  "earlier campaigns": "predate the frame rule; energy result withdrawn (faulty plant)"
+ },
+ "summary": {
+  "earlier": {
+   "attempted": 36,
+   "accepted": 32,
+   "excluded_delay": 4
+  },
+  "earlier-repeat": {
+   "attempted": 36,
+   "accepted": 32,
+   "excluded_delay": 4
+  },
+  "corrected-s0": {
+   "attempted": 40,
+   "accepted": 32,
+   "excluded_delay": 4,
+   "set_aside_frames": 4
+  },
+  "b2-s100": {
+   "attempted": 31,
+   "accepted": 22,
+   "accepted_over_limit": 2,
+   "set_aside_frames": 7
+  },
+  "b2-s200": {
+   "attempted": 29,
+   "accepted": 24,
+   "set_aside_frames": 5
+  },
+  "b1-estimators": {
+   "attempted": 13,
+   "accepted": 12,
+   "set_aside_frames": 1
+  }
+ }
+}

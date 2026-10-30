@@ -4,7 +4,7 @@ Word file. Run from the repository root:
     python3 paper/build_paper.py
 
 Reads 00-front.json, every NN-*.md that is not a claims file, and every
-NN-refs.json. Writes paper/EV-PIL-mock-paper-IEEE-Access.docx.
+NN-refs.json. Writes paper/EV-PIL-manuscript.docx.
 """
 import copy
 import hashlib
@@ -29,7 +29,7 @@ ROOT = Path(__file__).resolve().parent.parent
 PAPER = ROOT / "paper"
 SEC = PAPER / "sections"
 EQ_DIR = PAPER / "figures" / "_eq"
-OUT = PAPER / "EV-PIL-mock-paper-IEEE-Access.docx"
+OUT = PAPER / "EV-PIL-manuscript.docx"
 
 SERIF = "Times New Roman"
 SANS = "Arial"
@@ -334,7 +334,7 @@ def set_cols(section, n):
 
 
 class Flow:
-    """Tracks the column mode so page-wide floats get their own section."""
+    """Tracks the column mode so page-wide figures and tables get their own one-column block."""
 
     def __init__(self, doc):
         self.doc = doc
@@ -360,38 +360,6 @@ def cell_border(cell, **edges):
         el.set(qn("w:space"), "0")
         el.set(qn("w:color"), "000000")
         borders.append(el)
-
-
-def frame(par, top=True):
-    """Put a paragraph in a page-wide frame at the top or bottom margin."""
-    pPr = par._p.get_or_add_pPr()
-    fp = OxmlElement("w:framePr")
-    fp.set(qn("w:w"), str(int(PAGE_W * 1440)))
-    fp.set(qn("w:hSpace"), "0")
-    fp.set(qn("w:vSpace"), "140")
-    fp.set(qn("w:wrap"), "notBeside")
-    fp.set(qn("w:vAnchor"), "margin")
-    fp.set(qn("w:hAnchor"), "margin")
-    fp.set(qn("w:xAlign"), "center")
-    fp.set(qn("w:yAlign"), "top" if top else "bottom")
-    pPr.insert(0, fp)
-
-
-def float_table(tbl, top=False):
-    tblPr = tbl._tbl.tblPr
-    pp = OxmlElement("w:tblpPr")
-    pp.set(qn("w:leftFromText"), "0")
-    pp.set(qn("w:rightFromText"), "0")
-    pp.set(qn("w:topFromText"), "140")
-    pp.set(qn("w:bottomFromText"), "140")
-    pp.set(qn("w:vertAnchor"), "margin")
-    pp.set(qn("w:horzAnchor"), "margin")
-    pp.set(qn("w:tblpXSpec"), "center")
-    pp.set(qn("w:tblpYSpec"), "top" if top else "bottom")
-    tblPr.insert(0, pp)
-    ov = OxmlElement("w:tblOverlap")
-    ov.set(qn("w:val"), "never")
-    tblPr.insert(1, ov)
 
 
 def page_number_field(par):
@@ -458,16 +426,11 @@ def build():
     fmt(hp, align=WD_ALIGN_PARAGRAPH.LEFT)
     run(hp, front["running_head"], font=SANS, size=7)
     fp = s0.footer.paragraphs[0]
-    fp.paragraph_format.tab_stops.add_tab_stop(Inches(PAGE_W), WD_TAB_ALIGNMENT.RIGHT)
-    run(fp, "VOLUME XX, 2026\t", font=SANS, size=7)
+    fmt(fp, align=WD_ALIGN_PARAGRAPH.RIGHT)
     page_number_field(fp)
 
-    # ---- title block
-    p = fmt(doc.add_paragraph(), after=2)
-    run(p, front["dates"], font=SANS, size=7)
-    p = fmt(doc.add_paragraph(), after=10)
-    run(p, "Digital Object Identifier 10.1109/ACCESS.2026.XXXXXXX", font=SANS,
-        size=7, italic=True)
+    # ---- title block (no journal dates, DOI or volume: those are the
+    # publisher's to assign)
     p = fmt(doc.add_paragraph(), after=10, line=1.0)
     run(p, front["title"], font=SANS, size=22, bold=True)
     p = fmt(doc.add_paragraph(), after=4)
@@ -561,7 +524,9 @@ def build():
             first_para = True
         elif t == "fig":
             wide = b["width"] == "page"
-            flow.cols(2)
+            # Page-wide items sit inline in a one-column block. Floating
+            # frames and tables let Word place two of them over each other.
+            flow.cols(1 if wide else 2)
             img = ROOT / b["path"]
             p = fmt(doc.add_paragraph(), before=0 if wide else 6,
                     align=WD_ALIGN_PARAGRAPH.CENTER, keep=True)
@@ -570,13 +535,10 @@ def build():
             else:
                 run(p, f"[missing figure: {b['path']}]", color=RGBColor(200, 0, 0))
                 num.missing.add(b["path"])
-            cp = caption("FIGURE", num.fig[b["id"]], b["cap"])
-            if wide:
-                frame(p, top=True)
-                frame(cp, top=True)
+            caption("FIGURE", num.fig[b["id"]], b["cap"])
         elif t == "tab":
             wide = b["width"] == "page"
-            flow.cols(2)
+            flow.cols(1 if wide else 2)
             rows = b["rows"]
             ncol = max(len(r) for r in rows)
             off = 1 if wide else 0
@@ -600,7 +562,6 @@ def build():
                 cap_cell = tbl.cell(0, 0).merge(tbl.cell(0, ncol - 1))
                 caption("TABLE", num.tab[b["id"]], b["cap"], above=True,
                         par=cap_cell.paragraphs[0])
-                float_table(tbl, top=len(rows) > 10)
             for i, row in enumerate(rows):
                 for j in range(ncol):
                     cell = tbl.cell(i + off, j)

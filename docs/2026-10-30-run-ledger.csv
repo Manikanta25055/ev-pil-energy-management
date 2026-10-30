@@ -1,0 +1,186 @@
+campaign,plant,source,cell,arm,seed,comm_delay_s,dropped_frames,ctrl_late,tracking_rmse_mps,equivalent_wh_per_km,status
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,driving_condition/urban,actor,0,0.0,4,0,0.009,168.561,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,driving_condition/highway,actor,1,0.0,2,0,0.003,154.143,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,driving_condition/aggressive_mixed,actor,2,0.0,2,0,0.0125,176.532,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,road_grade/uphill,actor,0,0.0,1,0,0.0092,274.205,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,road_grade/flat,actor,1,0.0,3,0,0.0127,176.771,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,road_grade/downhill,actor,2,0.0,4,0,0.018,75.849,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,battery_state/high,actor,0,0.0,2,0,0.0114,176.52,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,battery_state/medium,actor,1,0.0,4,0,0.0145,176.334,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,battery_state/low,actor,2,0.0,2,0,0.0107,176.623,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,sensor_noise/floor,actor,0,0.0,4,0,0.0181,176.233,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,sensor_noise/elevated,actor,1,0.0,11,0,0.0355,176.922,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,sensor_noise/severe,actor,2,0.0,4,0,0.0297,173.168,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,comm_delay/none,actor,0,0.0,8,0,0.0256,176.466,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,comm_delay/one_period,actor,1,0.01,13157,0,32.8441,147.773,excluded_delay
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,comm_delay/three_periods,actor,2,0.03,245368,0,45.8463,102.683,excluded_delay
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,driver_aggression/normal,actor,0,0.0,2,0,0.012,176.499,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,driver_aggression/brisk,actor,1,0.0,1,0,0.0221,168.211,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,driver_aggression/aggressive,actor,2,0.0,6,0,0.0901,159.338,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,driving_condition/urban,rule,0,0.0,10,0,0.0118,168.114,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,driving_condition/highway,rule,1,0.0,35,0,0.0092,154.005,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,driving_condition/aggressive_mixed,rule,2,0.0,4,0,0.0163,190.791,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,road_grade/uphill,rule,0,0.0,10,0,0.0324,305.138,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,road_grade/flat,rule,1,0.0,9,0,0.0323,191.155,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,road_grade/downhill,rule,2,0.0,5,0,0.0183,79.666,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,battery_state/high,rule,0,0.0,2,0,0.0107,190.658,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,battery_state/medium,rule,1,0.0,2,0,0.0096,190.612,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,battery_state/low,rule,2,0.0,3,0,0.0146,190.473,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,sensor_noise/floor,rule,0,0.0,10,0,0.029,191.04,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,sensor_noise/elevated,rule,1,0.0,15,0,0.0465,192.224,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,sensor_noise/severe,rule,2,0.0,5,0,0.0328,200.65,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,comm_delay/none,rule,0,0.0,5,0,0.0215,190.884,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,comm_delay/one_period,rule,1,0.01,19301,0,35.8338,297.349,excluded_delay
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,comm_delay/three_periods,rule,2,0.03,235882,0,45.929,262.799,excluded_delay
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,driver_aggression/normal,rule,0,0.0,7,0,0.024,190.948,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,driver_aggression/brisk,rule,1,0.0,10,0,0.0451,196.825,accepted
+earlier,faulty (withdrawn),docs/week10-pil-campaign.json,driver_aggression/aggressive,rule,2,0.0,3,0,0.0753,203.255,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,driving_condition/urban,actor,0,0.0,6,0,0.0103,168.595,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,driving_condition/highway,actor,1,0.0,10,0,0.0058,154.186,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,driving_condition/aggressive_mixed,actor,2,0.0,4,0,0.0163,176.377,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,road_grade/uphill,actor,0,0.0,32,0,0.0372,272.669,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,road_grade/flat,actor,1,0.0,1,0,0.0102,176.725,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,road_grade/downhill,actor,2,0.0,0,0,0.007,75.664,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,battery_state/high,actor,0,0.0,10,0,0.0295,176.3,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,battery_state/medium,actor,1,0.0,0,0,0.0096,176.401,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,battery_state/low,actor,2,0.0,3,0,0.014,176.413,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,sensor_noise/floor,actor,0,0.0,10,0,0.0301,176.366,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,sensor_noise/elevated,actor,1,0.0,4,0,0.0168,176.462,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,sensor_noise/severe,actor,2,0.0,2,0,0.0248,174.39,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,comm_delay/none,actor,0,0.0,9,0,0.0286,176.443,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,comm_delay/one_period,actor,1,0.01,12921,0,32.6034,145.564,excluded_delay
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,comm_delay/three_periods,actor,2,0.03,240268,0,45.7292,103.191,excluded_delay
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,driver_aggression/normal,actor,0,0.0,5,0,0.0197,176.446,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,driver_aggression/brisk,actor,1,0.0,1,0,0.0244,168.633,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,driver_aggression/aggressive,actor,2,0.0,1,0,0.0803,158.691,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,driving_condition/urban,rule,0,0.0,6,0,0.0112,168.114,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,driving_condition/highway,rule,1,0.0,1,0,0.0031,153.954,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,driving_condition/aggressive_mixed,rule,2,0.0,5,0,0.0161,190.734,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,road_grade/uphill,rule,0,0.0,4,0,0.016,304.987,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,road_grade/flat,rule,1,0.0,10,0,0.0277,190.954,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,road_grade/downhill,rule,2,0.0,0,0,0.007,79.212,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,battery_state/high,rule,0,0.0,0,0,0.007,190.598,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,battery_state/medium,rule,1,0.0,0,0,0.018,190.793,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,battery_state/low,rule,2,0.0,3,0,0.0137,190.468,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,sensor_noise/floor,rule,0,0.0,4,0,0.0186,190.827,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,sensor_noise/elevated,rule,1,0.0,6,0,0.0219,191.502,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,sensor_noise/severe,rule,2,0.0,6,0,0.0323,200.631,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,comm_delay/none,rule,0,0.0,35,0,0.0402,191.17,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,comm_delay/one_period,rule,1,0.01,12874,0,32.9391,318.108,excluded_delay
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,comm_delay/three_periods,rule,2,0.03,257011,0,45.7414,262.938,excluded_delay
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,driver_aggression/normal,rule,0,0.0,18,0,0.0482,191.646,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,driver_aggression/brisk,rule,1,0.0,6,0,0.0306,196.453,accepted
+earlier-repeat,faulty (withdrawn),docs/week10-pil-campaign-repeat.json,driver_aggression/aggressive,rule,2,0.0,18,0,0.1104,204.288,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,driving_condition/urban,rule,0,0.0,8,0,0.0131,168.134,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,driving_condition/highway,rule,1,0.0,4,0,0.0036,153.961,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,road_grade/uphill,rule,0,0.0,12,0,0.039,305.262,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,road_grade/flat,rule,1,0.0,4,0,0.015,190.748,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,road_grade/downhill,rule,2,0.0,2,0,0.0101,79.301,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,sensor_noise/floor,rule,0,0.0,13,0,0.0205,190.755,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,sensor_noise/elevated,rule,1,0.0,3,0,0.0145,191.33,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,sensor_noise/severe,rule,2,0.0,14,0,0.0548,201.553,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,comm_delay/none,rule,0,0.0,4,0,0.0144,190.729,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,comm_delay/one_period,rule,1,0.01,14068,0,31.4772,349.521,excluded_delay
+corrected-s0,corrected,docs/week11-pil-corrected.json,comm_delay/three_periods,rule,2,0.03,243515,0,43.3592,359.782,excluded_delay
+corrected-s0,corrected,docs/week11-pil-corrected.json,driver_aggression/normal,rule,0,0.0,10,0,0.0276,190.992,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,driver_aggression/brisk,rule,1,0.0,10,0,0.045,197.162,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,driver_aggression/aggressive,rule,2,0.0,10,0,0.0981,204.465,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,driving_condition/aggressive_mixed,rule,2,0.0,0,0,0.0436,191.41,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,battery_state/high,rule,0,0.0,10,0,0.0263,190.93,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,battery_state/medium,rule,1,0.0,8,0,0.0265,191.0,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,battery_state/low,rule,2,0.0,6,0,0.0206,190.804,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,driving_condition/urban,actor,0,0.0,8,0,0.0156,169.303,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,driving_condition/highway,actor,1,0.0,2,0,0.0035,154.401,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,driving_condition/aggressive_mixed,actor,2,0.0,1,0,0.2262,191.476,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,road_grade/uphill,actor,0,0.0,2,0,0.2366,305.208,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,road_grade/flat,actor,1,0.0,1,0,0.2287,191.433,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,road_grade/downhill,actor,2,0.0,1,0,0.1931,83.827,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,battery_state/high,actor,0,0.0,2,0,0.2332,191.366,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,battery_state/medium,actor,1,0.0,6,0,0.1955,191.634,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,battery_state/low,actor,2,0.0,0,0,0.1678,191.197,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,sensor_noise/floor,actor,0,0.0,4,0,0.2295,191.806,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,sensor_noise/elevated,actor,1,0.0,2,0,0.2175,192.903,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,sensor_noise/severe,actor,2,0.0,4,0,0.1921,210.525,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,comm_delay/none,actor,0,0.0,7,0,0.2299,191.757,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,comm_delay/one_period,actor,1,0.01,19765,0,25.6688,378.258,excluded_delay
+corrected-s0,corrected,docs/week11-pil-corrected.json,comm_delay/three_periods,actor,2,0.03,233776,0,30.3715,339.204,excluded_delay
+corrected-s0,corrected,docs/week11-pil-corrected.json,driver_aggression/normal,actor,0,0.0,9,0,0.2281,191.984,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,driver_aggression/brisk,actor,1,0.0,4,0,0.3306,197.378,accepted
+corrected-s0,corrected,docs/week11-pil-corrected.json,driver_aggression/aggressive,actor,2,0.0,2,0,0.5042,204.747,accepted
+corrected-s0,corrected,docs/week11-pil-corrected-rule-disturbed.json,driving_condition/aggressive_mixed,rule,2,0.0,24,0,0.0325,190.837,set_aside_frames
+corrected-s0,corrected,docs/week11-pil-corrected-rule-disturbed.json,battery_state/high,rule,0,0.0,21,0,0.0398,191.147,set_aside_frames
+corrected-s0,corrected,docs/week11-pil-corrected-rule-disturbed.json,battery_state/medium,rule,1,0.0,54,0,0.0543,191.704,set_aside_frames
+corrected-s0,corrected,docs/week11-pil-corrected-rule-disturbed.json,battery_state/low,rule,2,0.0,30,0,0.0413,191.24,set_aside_frames
+b2-s100,corrected,docs/2026-10-14-pil-repeats-rule-s100.json,driving_condition/urban,rule,100,0.0,3,0,0.0232,168.229,accepted
+b2-s100,corrected,docs/2026-10-14-pil-repeats-rule-s100.json,driving_condition/highway,rule,101,0.0,6,0,0.0048,153.972,accepted
+b2-s100,corrected,docs/2026-10-14-pil-repeats-rule-s100.json,driving_condition/aggressive_mixed,rule,102,0.0,11,0,0.0305,190.978,accepted
+b2-s100,corrected,docs/2026-10-14-pil-repeats-rule-s100.json,road_grade/uphill,rule,100,0.0,5,0,0.0155,304.98,accepted
+b2-s100,corrected,docs/2026-10-14-pil-repeats-rule-s100.json,road_grade/downhill,rule,102,0.0,12,0,0.0328,79.749,accepted
+b2-s100,corrected,docs/2026-10-14-pil-repeats-rule-s100.json,battery_state/high,rule,100,0.0,3,0,0.0136,190.708,accepted
+b2-s100,corrected,docs/2026-10-14-pil-repeats-rule-s100.json,battery_state/medium,rule,101,0.0,7,0,0.0204,190.812,accepted
+b2-s100,corrected,docs/2026-10-14-pil-repeats-rule-s100.json,battery_state/low,rule,102,0.0,11,0,0.0396,191.358,accepted
+b2-s100,corrected,docs/2026-10-14-pil-repeats-rule-s100.json,sensor_noise/elevated,rule,101,0.0,10,0,0.0331,191.848,accepted
+b2-s100,corrected,docs/2026-10-14-pil-repeats-rule-s100.json,driver_aggression/brisk,rule,101,0.0,6,0,0.0576,197.513,accepted
+b2-s100,corrected,docs/2026-10-14-pil-repeats-rule-s100.json,driver_aggression/aggressive,rule,102,0.0,4,0,0.0812,203.581,accepted
+b2-s100,corrected,docs/2026-10-14-pil-repeats-rule-s100.json,sensor_noise/severe,rule,102,0.0,4,0,0.0304,200.816,accepted
+b2-s100,corrected,docs/2026-10-14-pil-repeats-actor-s100.json,battery_state/high,actor,100,0.0,16,0,0.2453,193.089,accepted
+b2-s100,corrected,docs/2026-10-14-pil-repeats-actor-s100.json,battery_state/medium,actor,101,0.0,11,0,0.1931,192.39,accepted
+b2-s100,corrected,docs/2026-10-14-pil-repeats-actor-s100.json,battery_state/low,actor,102,0.0,10,0,0.1689,191.989,accepted
+b2-s100,corrected,docs/2026-10-14-pil-repeats-actor-s100.json,sensor_noise/severe,actor,102,0.0,4,0,0.198,209.908,accepted
+b2-s100,corrected,docs/2026-10-14-pil-repeats-actor-s100.json,driver_aggression/brisk,actor,101,0.0,1,0,0.3346,197.56,accepted
+b2-s100,corrected,docs/2026-10-14-pil-repeats-actor-s100.json,driver_aggression/aggressive,actor,102,0.0,0,0,0.5025,204.744,accepted
+b2-s100,corrected,docs/2026-10-14-pil-repeats-actor-s100.json,driving_condition/urban,actor,100,0.0,55,0,0.0239,169.471,accepted_over_limit
+b2-s100,corrected,docs/2026-10-14-pil-repeats-actor-s100.json,driving_condition/highway,actor,101,0.0,23,0,0.008,154.481,accepted_over_limit
+b2-s100,corrected,docs/2026-10-14-pil-repeats-actor-s100.json,driving_condition/aggressive_mixed,actor,102,0.0,9,0,0.2264,191.739,accepted
+b2-s100,corrected,docs/2026-10-14-pil-repeats-actor-s100.json,road_grade/uphill,actor,100,0.0,7,0,0.2406,305.474,accepted
+b2-s100,corrected,docs/2026-10-14-pil-repeats-actor-s100.json,road_grade/downhill,actor,102,0.0,10,0,0.1937,85.207,accepted
+b2-s100,corrected,docs/2026-10-14-pil-repeats-actor-s100.json,sensor_noise/elevated,actor,101,0.0,14,0,0.2251,194.437,accepted
+b2-s100,corrected,docs/2026-10-14-pil-repeats-rule-s100-disturbed.json,sensor_noise/severe,rule,102,0.0,25,0,0.0469,201.176,set_aside_frames
+b2-s100,corrected,docs/2026-10-14-pil-repeats-actor-s100-disturbed.json,driving_condition/urban,actor,100,0.0,49,0,0.0264,169.715,set_aside_frames
+b2-s100,corrected,docs/2026-10-14-pil-repeats-actor-s100-disturbed.json,driving_condition/highway,actor,101,0.0,64,0,0.0106,154.548,set_aside_frames
+b2-s100,corrected,docs/2026-10-14-pil-repeats-actor-s100-disturbed.json,driving_condition/aggressive_mixed,actor,102,0.0,32,0,0.2336,193.133,set_aside_frames
+b2-s100,corrected,docs/2026-10-14-pil-repeats-actor-s100-disturbed.json,road_grade/uphill,actor,100,0.0,92,0,0.2519,305.989,set_aside_frames
+b2-s100,corrected,docs/2026-10-14-pil-repeats-actor-s100-disturbed.json,road_grade/downhill,actor,102,0.0,60,0,0.2021,88.17,set_aside_frames
+b2-s100,corrected,docs/2026-10-14-pil-repeats-actor-s100-disturbed.json,sensor_noise/elevated,actor,101,0.0,17,0,0.2316,194.575,set_aside_frames
+b2-s200,corrected,docs/2026-10-14-pil-repeats-rule-s200.json,driving_condition/urban,rule,200,0.0,10,0,0.0116,168.11,accepted
+b2-s200,corrected,docs/2026-10-14-pil-repeats-rule-s200.json,driving_condition/highway,rule,201,0.0,2,0,0.0034,153.958,accepted
+b2-s200,corrected,docs/2026-10-14-pil-repeats-rule-s200.json,driving_condition/aggressive_mixed,rule,202,0.0,2,0,0.0106,190.67,accepted
+b2-s200,corrected,docs/2026-10-14-pil-repeats-rule-s200.json,road_grade/uphill,rule,200,0.0,0,0,0.0071,304.897,accepted
+b2-s200,corrected,docs/2026-10-14-pil-repeats-rule-s200.json,road_grade/downhill,rule,202,0.0,4,0,0.0096,79.305,accepted
+b2-s200,corrected,docs/2026-10-14-pil-repeats-rule-s200.json,battery_state/high,rule,200,0.0,13,0,0.0348,191.07,accepted
+b2-s200,corrected,docs/2026-10-14-pil-repeats-rule-s200.json,battery_state/medium,rule,201,0.0,11,0,0.0355,191.243,accepted
+b2-s200,corrected,docs/2026-10-14-pil-repeats-rule-s200.json,sensor_noise/elevated,rule,201,0.0,12,0,0.0362,191.865,accepted
+b2-s200,corrected,docs/2026-10-14-pil-repeats-rule-s200.json,driver_aggression/aggressive,rule,202,0.0,3,0,0.0842,203.695,accepted
+b2-s200,corrected,docs/2026-10-14-pil-repeats-rule-s200.json,battery_state/low,rule,202,0.0,4,0,0.0176,190.767,accepted
+b2-s200,corrected,docs/2026-10-14-pil-repeats-rule-s200.json,sensor_noise/severe,rule,202,0.0,5,0,0.0301,200.752,accepted
+b2-s200,corrected,docs/2026-10-14-pil-repeats-rule-s200.json,driver_aggression/brisk,rule,201,0.0,4,0,0.025,196.2,accepted
+b2-s200,corrected,docs/2026-10-14-pil-repeats-actor-s200.json,driving_condition/aggressive_mixed,actor,202,0.0,2,0,0.2264,191.517,accepted
+b2-s200,corrected,docs/2026-10-14-pil-repeats-actor-s200.json,road_grade/uphill,actor,200,0.0,2,0,0.2369,305.252,accepted
+b2-s200,corrected,docs/2026-10-14-pil-repeats-actor-s200.json,road_grade/downhill,actor,202,0.0,7,0,0.1958,84.625,accepted
+b2-s200,corrected,docs/2026-10-14-pil-repeats-actor-s200.json,battery_state/high,actor,200,0.0,3,0,0.2359,191.652,accepted
+b2-s200,corrected,docs/2026-10-14-pil-repeats-actor-s200.json,battery_state/medium,actor,201,0.0,4,0,0.194,191.425,accepted
+b2-s200,corrected,docs/2026-10-14-pil-repeats-actor-s200.json,battery_state/low,actor,202,0.0,3,0,0.1698,191.239,accepted
+b2-s200,corrected,docs/2026-10-14-pil-repeats-actor-s200.json,sensor_noise/elevated,actor,201,0.0,10,0,0.2229,193.296,accepted
+b2-s200,corrected,docs/2026-10-14-pil-repeats-actor-s200.json,sensor_noise/severe,actor,202,0.0,7,0,0.1829,210.783,accepted
+b2-s200,corrected,docs/2026-10-14-pil-repeats-actor-s200.json,driver_aggression/brisk,actor,201,0.0,9,0,0.3285,198.439,accepted
+b2-s200,corrected,docs/2026-10-14-pil-repeats-actor-s200.json,driver_aggression/aggressive,actor,202,0.0,4,0,0.5194,205.79,accepted
+b2-s200,corrected,docs/2026-10-14-pil-repeats-actor-s200.json,driving_condition/urban,actor,200,0.0,2,0,0.0061,169.086,accepted
+b2-s200,corrected,docs/2026-10-14-pil-repeats-actor-s200.json,driving_condition/highway,actor,201,0.0,3,0,0.0033,154.408,accepted
+b2-s200,corrected,docs/2026-10-14-pil-repeats-rule-s200-disturbed.json,battery_state/low,rule,202,0.0,25,0,0.0484,191.639,set_aside_frames
+b2-s200,corrected,docs/2026-10-14-pil-repeats-rule-s200-disturbed.json,sensor_noise/severe,rule,202,0.0,33,0,0.0472,201.235,set_aside_frames
+b2-s200,corrected,docs/2026-10-14-pil-repeats-rule-s200-disturbed.json,driver_aggression/brisk,rule,201,0.0,27,0,0.0712,198.489,set_aside_frames
+b2-s200,corrected,docs/2026-10-14-pil-repeats-actor-s200-disturbed.json,driving_condition/urban,actor,200,0.0,25,0,0.0167,169.265,set_aside_frames
+b2-s200,corrected,docs/2026-10-14-pil-repeats-actor-s200-disturbed.json,driving_condition/highway,actor,201,0.0,929,0,0.0078,154.48,set_aside_frames
+b1-estimators,corrected,docs/2026-10-14-lowpass-pil-b0-s100.json,sensor_noise/floor,b0,100,0.0,11,0,0.0346,191.154,accepted
+b1-estimators,corrected,docs/2026-10-14-lowpass-pil-b0-s100.json,sensor_noise/severe,b0,102,0.0,10,0,0.0357,200.802,accepted
+b1-estimators,corrected,docs/2026-10-14-lowpass-pil-b0-s200.json,sensor_noise/severe,b0,202,0.0,9,0,0.0279,200.625,accepted
+b1-estimators,corrected,docs/2026-10-14-lowpass-pil-b0-s200.json,sensor_noise/floor,b0,200,0.0,7,0,0.023,190.894,accepted
+b1-estimators,corrected,docs/2026-10-14-lowpass-pil-lowpass-s100.json,sensor_noise/floor,lowpass,100,0.0,9,0,0.1068,191.887,accepted
+b1-estimators,corrected,docs/2026-10-14-lowpass-pil-lowpass-s100.json,sensor_noise/severe,lowpass,102,0.0,13,0,0.111,192.002,accepted
+b1-estimators,corrected,docs/2026-10-14-lowpass-pil-lowpass-s200.json,sensor_noise/floor,lowpass,200,0.0,9,0,0.1067,191.911,accepted
+b1-estimators,corrected,docs/2026-10-14-lowpass-pil-lowpass-s200.json,sensor_noise/severe,lowpass,202,0.0,3,0,0.0985,191.507,accepted
+b1-estimators,corrected,docs/2026-10-14-lowpass-pil-kalman-s100.json,sensor_noise/floor,kalman,100,0.0,7,0,0.0352,191.14,accepted
+b1-estimators,corrected,docs/2026-10-14-lowpass-pil-kalman-s100.json,sensor_noise/severe,kalman,102,0.0,0,0,0.0254,190.782,accepted
+b1-estimators,corrected,docs/2026-10-14-lowpass-pil-kalman-s200.json,sensor_noise/floor,kalman,200,0.0,14,0,0.0449,191.476,accepted
+b1-estimators,corrected,docs/2026-10-14-lowpass-pil-kalman-s200.json,sensor_noise/severe,kalman,202,0.0,8,0,0.0385,191.0,accepted
+b1-estimators,corrected,docs/2026-10-14-lowpass-pil-b0-s200-disturbed.json,sensor_noise/floor,b0,200,0.0,21,0,0.0366,190.959,set_aside_frames

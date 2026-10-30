@@ -23,7 +23,6 @@ from __future__ import annotations
 
 import json
 import statistics as st
-import subprocess
 from itertools import product
 from pathlib import Path
 
@@ -157,14 +156,21 @@ def build_manifest():
 
 
 def firmware_provenance():
-    log = Path(".claude/night/round2.log")
-    lines = [ln for ln in log.read_text().splitlines() if "b2-" in ln and "flashed" in ln] if log.exists() else []
-    return {"repeat_images": lines,
+    # Fixed at the build, not read from the checkout: an analysis re-run on a
+    # later commit must not restamp the images. The firmware/ tree is the same
+    # from 8a6dda7 to 0aee7a8, so its tree hash identifies the source.
+    return {"repeat_images": [
+                "17:26 b2-rule image flashed (-DSPEED_KALMAN=0 -DSPEED_FILTER_ALPHA=1.0f)",
+                "22:28 b2-actor image flashed (-DSPEED_KALMAN=0 -DSPEED_FILTER_ALPHA=1.0f)"],
             "build_switches": "-DFAULT_INJECT=0 -DFALLBACK_ENABLED=1 -DSPEED_KALMAN=0 -DSPEED_FILTER_ALPHA=1.0f",
             "rule_image": "built without firmware/main/sac_actor_weights.h",
             "actor_image": "built with the committed firmware/main/sac_actor_weights.h",
+            "image_sha256": {
+                "rule": "a0da796f4bf9d44bbf1d2bee7eb8a63aa5929f7936e6360df53169fd8e9e2007",
+                "actor": "0ee13d54986a84528cecd3e66d8cadbfbe4ef32e6f876d4ef222fcc97ffd1520"},
             "offset_0": "corrected campaign as recorded in docs/week11-pil-corrected.json",
-            "head": subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()}
+            "head": "0aee7a8efbc5517b0d12ace67b5ed1bd075fe178",
+            "firmware_tree": "af1f5fc42d6c6ac9ec0c82304d0deafa8a79815e"}
 
 
 def main() -> int:

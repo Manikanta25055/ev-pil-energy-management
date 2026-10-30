@@ -1,0 +1,267 @@
+{
+  "provenance": "SIMULATED on the host; corrected plant; review item R1",
+  "soc0": 0.8,
+  "t_ambient_c": 12.0,
+  "comfort_price": 1.0,
+  "ceiling": "held at twice the motor maximum, as in the reference",
+  "rows": [
+    {
+      "cycle": "wltc3b",
+      "grid": "coarse",
+      "soc_grid_n": 81,
+      "n_blends": 3,
+      "n_derates": 2,
+      "dp_equivalent_wh_per_km": 175.93839378517305,
+      "dp_value_error_pct": 0.0010314468815647087,
+      "rule_equivalent_wh_per_km": 175.99300488304263,
+      "rule_gap_pct": 0.031039897940774545,
+      "solve_s": 16.70242404937744
+    },
+    {
+      "cycle": "wltc3b",
+      "grid": "nominal",
+      "soc_grid_n": 161,
+      "n_blends": 5,
+      "n_derates": 3,
+      "dp_equivalent_wh_per_km": 175.93839378517305,
+      "dp_value_error_pct": 0.0010314468815647087,
+      "rule_equivalent_wh_per_km": 175.99300488304263,
+      "rule_gap_pct": 0.031039897940774545,
+      "solve_s": 17.7495379447937
+    },
+    {
+      "cycle": "wltc3b",
+      "grid": "fine_soc",
+      "soc_grid_n": 321,
+      "n_blends": 5,
+      "n_derates": 3,
+      "dp_equivalent_wh_per_km": 175.93839378517305,
+      "dp_value_error_pct": 0.0010314468815202722,
+      "rule_equivalent_wh_per_km": 175.99300488304263,
+      "rule_gap_pct": 0.031039897940774545,
+      "solve_s": 19.074537992477417
+    },
+    {
+      "cycle": "wltc3b",
+      "grid": "fine_actions",
+      "soc_grid_n": 161,
+      "n_blends": 11,
+      "n_derates": 7,
+      "dp_equivalent_wh_per_km": 175.93839378517305,
+      "dp_value_error_pct": 0.0010314468815647087,
+      "rule_equivalent_wh_per_km": 175.99300488304263,
+      "rule_gap_pct": 0.031039897940774545,
+      "solve_s": 19.77459716796875
+    },
+    {
+      "cycle": "wltc3b",
+      "grid": "fine_both",
+      "soc_grid_n": 321,
+      "n_blends": 11,
+      "n_derates": 7,
+      "dp_equivalent_wh_per_km": 175.93839378517305,
+      "dp_value_error_pct": 0.0010314468815202722,
+      "rule_equivalent_wh_per_km": 175.99300488304263,
+      "rule_gap_pct": 0.031039897940774545,
+      "solve_s": 23.03536581993103
+    },
+    {
+      "cycle": "udds",
+      "grid": "coarse",
+      "soc_grid_n": 81,
+      "n_blends": 3,
+      "n_derates": 2,
+      "dp_equivalent_wh_per_km": 167.66781607070467,
+      "dp_value_error_pct": 0.0021001683445416273,
+      "rule_equivalent_wh_per_km": 167.92780488959977,
+      "rule_gap_pct": 0.15506185085958385,
+      "solve_s": 12.450021266937256
+    },
+    {
+      "cycle": "udds",
+      "grid": "nominal",
+      "soc_grid_n": 161,
+      "n_blends": 5,
+      "n_derates": 3,
+      "dp_equivalent_wh_per_km": 167.66781607070467,
+      "dp_value_error_pct": 0.0021001683445416273,
+      "rule_equivalent_wh_per_km": 167.92780488959977,
+      "rule_gap_pct": 0.15506185085958385,
+      "solve_s": 13.222732067108154
+    },
+    {
+      "cycle": "udds",
+      "grid": "fine_soc",
+      "soc_grid_n": 321,
+      "n_blends": 5,
+      "n_derates": 3,
+      "dp_equivalent_wh_per_km": 167.66781607070467,
+      "dp_value_error_pct": 0.002100168344677345,
+      "rule_equivalent_wh_per_km": 167.92780488959977,
+      "rule_gap_pct": 0.15506185085958385,
+      "solve_s": 14.165946245193481
+    },
+    {
+      "cycle": "udds",
+      "grid": "fine_actions",
+      "soc_grid_n": 161,
+      "n_blends": 11,
+      "n_derates": 7,
+      "dp_equivalent_wh_per_km": 167.66781607070467,
+      "dp_value_error_pct": 0.0021001683445416273,
+      "rule_equivalent_wh_per_km": 167.92780488959977,
+      "rule_gap_pct": 0.15506185085958385,
+      "solve_s": 15.73241901397705
+    },
+    {
+      "cycle": "udds",
+      "grid": "fine_both",
+      "soc_grid_n": 321,
+      "n_blends": 11,
+      "n_derates": 7,
+      "dp_equivalent_wh_per_km": 167.66781607070467,
+      "dp_value_error_pct": 0.002100168344677345,
+      "rule_equivalent_wh_per_km": 167.92780488959977,
+      "rule_gap_pct": 0.15506185085958385,
+      "solve_s": 17.56296992301941
+    },
+    {
+      "cycle": "hwfet",
+      "grid": "coarse",
+      "soc_grid_n": 81,
+      "n_blends": 3,
+      "n_derates": 2,
+      "dp_equivalent_wh_per_km": 153.89221767944252,
+      "dp_value_error_pct": 0.0016621300393709854,
+      "rule_equivalent_wh_per_km": 153.90155013996434,
+      "rule_gap_pct": 0.006064283602208777,
+      "solve_s": 6.714111089706421
+    },
+    {
+      "cycle": "hwfet",
+      "grid": "nominal",
+      "soc_grid_n": 161,
+      "n_blends": 5,
+      "n_derates": 3,
+      "dp_equivalent_wh_per_km": 153.89221767944252,
+      "dp_value_error_pct": 0.0016621300393709854,
+      "rule_equivalent_wh_per_km": 153.90155013996434,
+      "rule_gap_pct": 0.006064283602208777,
+      "solve_s": 7.039873123168945
+    },
+    {
+      "cycle": "hwfet",
+      "grid": "fine_soc",
+      "soc_grid_n": 321,
+      "n_blends": 5,
+      "n_derates": 3,
+      "dp_equivalent_wh_per_km": 153.89221767944252,
+      "dp_value_error_pct": 0.0016621300393709854,
+      "rule_equivalent_wh_per_km": 153.90155013996434,
+      "rule_gap_pct": 0.006064283602208777,
+      "solve_s": 7.509644031524658
+    },
+    {
+      "cycle": "hwfet",
+      "grid": "fine_actions",
+      "soc_grid_n": 161,
+      "n_blends": 11,
+      "n_derates": 7,
+      "dp_equivalent_wh_per_km": 153.89221767944252,
+      "dp_value_error_pct": 0.0016621300393709854,
+      "rule_equivalent_wh_per_km": 153.90155013996434,
+      "rule_gap_pct": 0.006064283602208777,
+      "solve_s": 8.086956977844238
+    },
+    {
+      "cycle": "hwfet",
+      "grid": "fine_both",
+      "soc_grid_n": 321,
+      "n_blends": 11,
+      "n_derates": 7,
+      "dp_equivalent_wh_per_km": 153.89221767944252,
+      "dp_value_error_pct": 0.0016621300393709854,
+      "rule_equivalent_wh_per_km": 153.90155013996434,
+      "rule_gap_pct": 0.006064283602208777,
+      "solve_s": 9.566094160079956
+    },
+    {
+      "cycle": "us06",
+      "grid": "coarse",
+      "soc_grid_n": 81,
+      "n_blends": 3,
+      "n_derates": 2,
+      "dp_equivalent_wh_per_km": 190.38639329221184,
+      "dp_value_error_pct": 0.0017207978111943038,
+      "rule_equivalent_wh_per_km": 190.46729466350823,
+      "rule_gap_pct": 0.042493252746392436,
+      "solve_s": 5.414150953292847
+    },
+    {
+      "cycle": "us06",
+      "grid": "nominal",
+      "soc_grid_n": 161,
+      "n_blends": 5,
+      "n_derates": 3,
+      "dp_equivalent_wh_per_km": 190.38639329221184,
+      "dp_value_error_pct": 0.0017207978111943038,
+      "rule_equivalent_wh_per_km": 190.46729466350823,
+      "rule_gap_pct": 0.042493252746392436,
+      "solve_s": 5.712630033493042
+    },
+    {
+      "cycle": "us06",
+      "grid": "fine_soc",
+      "soc_grid_n": 321,
+      "n_blends": 5,
+      "n_derates": 3,
+      "dp_equivalent_wh_per_km": 190.38639329221184,
+      "dp_value_error_pct": 0.0017207978111943038,
+      "rule_equivalent_wh_per_km": 190.46729466350823,
+      "rule_gap_pct": 0.042493252746392436,
+      "solve_s": 5.877833127975464
+    },
+    {
+      "cycle": "us06",
+      "grid": "fine_actions",
+      "soc_grid_n": 161,
+      "n_blends": 11,
+      "n_derates": 7,
+      "dp_equivalent_wh_per_km": 190.38639329221184,
+      "dp_value_error_pct": 0.0017207978111943038,
+      "rule_equivalent_wh_per_km": 190.46729466350823,
+      "rule_gap_pct": 0.042493252746392436,
+      "solve_s": 6.548249244689941
+    },
+    {
+      "cycle": "us06",
+      "grid": "fine_both",
+      "soc_grid_n": 321,
+      "n_blends": 11,
+      "n_derates": 7,
+      "dp_equivalent_wh_per_km": 190.38639329221184,
+      "dp_value_error_pct": 0.0017207978111943038,
+      "rule_equivalent_wh_per_km": 190.46729466350823,
+      "rule_gap_pct": 0.042493252746392436,
+      "solve_s": 7.56203293800354
+    }
+  ],
+  "rule_gap_range_by_cycle": {
+    "wltc3b": {
+      "min_pct": 0.031039897940774545,
+      "max_pct": 0.031039897940774545
+    },
+    "udds": {
+      "min_pct": 0.15506185085958385,
+      "max_pct": 0.15506185085958385
+    },
+    "hwfet": {
+      "min_pct": 0.006064283602208777,
+      "max_pct": 0.006064283602208777
+    },
+    "us06": {
+      "min_pct": 0.042493252746392436,
+      "max_pct": 0.042493252746392436
+    }
+  }
+}

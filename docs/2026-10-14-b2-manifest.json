@@ -28,8 +28,13 @@
   "build_switches": "-DFAULT_INJECT=0 -DFALLBACK_ENABLED=1 -DSPEED_KALMAN=0 -DSPEED_FILTER_ALPHA=1.0f",
   "rule_image": "built without firmware/main/sac_actor_weights.h",
   "actor_image": "built with the committed firmware/main/sac_actor_weights.h",
+  "image_sha256": {
+   "rule": "a0da796f4bf9d44bbf1d2bee7eb8a63aa5929f7936e6360df53169fd8e9e2007",
+   "actor": "0ee13d54986a84528cecd3e66d8cadbfbe4ef32e6f876d4ef222fcc97ffd1520"
+  },
   "offset_0": "corrected campaign as recorded in docs/week11-pil-corrected.json",
-  "head": "0aee7a8efbc5517b0d12ace67b5ed1bd075fe178"
+  "head": "0aee7a8efbc5517b0d12ace67b5ed1bd075fe178",
+  "firmware_tree": "af1f5fc42d6c6ac9ec0c82304d0deafa8a79815e"
  },
  "pairs": [
   {

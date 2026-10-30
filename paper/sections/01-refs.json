@@ -760,5 +760,27 @@
   "year": "2021",
   "doi": "10.1016/j.trc.2021.102967",
   "verified_url": "https://doi.org/10.1016/j.trc.2021.102967"
+ },
+ {
+  "key": "zhang2024mt",
+  "authors": [
+   "Y. Zhang",
+   "D. Towey",
+   "M. Pike",
+   "J. C. Han",
+   "Z. Q. Zhou",
+   "C. Yin",
+   "Q. Wang",
+   "C. Xie"
+  ],
+  "title": "Scenario-driven metamorphic testing for autonomous driving simulators",
+  "venue": "Software Testing, Verification and Reliability",
+  "volume": "34",
+  "number": "7",
+  "pages": "e1892",
+  "month": "November",
+  "year": "2024",
+  "doi": "10.1002/stvr.1892",
+  "verified_url": "https://doi.org/10.1002/stvr.1892"
  }
 ]
