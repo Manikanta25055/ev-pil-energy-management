@@ -3,14 +3,15 @@
 This repository holds the code, firmware, run logs and write-ups for a study of
 electric-vehicle (EV) energy management running on an ESP32-S3 microcontroller.
 A rule-based energy manager and a learned one (Soft Actor-Critic, SAC) run on
-the board at 100 Hz. The laptop simulates the vehicle and talks to the board
+the board as a 10 Hz supervisory task, above a 100 Hz speed loop. The laptop simulates the vehicle and talks to the board
 over USB serial; this arrangement is called processor-in-the-loop (PIL).
 
 ## Where to start
 
 | If you want | Open |
 |---|---|
-| The paper (mock IEEE Access manuscript, 24 pages) | [`paper/EV-PIL-mock-paper-IEEE-Access.pdf`](paper/EV-PIL-mock-paper-IEEE-Access.pdf) |
+| The paper (manuscript, 25 pages; Word source alongside) | [`paper/EV-PIL-manuscript.pdf`](paper/EV-PIL-manuscript.pdf) |
+| Files, checksums and one command per headline table | [`docs/reproducibility-manifest.md`](docs/reproducibility-manifest.md) |
 | The full project report (weeks 1 to 14) | [`reports/EV-PIL-status-report.docx`](reports/EV-PIL-status-report.docx) |
 | The note correcting the earlier 8.28% claim | [`reports/supervisor-correction-note.docx`](reports/supervisor-correction-note.docx) |
 | The simulated peer review of the paper | [`paper/reviews/2026-10-14/`](paper/reviews/2026-10-14/) |
@@ -28,21 +29,29 @@ the paper is newer.
    a low ceiling and drive above it without paying. A sweep with no controller
    showed it: a fixed 5 kW ceiling "drove" all of US06 on 8.05 Wh/km. The
    8.28% result is withdrawn.
-2. **After the fix, the learned policy does not beat the rules.** Over 36 runs
-   on the board it used 0.94% more energy on average and was lower in 1 of 16
-   settings. A second campaign with new noise seeds gave more energy in 12 of
-   12 conditions (median +0.50%, Wilcoxon p = 0.0005).
-3. **There was little to gain in the first place.** With the speed profile set
-   by the tracking loop, a dynamic-programming bound puts the rules within
-   0.01% to 0.16% of the optimum.
-4. **The measured gain came from estimation.** A two-state Kalman speed
-   estimator on the board cut the energy lost at ten times the sensor-noise
-   floor from 9.44 to 0.24 Wh/km.
+2. **After the fix, the evaluated learned policy does not beat the rules.** Over
+   36 runs on the board it used 0.94% more energy on average and was lower in 1
+   of 16 settings. With two more noise draws per condition it used more energy
+   in all 12 distinct conditions, each averaged over three draws (median +0.50%,
+   exact Wilcoxon p = 0.0005). This covers one SAC configuration, not
+   reinforcement learning in general.
+3. **There was little visible room.** With the speed profile set by the
+   tracking loop, the rules differ by 0.01% to 0.16% from a feasible reference
+   policy obtained by approximate dynamic programming. That gap is a difference
+   from one evaluated policy; it does not certify the largest saving physically
+   attainable.
+4. **The gain that did appear came from filtering the speed reading.** A
+   two-state Kalman estimator cut the energy lost at ten times the sensor-noise
+   floor from 9.44 to 0.24 Wh/km; a first-order low-pass filter recovered nearly
+   as much, at about three times the clean tracking error.
 5. **Every learned component is reported with its on-board cost** (memory,
    latency), next to its accuracy.
 
-Results are labelled MEASURED (on the board) or SIMULATED (host only)
-throughout the documents.
+The manuscript labels results target-measured (timing, counters and memory on
+the board), PIL-evaluated (energy, tracking and other vehicle outcomes computed
+by the host model while the controller ran on the board) or host-simulated.
+Older documents use MEASURED for the first two and SIMULATED for the third.
+Wh/km figures are model outputs; no battery was metered.
 
 ## Repository layout
 
@@ -55,7 +64,7 @@ throughout the documents.
 | `scripts/` | Simulation, training, PIL campaign runners, statistics, plotting, report builders |
 | `tests/` | pytest suite |
 | `docs/` | Experiment records (JSON/CSV/Markdown), dated plans, figures |
-| `paper/` | Manuscript sections, figures, build script, audits and simulated review |
+| `paper/` | Manuscript sections, figures, build script, audits and reviews |
 | `reports/` | Project report and supervisor note (Word) |
 | `data/` | Vehicle parameters and train/validation/test split definitions |
 | `models/` | Trained model files (speed planner, sensor-fault reviewer) |

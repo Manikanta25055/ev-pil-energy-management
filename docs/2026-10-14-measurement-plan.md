@@ -124,3 +124,16 @@ Run only if board time remains after B2.
 
 Update the affected paper sections with the new numbers (writers), re-audit
 (fact auditors), rebuild and render, and add any post-hoc change to Table 3.
+
+## Erratum (2026-10-30)
+
+The B2 section names an output file `docs/2026-10-14-pil-repeats.json` and an
+analysis by extending `scripts/paper_table5_stats.py`. Neither happened as
+written. The repeats were saved per arm and offset in
+`docs/2026-10-14-pil-repeats-{rule,actor}-s{100,200}.json`, with set-aside runs
+in the matching `-disturbed.json` files, and the registered test was run by a
+new script, `scripts/paper_repeat_stats.py`, cross-checked by
+`scripts/b2_repeats_stats.py`; `paper_table5_stats.py` still covers the
+single-draw campaign only. The decision rule above was applied unchanged.
+`docs/reproducibility-manifest.md` lists the files and commands. This note
+corrects file names only; nothing above it was edited.

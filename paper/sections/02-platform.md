@@ -1,6 +1,6 @@
 # EXPERIMENTAL PLATFORM AND METHOD {#sec:platform}
 
-Every result in the paper carries one of two labels. MEASURED means the quantity was recorded while the code ran on the microcontroller; SIMULATED means it came from the host alone. Table @tab:platform-gates lists every criterion fixed in advance with its outcome, and Table @tab:platform-revisions every rule or revision made after results were seen.
+Every result in the paper carries one of three labels. Target-measured means a quantity of the processor itself, recorded while the code ran on the microcontroller: loop timing, computation time, counters and memory. PIL-evaluated means a vehicle outcome, such as energy in Wh/km, tracking error, battery current or a fault caught, that the host model computed while the controller ran on the target; it is a model figure, and no battery or vehicle was metered. Host-simulated means the host alone ran the controller and the model. Table @tab:platform-gates lists every criterion fixed in advance with its outcome, and Table @tab:platform-revisions every rule or revision made after results were seen.
 
 ## Processor-in-the-Loop Arrangement
 
@@ -15,7 +15,7 @@ Caption: Processor-in-the-loop arrangement. The host side is simulated; the targ
 
 ## Target Hardware and Firmware
 
-The target has two Xtensa LX7 cores at 240 MHz and 8 MB of PSRAM, and its FreeRTOS firmware runs four tasks. The 100 Hz speed loop has core 0 and the highest priority. It combines a PID controller with a physics feedforward and, in some builds, a speed estimator and fault detector. Core 1 hosts the energy manager and an inference task at 10 Hz and a diagnostic task at 2 Hz, so inference cannot delay control.
+The target has two Xtensa LX7 cores at 240 MHz and 8 MB of PSRAM, and its FreeRTOS firmware runs four tasks. The 100 Hz speed loop has core 0 and the highest priority; it is a different task from the energy manager. It combines a PID controller with a physics feedforward and, in some builds, a speed estimator and fault detector. Core 1 hosts the energy manager and an inference task at 10 Hz and a diagnostic task at 2 Hz, so inference cannot delay control.
 
 Which energy manager runs is a compile-time choice: the firmware builds the learned policy when its generated weight header exists and the rule-based manager otherwise. A campaign therefore needs one image per controller, and a diagnostic counter of policy steps, which cannot be non-zero in the rule-based image, confirms the choice.
 
@@ -26,7 +26,7 @@ The firmware moved from the vendor framework to the Arduino core, which yields a
 Gate G3 was measured over 59,650 control loops, ten minutes, against the target's own clock. On the first Arduino-core run every loop landed within 25 µs of its slot, the worst control computation took 61 µs and no loop missed its deadline (Fig. @fig:platform-jitter).
 
 ![fig:platform-jitter](paper/figures/fig-platform-jitter.png){width=col}
-Caption: Deviation of the control period from 10 ms on the Arduino-core build (MEASURED). Empty bins are marked 0. The five pooled runs use the shipped image with the learned policy.
+Caption: Deviation of the control period from 10 ms on the Arduino-core build (target-measured). Empty bins are marked 0. The five pooled runs use the shipped image with the learned policy.
 
 The frame criterion fails. A dropped frame is a reply that misses the 1 ms window. The first run had 9. All 121,208 frames arrived intact; the record attributes the misses to the host operating system answering late in bursts. Torque is ramped down only after more than five consecutive stale steps. That happened once.
 
@@ -42,6 +42,18 @@ Energy is reported on the comparable scale: cabin heating that a controller shed
 
 Seed 0, 1 or 2 is paired with the three levels of each factor and both arms receive the same draw, so within a factor the noise level is confounded with the seed, and the five nominal repeats hold at most three distinct draws. The plant and both controllers are deterministic, which means a repeat with the same seed replays the same noise draw and differs mainly in link timing, so it is not an independent repeat of anything the noise drives. The later fault campaign and the corrected-campaign repeats (Section @sec:ems) add seed offsets of 100 and 200, giving three independent draws per condition.
 
+Table @tab:platform-ledger counts every energy-comparison run on the target and the reason any run left the analysed set; the run-level list, with source file and seed, is in the repository (Data and Code Availability).
+
+Table: tab:platform-ledger | Ledger of energy-comparison runs on the target. Analysed runs include two offset-100 retakes that exceeded 16 dropped frames again and stand, as the rule allows one retake. The earlier campaigns predate the frame rule. | width=col
+| Campaign | Attempted | Delay excluded | Set aside, frames | Analysed |
+|---|---|---|---|---|
+| Earlier, faulty model | 36 | 4 | 0 | 32 |
+| Earlier repeat, faulty model | 36 | 4 | 0 | 32 |
+| Corrected, seed offset 0 | 40 | 4 | 4 | 32 |
+| Corrected, seed offset 100 | 31 | 0 | 7 | 24 |
+| Corrected, seed offset 200 | 29 | 0 | 5 | 24 |
+| Speed-estimator blocks | 13 | 0 | 1 | 12 |
+
 Anything written twice, in Python and in C, has a parity test; a policy network of the deployed shape matches its NumPy original to 2.12e-06. The host is kept idle during a campaign.
 
 ## Criteria Fixed in Advance, and What Was Decided Afterwards
@@ -53,26 +65,26 @@ Table @tab:platform-gates holds every such criterion in the paper. Six are misse
 Table: tab:platform-gates | Every criterion fixed in advance in the paper, with the date of its record and its outcome. | width=page
 | Id | Criterion fixed in advance | Fixed | Outcome | Label |
 |---|---|---|---|---|
-| G1 | 0.1 M multiply-accumulates in 20 ms or less | 2026-08-30 | Pass: 3.30 ms from measured throughput, margin 6.1x | MEASURED |
-| G2 | Power RMSE within 10% of mean; final SOC within 2 points | 2026-08-30 | Fail on 1 of 7 trips: SOC 2.45 against 2.00 | SIMULATED |
-| G3a | 99th-percentile period jitter of 1 ms or less | 2026-08-30 | Pass: 25 µs | MEASURED |
-| G3b | Zero dropped frames in 10 min | 2026-08-30 | Fail: 4 to 16 per run | MEASURED |
-| G4 | 10% lower RMSE than persistence at 3 s | 2026-08-30 | Pass: 14.5% for the weakest fitted model | SIMULATED |
-| G5 | 40 ms or less; model plus arena 300 KB or less | 2026-08-30 | Timing and memory pass: 36.46 ms, 35.03 ms; 28,894 B. Converted model not yet run on target | MEASURED |
-| Ablations | Null result accepted in advance for physics loss and for forecast in the policy state | 2026-08-30 | Both null; forecast ablation on the corrected model +0.262 Wh/km, interval -0.698 to +0.982 | SIMULATED |
-| Headroom | Rule-based manager within 0.5% of the DP reference on the corrected plant | 2026-10-14 | Met: 0.01% to 0.16%, unchanged by the fix | SIMULATED |
-| Bias-aware detector, logged trips, 10 Hz | Under 1 false alarm per clean hour on 70 trips (30.4 h), standstill alarms set apart | 2026-10-14 | Met numerically: 0.99 per hour on channels assumed healthy; flag up 59% of recorded time | SIMULATED |
-| Bias-aware detector, logged trips, 100 Hz | Same limit, logs interpolated to 100 Hz | 2026-10-14 | Fail: 16.2 per hour; synthetic diagnostic | SIMULATED |
-| Plant sensitivity | Sign of learned minus rules unchanged in every plant variant | 2026-10-14 | Met: learned worse in all 14 variants, by 0.12% to 0.81% | SIMULATED |
-| Low-pass comparator | Credit filtering in general if the low-pass recovers at least as much 10x loss as the Kalman estimator | 2026-10-14 | Not met: less in both blocks, by 0.47 and 0.07 Wh/km | MEASURED |
-| Corrected comparison, three draws | Learned used more if exact two-sided Wilcoxon p < 0.05 with positive median over 12 conditions | 2026-10-14 | Met: higher in 12 of 12, median +0.50%, p = 0.0005 | MEASURED |
-| Speed estimator | Clean energy within 0.2% of the baseline loop | 2026-10-06 | Pass | MEASURED |
-| Speed estimator | Clean tracking within 0.005 m/s of the baseline loop | 2026-10-06 | Fail: 0.0193 against 0.0104 m/s on UDDS | MEASURED |
-| Speed estimator | At least half of the 10x-noise penalty recovered | 2026-10-06 | Pass: 9.44 to 0.24 Wh/km | MEASURED |
-| Speed estimator | Tracking below 0.1 m/s in every cell | 2026-10-06 | Pass | MEASURED |
-| First detector | No false alarm on a healthy sensor | 2026-10-06 | Fail: 1 false alarm on the target | MEASURED |
-| Bias-aware detector | Every named fault flagged within 0.5 s; under 1 false alarm per clean hour | 2026-10-08 | Not met: 551 and 533 of 560 caught | SIMULATED |
-| Bias-aware detector | Same limits on the target | 2026-10-08 | Met on cases run: 120 of 120 within 0.32 s; 0 alarms in 1 clean hour | MEASURED |
+| G1 | 0.1 M multiply-accumulates in 20 ms or less | 2026-08-30 | Pass: 3.30 ms from measured throughput, margin 6.1x | target-measured |
+| G2 | Power RMSE within 10% of mean; final SOC within 2 points | 2026-08-30 | Fail on 1 of 7 trips: SOC 2.45 against 2.00 | host-simulated |
+| G3a | 99th-percentile period jitter of 1 ms or less | 2026-08-30 | Pass: 25 µs | target-measured |
+| G3b | Zero dropped frames in 10 min | 2026-08-30 | Fail: 4 to 16 per run | target-measured |
+| G4 | 10% lower RMSE than persistence at 3 s | 2026-08-30 | Pass: 14.5% for the weakest fitted model | host-simulated |
+| G5 | 40 ms or less; model plus arena 300 KB or less | 2026-08-30 | Timing and memory pass: 36.46 ms, 35.03 ms; 28,894 B. Converted model not yet run on target | target-measured |
+| Ablations | Null result accepted in advance for physics loss and for forecast in the policy state | 2026-08-30 | Both null; forecast ablation on the corrected model +0.262 Wh/km, interval -0.698 to +0.982 | host-simulated |
+| Headroom | Rule-based manager within 0.5% of the DP reference on the corrected plant | 2026-10-14 | Met: 0.01% to 0.16%, unchanged by the fix | host-simulated |
+| Bias-aware detector, logged trips, 10 Hz | Under 1 false alarm per clean hour on 70 trips (30.4 h), standstill alarms set apart | 2026-10-14 | Met numerically: 0.99 per hour on channels assumed healthy; flag up 59% of recorded time | host-simulated |
+| Bias-aware detector, logged trips, 100 Hz | Same limit, logged channels interpolated to 100 Hz | 2026-10-14 | Fail: 16.2 alarms per hour; interpolation, not a 100 Hz sensor | host-simulated |
+| Plant sensitivity | Sign of learned minus rules unchanged in every plant variant | 2026-10-14 | Met: learned worse in all 14 variants, by 0.12% to 0.81% | host-simulated |
+| Low-pass comparator | Credit filtering in general if the low-pass recovers at least as much 10x loss as the Kalman estimator | 2026-10-14 | Not met: less in both blocks, by 0.47 and 0.07 Wh/km, of the order of run spread | PIL-evaluated |
+| Corrected comparison, three draws | Learned used more if exact two-sided Wilcoxon p < 0.05 with positive median over 12 conditions | 2026-10-14 | Met: higher in 12 of 12, median +0.50%, p = 0.0005 | PIL-evaluated |
+| Speed estimator | Clean energy within 0.2% of the baseline loop | 2026-10-06 | Pass | PIL-evaluated |
+| Speed estimator | Clean tracking within 0.005 m/s of the baseline loop | 2026-10-06 | Fail: 0.0193 against 0.0104 m/s on UDDS | PIL-evaluated |
+| Speed estimator | At least half of the 10x-noise penalty recovered | 2026-10-06 | Pass: 9.44 to 0.24 Wh/km | PIL-evaluated |
+| Speed estimator | Tracking below 0.1 m/s in every cell | 2026-10-06 | Pass | PIL-evaluated |
+| First detector | No false alarm on a healthy sensor | 2026-10-06 | Fail: 1 false alarm on the target | PIL-evaluated |
+| Bias-aware detector | Every named fault flagged within 0.5 s; under 1 false alarm per clean hour | 2026-10-08 | Not met: 551 and 533 of 560 caught | host-simulated |
+| Bias-aware detector | Same limits on the target | 2026-10-08 | Met on cases run: 120 of 120 within 0.32 s; 0 alarms in 1 clean hour | PIL-evaluated |
 
 Table @tab:platform-revisions records each rule or revision made after results were seen. The re-run rule and the delay exclusion are judgement calls. The origin of the 16-frame threshold is not recorded; it equals the largest count among the five G3 repeats, but the record does not say it came from them.
 
@@ -81,7 +93,8 @@ Table: tab:platform-revisions | Rules and revisions made after results were seen
 |---|---|---|---|
 | G2 split into three parts | 2026-08-30 | Pooled form failed all 7 trips | Both thresholds kept, a torque bound added; gate fails 1 of 7 |
 | Delay settings excluded | 2026-09-21 | Neither arm followed the cycle (25.7 to 43.4 m/s) | Rule: tracking error 1 m/s or more; 4 of 36 runs dropped |
-| Re-run above 16 dropped frames | 2026-10-07 | Four rule cells run beside other jobs (21 to 54) | Looser than G3; 8 cells later set aside |
+| Re-run above 16 dropped frames | 2026-10-07 | Four rule cells run beside other jobs (21 to 54) | Looser than G3; 17 energy-campaign and 8 fault-campaign runs set aside and retaken (Table @tab:platform-ledger) |
+| Deployed policy seed | 2026-10-06 | Five retrained seeds | Lowest HWFET validation energy, seed 3; US06 not used for the choice |
 | Plant fix and added checks | 2026-10-06 | Anomalies in campaign tables, not a gate | 8.28% gain withdrawn; limit-invariance sweep and reference check added |
 | Second fault detector | 2026-10-08 | First detector assumed an acceleration channel that logged trips did not match | Offset state added; criteria recorded with it |
 | Fused backup speed | 2026-10-09 | Checker with rule monitor failed on a heavier car | 18 candidates on one training cycle; rule fixed before runs |

@@ -1,8 +1,11 @@
-"""Paired statistics for the corrected board campaign (paper Table 5).
+"""Paired statistics for the single-draw corrected board campaign.
 
-Reads docs/week11-pil-corrected.json and writes docs/paper-table5-stats.json.
-The 16 valid settings contain 5 runs of the nominal US06 condition, so the
-paired test is run on 12 distinct conditions (the 5 replicates averaged).
+Reads docs/week11-pil-corrected.json (seed offset 0 only) and writes
+docs/paper-table5-stats.json. The 16 valid settings contain 5 runs of the
+nominal US06 condition, so the paired test is run on 12 distinct conditions
+(the 5 replicates averaged). This is the descriptive single-draw figure in the
+paper (median +0.31%, p = 0.001). The three-draw result and its table come from
+scripts/paper_repeat_stats.py, cross-checked by scripts/b2_repeats_stats.py.
 """
 import json
 import math

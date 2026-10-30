@@ -1,10 +1,10 @@
 #!/bin/zsh
-# Convert the mock paper to PDF with Microsoft Word and render pages to PNG.
+# Convert the manuscript to PDF with Microsoft Word and render pages to PNG.
 set -e
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-SRC="$ROOT/paper/EV-PIL-mock-paper-IEEE-Access.docx"
+SRC="$ROOT/paper/EV-PIL-manuscript.docx"
 WD="$HOME/Library/Containers/com.microsoft.Word/Data/Documents"
-TAG="evpil-mock-$(date +%s)"
+TAG="evpil-ms-$(date +%s)"
 cp "$SRC" "$WD/$TAG.docx"
 osascript <<OSA
 tell application "Microsoft Word"
@@ -14,13 +14,13 @@ tell application "Microsoft Word"
   close active document saving no
 end tell
 OSA
-cp "$WD/$TAG.pdf" "$ROOT/paper/EV-PIL-mock-paper-IEEE-Access.pdf"
+cp "$WD/$TAG.pdf" "$ROOT/paper/EV-PIL-manuscript.pdf"
 rm -f "$WD/$TAG.docx" "$WD/$TAG.pdf"
 mkdir -p "$ROOT/paper/_render"; rm -f "$ROOT"/paper/_render/*.png(N)
 python3 - "$ROOT" <<'PY'
 import sys, pymupdf
 root=sys.argv[1]
-d=pymupdf.open(root+"/paper/EV-PIL-mock-paper-IEEE-Access.pdf")
+d=pymupdf.open(root+"/paper/EV-PIL-manuscript.pdf")
 for i,p in enumerate(d):
     p.get_pixmap(dpi=80).save(f"{root}/paper/_render/p{i+1:02d}.png")
 print("pages",len(d))

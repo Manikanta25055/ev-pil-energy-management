@@ -1,7 +1,6 @@
 {
  "title": "An 8% Learned Energy Saving That Was a Plant-Model Artefact: Processor-in-the-Loop Evaluation of Rule-Based and Learned Electric-Vehicle Energy Management on a Microcontroller",
  "running_head": "M. Gonugondla et al.: An 8% Learned Energy Saving That Was a Plant-Model Artefact",
- "dates": "Received XX Month 2026, accepted XX Month 2026, date of publication XX Month 2026, date of current version XX Month 2026.",
  "authors": [
   {
    "name": "Manikanta Gonugondla",
@@ -15,24 +14,22 @@
   }
  ],
  "affiliations": [
-  "1[Department and institution to be confirmed]"
+  "1[Affiliation to be confirmed by the authors before submission]"
  ],
  "notes": [
-  "Corresponding author: Dr Swathi Tangi",
-  "MOCK MANUSCRIPT prepared for internal review. Not submitted to any journal. Dates, volume and Digital Object Identifier are placeholders."
+  "Corresponding author: Swathi Tangi"
  ],
- "abstract": "A learned electric-vehicle energy manager is trained and scored against a simulated vehicle, so a fault in that model can be read as a gain. This paper reports one case and the checks that exposed it. A Soft Actor-Critic policy and a rule-based energy manager ran on an ESP32-S3 microcontroller at 100 Hz in a processor-in-the-loop arrangement, against a longitudinal vehicle model identified from logged trips. In a first campaign the policy used less energy than the rules in 14 of 16 settings, by 8.28% on average, and a repeat campaign reproduced it. The gain came from the model, which capped billed battery power at the policy's ceiling but computed acceleration from the uncapped torque. Repetition reproduced the fault, and trip replays never imposed a binding ceiling, so neither detected it. It was caught when the policy finished 7% below a dynamic-programming reference computed beforehand, at equal tracking, and a sweep of fixed ceilings with no controller drove US06 on 8.05 Wh/km at 5 kW. After correction and retraining, over 36 runs and 2,282,832 control steps, none late, the policy used less energy in 1 of 16 settings and 0.94% more on average, with worse speed tracking on the target. The 8.28% result is withdrawn. Measured gains came from estimation: a two-state Kalman speed estimator cut the energy lost at ten times the sensor-noise floor from 9.44 to 0.24 Wh/km, and a bias-aware detector caught 120 of 120 injected speed-sensor faults with no false alarm in one clean hour.",
+ "abstract": "A learned electric-vehicle energy manager is trained and scored against a simulated vehicle, so a physical inconsistency in that model can be read as a gain. This paper reports one such case and the audit that exposed it. A rule-based energy manager and a Soft Actor-Critic (SAC) policy ran as a 10 Hz supervisory task on an ESP32-S3 microcontroller, above a 100 Hz speed loop, in a processor-in-the-loop (PIL) arrangement against a longitudinal vehicle model identified from logged winter trips. In a first campaign the policy appeared to cut model-computed energy by 8.28%, using less in 14 of 16 settings, and a repeat reproduced it. The model capped billed battery power at the policy's ceiling but computed acceleration from the uncapped torque. Repetition and trip replay could not see this. It surfaced when the policy finished 7% below a feasible dynamic-programming reference, and a controller-free sweep then drove US06 on 8.05 Wh/km at a 5 kW ceiling. After correction and retraining, the evaluated SAC design used more energy than the rules in all 12 distinct conditions, each averaged over three paired noise draws (median +0.50%, exact Wilcoxon p = 0.0005), and tracked speed worse. The 8.28% result is withdrawn. The checks are set out as a reusable physical-consistency audit, with tested and untested parts kept apart. Filtering the speed reading recovered the energy lost at ten times the sensor-noise floor. Absolute Wh/km figures belong to this model, whose median trip-energy error on a second vehicle is 13% to 17%.",
  "index_terms": "Electric vehicles, energy management, fault detection, Kalman filters, microcontrollers, processor-in-the-loop, reinforcement learning, time series forecasting.",
  "back": [
   [
    "DATA AND CODE AVAILABILITY",
-   "The vehicle-model code, firmware images, run logs and analysis scripts used in this study are available from the corresponding author on reasonable request. The BMW i3 trips and the Vehicle Energy Dataset are published datasets, cited in Section IV."
+   "The vehicle-model code, firmware sources, run records and analysis scripts are in the public repository https://github.com/Manikanta25055/ev-pil-energy-management. The file docs/reproducibility-manifest.md in that repository names the commit, the firmware image checksums, the deployed policy, the data splits and one command for each headline table. The BMW i3 trips and the Vehicle Energy Dataset are published datasets, cited in Section @sec:plant."
+  ],
+  [
+   "USE OF AI TOOLS",
+   "Anthropic's Claude, a large language model, was used to write and debug analysis scripts and firmware build scripts, to draft and edit the text of every section, and to audit reported numbers against the run records. The authors specified the experiments, checked each result against the records and take responsibility for the content."
   ]
  ],
- "bios": [
-  [
-   "Manikanta Gonugondla",
-   "Biography to be written."
-  ]
- ]
+ "bios": []
 }
