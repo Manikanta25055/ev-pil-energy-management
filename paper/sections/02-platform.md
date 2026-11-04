@@ -19,7 +19,7 @@ The target has two Xtensa LX7 cores at 240 MHz and 8 MB of PSRAM, and its FreeRT
 
 Which energy manager runs is a compile-time choice: the firmware builds the learned policy when its generated weight header exists and the rule-based manager otherwise. A campaign therefore needs one image per controller, and a diagnostic counter of policy steps, which cannot be non-zero in the rule-based image, confirms the choice.
 
-The firmware moved from the vendor framework to the Arduino core, which yields a different binary from the same source, so every gate was measured again: the forecaster took 35.03 ms instead of 36.46 ms and the policy 0.123 ms instead of 0.121 ms. The Arduino image carries radio stacks that nothing starts; supply current was not re-measured.
+The firmware moved from the vendor framework to the Arduino core, which yields a different binary from the same source, so every gate was measured again: the forecaster took 35.03 ms instead of 36.46 ms and the policy 0.123 ms instead of 0.121 ms. The Arduino image carries radio stacks that nothing starts. The board's supply current was not measured in this study, so no result concerns the power drawn by the microcontroller itself.
 
 ## Real-Time Behaviour
 

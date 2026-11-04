@@ -20,7 +20,7 @@ This paper makes five contributions.
 - An account of which safeguards could and could not detect that fault, and a physical-consistency audit for learned controllers on simulated plants in four parts: actuator-limit and energy-conservation tests, controller-free command sweeps, invariance under limits that do not bind, and anomaly triggers against a reference policy. The parts exercised here are kept apart from those only recommended.
 - A comparison on the corrected model of a rule-based energy manager with one SAC configuration over 12 distinct conditions and three paired noise draws on the target, with loop timing measured.
 - Speed-loop results in the same loop: a two-state Kalman estimator compared with a low-pass filter under sensor noise, and a bias-aware fault detector reported with its failure on logged trips.
-- On-device costs, timing and memory, reported next to the accuracy of each learned component.
+- On-device computation time and memory, reported next to the accuracy of each learned component.
 
 Section @sec:related reviews related work, and Section @sec:platform describes the platform, the gates and the labelling of results. Section @sec:plant presents the vehicle model and data; within it, Section @sec:artefact traces the apparent gain from its first report to its withdrawal, and Section @sec:checks sets out the audit. Section @sec:ems gives the corrected comparison. Sections @sec:forecast to @sec:planning hold supporting results: on-device forecasting, speed estimation and fault detection, and the simulated speed planner. Section @sec:discussion discusses the limits of the evidence, and Section @sec:conclusion concludes.
 
